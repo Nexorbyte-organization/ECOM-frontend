@@ -1,3 +1,4 @@
+import ContentSkeleton from '@/components/ui/Skeleton';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Menu, Sun, Moon, Monitor, Bell, LogOut } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
@@ -23,8 +24,10 @@ export default function Navbar({ onMenuClick, title }: NavbarProps) {
 
     const router = useRouter();
     const { user, logout } = useAuth();
+    const [notificationsLoading, setNotificationsLoading] = useState(true);
     const [notifications, setNotifications] = useState<AppNotification[]>([]);
     const [notifOpen, setNotifOpen] = useState(false);
+    const [notificationBusy, setNotificationBusy] = useState(false);
     const [notifError, setNotifError] = useState('');
     const [signOutOpen, setSignOutOpen] = useState(false);
     const [isSigningOut, setIsSigningOut] = useState(false);
@@ -37,6 +40,8 @@ export default function Navbar({ onMenuClick, title }: NavbarProps) {
             setNotifError('');
         } catch (err) {
             setNotifError(err instanceof Error ? err.message : 'Could not load notifications.');
+        } finally {
+            setNotificationsLoading(false);
         }
     }, [user]);
 
@@ -64,25 +69,27 @@ export default function Navbar({ onMenuClick, title }: NavbarProps) {
     const unreadCount = notifications.filter((n) => !n.isRead).length;
 
     const handleMarkAllRead = async () => {
-        if (!user) return;
+        if (!user || notificationBusy) return;
         try {
+                setNotificationBusy(true);
             await markAllNotificationsAsRead(user._id);
             setNotifications((current) => current.map((item) => ({ ...item, isRead: true })));
         } catch (err) {
             setNotifError(err instanceof Error ? err.message : 'Could not mark notifications as read.');
-        }
+        } finally { setNotificationBusy(false); }
     };
 
     const handleClearAll = async () => {
-        if (!user) return;
+        if (!user || notificationBusy) return;
         if (confirm(isArabic ? 'هل أنت متأكد من مسح جميع التنبيهات؟' : 'Are you sure you want to clear all notifications?')) {
             try {
+                setNotificationBusy(true);
                 await clearAllNotifications(user._id);
                 setNotifications([]);
                 setNotifOpen(false);
             } catch (err) {
                 setNotifError(err instanceof Error ? err.message : 'Could not clear notifications.');
-            }
+            } finally { setNotificationBusy(false); }
         }
     };
 
@@ -225,7 +232,7 @@ export default function Navbar({ onMenuClick, title }: NavbarProps) {
                                         <div className="flex gap-2">
                                             {unreadCount > 0 && (
                                                 <button
-                                                    onClick={handleMarkAllRead}
+                                                    disabled={notificationBusy} aria-busy={notificationBusy} onClick={handleMarkAllRead}
                                                     className="text-[10px] font-bold text-primary-400 hover:text-primary-300 hover:underline cursor-pointer"
                                                 >
                                                     {isArabic ? 'تحديد الكل كمقروء' : 'Mark read'}
@@ -233,7 +240,7 @@ export default function Navbar({ onMenuClick, title }: NavbarProps) {
                                             )}
                                             {notifications.length > 0 && (
                                                 <button
-                                                    onClick={handleClearAll}
+                                                    disabled={notificationBusy} aria-busy={notificationBusy} onClick={handleClearAll}
                                                     className="text-[10px] font-bold text-danger-450 hover:text-danger-300 hover:underline cursor-pointer"
                                                 >
                                                     {isArabic ? 'مسح الكل' : 'Clear all'}
@@ -245,7 +252,7 @@ export default function Navbar({ onMenuClick, title }: NavbarProps) {
                                     {/* Notifications List */}
                                     {notifError && <p role="alert" className="p-3 text-xs text-danger-400">{notifError}</p>}
                                     <div className="flex-1 overflow-y-auto divide-y divide-dark-800/60 max-h-[280px]">
-                                        {notifications.length === 0 ? (
+                                        {notificationsLoading ? <ContentSkeleton variant="list" count={2} className="p-3" /> : notifError && notifications.length === 0 ? null : notifications.length === 0 ? (
                                             <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
                                                 <Bell size={24} className="text-dark-600 mb-2" />
                                                 <p className="text-xs text-dark-400 font-semibold">{isArabic ? 'لا توجد تنبيهات' : 'No notifications'}</p>

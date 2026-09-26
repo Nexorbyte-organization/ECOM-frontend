@@ -1,5 +1,7 @@
 'use client';
 
+import { PageSkeleton } from '@/components/ui/Skeleton';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -79,23 +81,7 @@ export default function HomePage() {
     }
   }, [user, isLoading, isTalent, isProvider, isAdmin, router]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-dark-950">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 mx-auto relative">
-            <img src="/logo-light.png" alt="OO-Ushers Logo" className="w-16 h-16 object-contain dark-logo-hidden" />
-            <img src="/logo-dark.png" alt="OO-Ushers Logo" className="w-16 h-16 object-contain dark-logo-block" />
-          </div>
-          <div className="flex items-center gap-2 justify-center">
-            <div className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-bounce" style={{ animationDelay: '0ms' }} />
-            <div className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-bounce" style={{ animationDelay: '150ms' }} />
-            <div className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-bounce" style={{ animationDelay: '300ms' }} />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading) return <PageSkeleton />;
 
   if (!user) {
     // Pricing configurations (with reactive translation hook)

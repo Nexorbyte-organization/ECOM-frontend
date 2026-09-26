@@ -1,5 +1,7 @@
 'use client';
 
+import ContentSkeleton from '@/components/ui/Skeleton';
+
 import React, { useEffect, useState } from 'react';
 import { getOpenEvents } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
@@ -95,9 +97,7 @@ export default function BrowseJobsPage() {
 
             {/* Job List */}
             {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[1, 2, 3, 4].map((i) => <div key={i} className="h-52 glass rounded-2xl animate-pulse" />)}
-                </div>
+                <ContentSkeleton variant="cards" />
             ) : filteredEvents.length === 0 ? (
                 <Card className="text-center py-12">
                     <Filter size={32} className="mx-auto text-dark-600 mb-3" />
