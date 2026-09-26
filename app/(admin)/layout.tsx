@@ -8,7 +8,7 @@ import Navbar from '@/components/shared/Navbar';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const { user, isLoading, isAdmin } = useAuth();
+    const { user, isLoading, isAdmin  } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
