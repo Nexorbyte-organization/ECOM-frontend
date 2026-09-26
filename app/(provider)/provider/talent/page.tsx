@@ -1,0 +1,216 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { searchTalents, getProviderProfileByUserId, getProviderEvents, directBookTalent, isVerifiedTalent } from '@/lib/api';
+import { TalentProfile, Event, TalentSearchFilters } from '@/types';
+import { useAuth } from '@/lib/auth';
+import Card from '@/components/ui/Card';
+import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
+import Avatar from '@/components/ui/Avatar';
+import Modal from '@/components/ui/Modal';
+import { formatDate, EVENT_CATEGORIES, CITIES } from '@/lib/utils';
+import { Search, MapPin, Star, Shield, Clock, UserPlus, Briefcase } from 'lucide-react';
+import Link from 'next/link';
+import { useProfileCompletion } from '@/components/shared/ProfileCompletionGate';
+
+export default function TalentSearchPage() {
+    const { user } = useAuth();
+    const { isComplete: isProfileComplete, isChecking: isCheckingProfile } = useProfileCompletion();
+    const [talents, setTalents] = useState<TalentProfile[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [searchCity, setSearchCity] = useState('');
+    const [searchCategory, setSearchCategory] = useState('');
+
+    // Direct booking state
+    const [bookingModal, setBookingModal] = useState<{ open: boolean; talent: TalentProfile | null }>({ open: false, talent: null });
+    const [providerEvents, setProviderEvents] = useState<Event[]>([]);
+    const [selectedEventId, setSelectedEventId] = useState('');
+    const [bookingLoading, setBookingLoading] = useState(false);
+    const [bookingSuccess, setBookingSuccess] = useState(false);
+    const [error, setError] = useState('');
+
+    const fetchTalents = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const filters: TalentSearchFilters = {};
+            if (searchCity) filters.city = searchCity;
+            if (searchCategory) filters.category = searchCategory;
+            const res = await searchTalents(filters);
+            setTalents(res.data);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Could not load talent.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Search results follow the two server-side filters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => { fetchTalents(); }, [searchCity, searchCategory]);
+
+    const openBookingModal = async (talent: TalentProfile) => {
+        if (!user || !isProfileComplete) return;
+        setError('');
+        try {
+            const profile = await getProviderProfileByUserId(user._id);
+            if (!profile) return;
+            const events = await getProviderEvents(profile._id);
+            setProviderEvents(events.data.filter((e) => e.status === 'open'));
+            setBookingModal({ open: true, talent });
+            setSelectedEventId('');
+            setBookingSuccess(false);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Could not load events for booking.');
+        }
+    };
+
+    const handleDirectBook = async () => {
+        if (!bookingModal.talent || !selectedEventId) return;
+        setBookingLoading(true);
+        setError('');
+        try {
+            await directBookTalent(selectedEventId, bookingModal.talent._id);
+            setBookingSuccess(true);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Could not send booking request.');
+        } finally {
+            setBookingLoading(false);
+        }
+    };
+
+    return (
+        <div className="space-y-6 animate-fade-in">
+            {error && <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}
+            <div>
+                <h1 className="text-2xl font-bold text-dark-50">Search Talent</h1>
+                <p className="text-dark-400 mt-1">Find and book the perfect talent for your events</p>
+            </div>
+
+            {/* Filters */}
+            <Card>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <label className="block text-sm font-medium text-dark-300">City</label>
+                        <select
+                            value={searchCity}
+                            onChange={(e) => setSearchCity(e.target.value)}
+                            className="w-full bg-dark-950 border-2 border-dark-50 rounded-xl px-4 py-2.5 text-sm text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all appearance-none cursor-pointer"
+                        >
+                            <option value="" className="bg-dark-900 text-dark-100">All cities</option>
+                            {CITIES.map((c) => <option key={c} value={c} className="bg-dark-900 text-dark-100">{c}</option>)}
+                        </select>
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="block text-sm font-medium text-dark-300">Category</label>
+                        <select
+                            value={searchCategory}
+                            onChange={(e) => setSearchCategory(e.target.value)}
+                            className="w-full bg-dark-950 border-2 border-dark-50 rounded-xl px-4 py-2.5 text-sm text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all appearance-none cursor-pointer"
+                        >
+                            <option value="" className="bg-dark-900 text-dark-100">All categories</option>
+                            {EVENT_CATEGORIES.map((c) => <option key={c} value={c} className="bg-dark-900 text-dark-100">{c}</option>)}
+                        </select>
+                    </div>
+                </div>
+            </Card>
+
+            {/* Results */}
+            {loading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[1, 2, 3].map((i) => <div key={i} className="h-64 glass rounded-2xl animate-pulse" />)}
+                </div>
+            ) : talents.length === 0 ? (
+                <Card className="text-center py-12">
+                    <Search size={32} className="mx-auto text-dark-600 mb-3" />
+                    <p className="text-dark-400">No talent found matching your criteria</p>
+                </Card>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
+                    {talents.map((talent) => (
+                        <Card key={talent._id} className="flex flex-col">
+                            <div className="flex items-center gap-3 mb-4">
+                                <Avatar src={talent.photo} name={talent.fullName} size="lg" />
+                                <div>
+                                    <div className="flex items-center gap-1.5">
+                                        <Link href={`/provider/talent/${talent._id}`} className="text-sm font-semibold text-dark-100 hover:text-primary-500 transition-colors">{talent.fullName}</Link>
+                                        {isVerifiedTalent(talent) && <span className="text-xs text-success-400">✅</span>}
+                                    </div>
+                                    <p className="text-xs text-dark-400 flex items-center gap-1"><MapPin size={11} /> {talent.city}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 mb-3 flex-wrap">
+                                <Badge variant="primary"><Shield size={10} className="inline mr-1" />{talent.reliabilityScore}%</Badge>
+                                <Badge variant="warning"><Star size={10} className="inline mr-1" />{talent.ratingAverage}</Badge>
+                                <Badge variant="default"><Clock size={10} className="inline mr-1" />{talent.experienceYears}yr</Badge>
+                            </div>
+                            <div className="flex flex-wrap gap-1 mb-3">
+                                {talent.categories.map((cat) => (
+                                    <span key={cat} className="text-[10px] px-2 py-0.5 rounded-md bg-dark-800 text-dark-400 border border-dark-700">{cat}</span>
+                                ))}
+                            </div>
+                            <div className="flex flex-wrap gap-1 mb-4">
+                                {talent.languages.map((lang) => (
+                                    <span key={lang} className="text-[10px] px-2 py-0.5 rounded-md bg-dark-800/50 text-dark-500">{lang}</span>
+                                ))}
+                            </div>
+                            <div className="mt-auto pt-3 border-t border-dark-700/50">
+                                <Button size="sm" icon={<UserPlus size={14} />} disabled={isCheckingProfile || !isProfileComplete} onClick={() => openBookingModal(talent)} className="w-full">
+                                    {isProfileComplete ? 'Direct Book' : 'Complete Profile'}
+                                </Button>
+                            </div>
+                        </Card>
+                    ))}
+                </div>
+            )}
+
+            {/* Direct Booking Modal */}
+            <Modal
+                isOpen={bookingModal.open}
+                onClose={() => setBookingModal({ open: false, talent: null })}
+                title={`Book ${bookingModal.talent?.fullName}`}
+            >
+                {error && <p role="alert" className="mb-4 rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}
+                {bookingSuccess ? (
+                    <div className="text-center py-4">
+                        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-success-500/15 flex items-center justify-center">
+                            <Briefcase size={20} className="text-success-400" />
+                        </div>
+                        <p className="text-sm font-semibold text-dark-100">Booking request sent!</p>
+                        <p className="text-xs text-dark-400 mt-1">Waiting for talent to accept</p>
+                        <Button className="mt-4" variant="secondary" onClick={() => setBookingModal({ open: false, talent: null })}>
+                            Close
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        <p className="text-sm text-dark-300">Select an event to book this talent for:</p>
+                        {providerEvents.length === 0 ? (
+                            <p className="text-sm text-dark-500">No open events available. Create an event first.</p>
+                        ) : (
+                            <div className="space-y-2">
+                                {providerEvents.map((event) => (
+                                    <button
+                                        key={event._id}
+                                        onClick={() => setSelectedEventId(event._id)}
+                                        className={`w-full p-3 rounded-xl border text-left transition-all cursor-pointer ${selectedEventId === event._id
+                                            ? 'border-primary-500 bg-primary-500/10'
+                                            : 'border-dark-700 bg-dark-800/30 hover:border-dark-600'
+                                            }`}
+                                    >
+                                        <p className="text-sm font-medium text-dark-100">{event.title}</p>
+                                        <p className="text-xs text-dark-400">{formatDate(event.eventDate)} · {event.location}</p>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        <Button onClick={handleDirectBook} isLoading={bookingLoading} disabled={!selectedEventId || !isProfileComplete} className="w-full">
+                            Send Booking Request
+                        </Button>
+                    </div>
+                )}
+            </Modal>
+        </div>
+    );
+}
