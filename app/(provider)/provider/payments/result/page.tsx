@@ -1,5 +1,8 @@
 'use client';
 
+import ContentSkeleton from '@/components/ui/Skeleton';
+import { toast } from '@/lib/toast';
+
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -56,18 +59,19 @@ function PaymentResultContent() {
 
     useEffect(() => {
         if (!paid || !settlement?.eventId) return;
+        toast.success({ en: 'Payment confirmed.', ar: 'تم تأكيد الدفع.', 'ar-eg': 'الدفع اتأكد.' });
         const timeout = window.setTimeout(() => {
             router.replace(`/provider/events/${settlement.eventId}`);
         }, 3000);
         return () => window.clearTimeout(timeout);
     }, [paid, settlement?.eventId, router]);
 
+    if (loading) return <ContentSkeleton variant="status" className="mx-auto max-w-2xl" />;
+
     return (
         <div className="mx-auto max-w-2xl space-y-5 py-8 animate-fade-in">
             <Card className="text-center">
-                {loading ? (
-                    <RefreshCw size={42} className="mx-auto mb-4 animate-spin text-primary-500" />
-                ) : paid ? (
+                {paid ? (
                     <CheckCircle2 size={48} className="mx-auto mb-4 text-success-500" />
                 ) : failed ? (
                     <XCircle size={48} className="mx-auto mb-4 text-danger-500" />
@@ -76,7 +80,7 @@ function PaymentResultContent() {
                 )}
                 <Badge variant="warning">PAYMOB TEST MODE</Badge>
                 <h1 className="mt-3 text-2xl font-black text-dark-50">
-                    {loading ? 'Checking payment…' : paid ? 'Payment confirmed' : failed ? 'Payment was not completed' : 'Payment confirmation pending'}
+                    {paid ? 'Payment confirmed' : failed ? 'Payment was not completed' : 'Payment confirmation pending'}
                 </h1>
                 <p className="mx-auto mt-2 max-w-lg text-sm text-dark-400">
                     {paid
@@ -115,5 +119,5 @@ function PaymentResultContent() {
 }
 
 export default function PaymentResultPage() {
-    return <Suspense fallback={<div className="py-20 text-center text-dark-400">Checking payment…</div>}><PaymentResultContent /></Suspense>;
+    return <Suspense fallback={<ContentSkeleton variant="status" className="mx-auto max-w-2xl" />}><PaymentResultContent /></Suspense>;
 }

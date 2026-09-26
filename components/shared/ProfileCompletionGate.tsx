@@ -2,6 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Skeleton, SkeletonGroup } from '@/components/ui/Skeleton';
 import { AlertTriangle, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { useLanguage } from '@/lib/i18n';
@@ -96,6 +97,7 @@ export default function ProfileCompletionGate({
 
     return (
         <ProfileCompletionContext.Provider value={{ isComplete, isChecking, refresh }}>
+            {isChecking && <SkeletonGroup className="border-b border-dark-700 px-4 py-3"><Skeleton className="h-4 w-64 max-w-full" /></SkeletonGroup>}
             {error && <div role="alert" className="flex items-center justify-center gap-3 bg-danger-500/10 p-3 text-sm text-danger-400">{error}<button type="button" onClick={() => void refresh()} className="font-semibold underline">Retry</button></div>}
             {!isChecking && !isComplete && !error && (
                 <div className="sticky top-0 z-30 border-b border-amber-500/30 bg-amber-50/95 px-4 py-3 shadow-sm backdrop-blur dark:bg-amber-950/90" role="alert">

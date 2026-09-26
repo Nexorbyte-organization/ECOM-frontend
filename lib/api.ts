@@ -1,3 +1,4 @@
+import { withFeedback } from '@/lib/toast';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
     AppNotification, Application, ApplicationStatus, Attendance, AttendanceCheckInResult, AttendanceQr, AttendanceStatus,
@@ -220,29 +221,29 @@ export async function getAllTalentProfiles(): Promise<TalentProfile[]> {
 export async function getAllProviderProfiles(): Promise<ProviderProfile[]> {
     const payload = await apiRequest('/admin/organizers?limit=100'); return (payload.data || []).map(normalizeProvider);
 }
-export async function adminBlockUser(userId: string): Promise<void> { await apiRequest(`/admin/users/${userId}/block`, { method: 'PATCH' }); }
-export async function adminUnblockUser(userId: string): Promise<void> { await apiRequest(`/admin/users/${userId}/unblock`, { method: 'PATCH' }); }
-export async function adminDeleteUser(userId: string): Promise<void> { await apiRequest(`/admin/users/${userId}`, { method: 'DELETE' }); }
-export async function adminUpdateEventStatus(eventId: string, status: EventStatus): Promise<Event> {
+async function adminBlockUserAction(userId: string): Promise<void> { await apiRequest(`/admin/users/${userId}/block`, { method: 'PATCH' }); }
+async function adminUnblockUserAction(userId: string): Promise<void> { await apiRequest(`/admin/users/${userId}/unblock`, { method: 'PATCH' }); }
+async function adminDeleteUserAction(userId: string): Promise<void> { await apiRequest(`/admin/users/${userId}`, { method: 'DELETE' }); }
+async function adminUpdateEventStatusAction(eventId: string, status: EventStatus): Promise<Event> {
     const payload = await apiRequest(`/admin/events/${eventId}/status`, { method: 'PATCH', body: { status } }); return normalizeEvent(payload.data);
 }
-export async function adminResetLateExcuses(talentId: string): Promise<void> { await apiRequest(`/admin/ushers/${talentId}/reset-excuses`, { method: 'POST' }); }
-export async function adminDeleteEvent(eventId: string): Promise<void> { await apiRequest(`/admin/events/${eventId}`, { method: 'DELETE' }); }
-export async function adminVerifyUser(userId: string): Promise<void> { await apiRequest(`/admin/users/${userId}/verify`, { method: 'PATCH' }); }
-export async function adminUnverifyUser(userId: string): Promise<void> { await apiRequest(`/admin/users/${userId}/unverify`, { method: 'PATCH' }); }
-export async function adminInviteUser(data: {
+async function adminResetLateExcusesAction(talentId: string): Promise<void> { await apiRequest(`/admin/ushers/${talentId}/reset-excuses`, { method: 'POST' }); }
+async function adminDeleteEventAction(eventId: string): Promise<void> { await apiRequest(`/admin/events/${eventId}`, { method: 'DELETE' }); }
+async function adminVerifyUserAction(userId: string): Promise<void> { await apiRequest(`/admin/users/${userId}/verify`, { method: 'PATCH' }); }
+async function adminUnverifyUserAction(userId: string): Promise<void> { await apiRequest(`/admin/users/${userId}/unverify`, { method: 'PATCH' }); }
+async function adminInviteUserAction(data: {
     email: string; password?: string; role: UserRole; fullName?: string; city?: string; companyName?: string; providerProfileId?: string;
 }): Promise<User> {
     const payload = await apiRequest('/admin/users', { method: 'POST', body: data }); return normalizeUser(payload.data) as User;
 }
 
 // Auth
-export async function login(email: string, password: string): Promise<AuthResponse> {
+async function loginAction(email: string, password: string): Promise<AuthResponse> {
     const payload = await apiRequest('/auth/login', { method: 'POST', body: { email, password } });
     const response = payload.data || payload;
     return { token: '', user: normalizeUser(response.user || payload.user) };
 }
-export async function register(email: string, password: string, role: 'talent' | 'provider'): Promise<RegistrationResponse> {
+async function registerAction(email: string, password: string, role: 'talent' | 'provider'): Promise<RegistrationResponse> {
     const payload = await apiRequest('/auth/signup', { method: 'POST', body: { email, password, role: role === 'talent' ? 'usher' : 'organizer' } });
     return { user: normalizeUser(payload.data), message: payload.message || 'Account created', verificationRequired: true };
 }
@@ -252,15 +253,15 @@ export async function getCurrentUser(): Promise<Omit<User, 'password'>> {
 export async function logoutSession(): Promise<void> {
     await apiRequest('/auth/logout', { method: 'POST' }, false);
 }
-export async function forgotPassword(email: string): Promise<string> {
+async function forgotPasswordAction(email: string): Promise<string> {
     const payload = await apiRequest('/auth/forget-password', { method: 'POST', body: { email } }, false);
     return payload.message;
 }
-export async function verifyResetOtp(email: string, otp: string): Promise<string> {
+async function verifyResetOtpAction(email: string, otp: string): Promise<string> {
     const payload = await apiRequest('/auth/verify-otp', { method: 'POST', body: { email, otp } }, false);
     return payload.data?.resetToken || payload.resetToken;
 }
-export async function resetPassword(resetToken: string, newPassword: string): Promise<void> {
+async function resetPasswordAction(resetToken: string, newPassword: string): Promise<void> {
     await apiRequest('/auth/reset-password', { method: 'POST', body: { resetToken, newPassword } }, false);
 }
 export function isVerifiedTalent(profile: TalentProfile): boolean { return profile.completedEventsCount >= 10 && profile.ratingAverage >= 4; }
@@ -277,7 +278,7 @@ export async function getTalentProfile(id: string): Promise<TalentProfile | null
     }
 }
 export async function getTalentProfileByUserId(userId: string): Promise<TalentProfile | null> { return getTalentProfile(userId); }
-export async function updateTalentProfile(userId: string, data: Partial<TalentProfile>): Promise<TalentProfile> {
+async function updateTalentProfileAction(userId: string, data: Partial<TalentProfile>): Promise<TalentProfile> {
     const { photo, ...profileData } = data;
     let profile: TalentProfile;
     if (Object.keys(profileData).length) {
@@ -289,26 +290,26 @@ export async function updateTalentProfile(userId: string, data: Partial<TalentPr
     }
     return profile;
 }
-export async function uploadTalentPortfolioImage(file: File): Promise<string[]> {
+async function uploadTalentPortfolioImageAction(file: File): Promise<string[]> {
     const form = new FormData(); form.append('image', file);
     const payload = await apiRequest('/talent/profile/portfolio', { method: 'POST', body: form });
     return (payload.data || []).map((image: any) => image?.secure_url || image?.url || image);
 }
-export async function deleteTalentPortfolioImage(index: number): Promise<string[]> {
+async function deleteTalentPortfolioImageAction(index: number): Promise<string[]> {
     const payload = await apiRequest(`/talent/profile/portfolio/${index}`, { method: 'DELETE' });
     return (payload.data || []).map((image: any) => image?.secure_url || image?.url || image);
 }
-export async function addPaymentMethod(
+async function addPaymentMethodAction(
     _userId: string, providerOrMethod: string | Omit<PaymentMethod, '_id' | 'isDefault'>, numberOrDetail?: string,
 ): Promise<PaymentMethod[]> {
     const body = typeof providerOrMethod === 'string' ? { provider: providerOrMethod, numberOrDetail } : providerOrMethod;
     const payload = await apiRequest('/talent/profile/payment-methods', { method: 'POST', body });
     return (payload.data || []).map(normalizePaymentMethod);
 }
-export async function deletePaymentMethod(_userId: string, methodId: string): Promise<PaymentMethod[]> {
+async function deletePaymentMethodAction(_userId: string, methodId: string): Promise<PaymentMethod[]> {
     const payload = await apiRequest(`/talent/profile/payment-methods/${methodId}`, { method: 'DELETE' }); return (payload.data || []).map(normalizePaymentMethod);
 }
-export async function setDefaultPaymentMethod(_userId: string, methodId: string): Promise<PaymentMethod[]> {
+async function setDefaultPaymentMethodAction(_userId: string, methodId: string): Promise<PaymentMethod[]> {
     const payload = await apiRequest(`/talent/profile/payment-methods/${methodId}/default`, { method: 'PATCH' }); return (payload.data || []).map(normalizePaymentMethod);
 }
 export async function searchTalents(filters: TalentSearchFilters): Promise<PaginatedResponse<TalentProfile>> {
@@ -319,7 +320,7 @@ export async function getProviderProfile(_id: string): Promise<ProviderProfile |
     catch (error) { if (error instanceof Error && /not found/i.test(error.message)) return null; throw error; }
 }
 export async function getProviderProfileByUserId(userId: string): Promise<ProviderProfile | null> { return getProviderProfile(userId); }
-export async function updateProviderProfile(userId: string, data: Partial<ProviderProfile>): Promise<ProviderProfile> {
+async function updateProviderProfileAction(userId: string, data: Partial<ProviderProfile>): Promise<ProviderProfile> {
     const { logo, ...profileData } = data;
     let profile: ProviderProfile;
     if (Object.keys(profileData).length) {
@@ -333,11 +334,11 @@ export async function updateProviderProfile(userId: string, data: Partial<Provid
 }
 
 // Events
-export async function createEvent(data: Omit<Event, '_id' | 'createdAt' | 'hiredTalents' | 'status'>): Promise<Event> {
+async function createEventAction(data: Omit<Event, '_id' | 'createdAt' | 'hiredTalents' | 'status'>): Promise<Event> {
     const { providerId: _providerId, photo, ...body } = data;
     const payload = await apiRequest('/provider/events', { method: 'POST', body });
     let event = normalizeEvent(payload.data);
-    if (photo?.startsWith('data:')) event = await uploadEventPhoto(event._id, await dataUrlToFile(photo, 'event-photo.jpg'));
+    if (photo?.startsWith('data:')) event = await uploadEventPhotoAction(event._id, await dataUrlToFile(photo, 'event-photo.jpg'));
     return event;
 }
 export async function getEvent(id: string): Promise<Event | null> {
@@ -356,20 +357,20 @@ export async function getProviderEvents(_providerId: string, filters?: EventFilt
 export async function getOpenEvents(filters?: EventFilters): Promise<PaginatedResponse<Event>> {
     const payload = await apiRequest(`/talent/events/browse${queryString({ ...filters, limit: filters?.limit || 100 })}`); return listResponse(payload, normalizeEvent);
 }
-export async function updateEvent(id: string, data: Partial<Event>): Promise<Event> {
+async function updateEventAction(id: string, data: Partial<Event>): Promise<Event> {
     const { photo, ...body } = data;
     const payload = await apiRequest(`/provider/events/${id}`, { method: 'PUT', body });
     let event = normalizeEvent(payload.data);
-    if (photo?.startsWith('data:')) event = await uploadEventPhoto(id, await dataUrlToFile(photo, 'event-photo.jpg'));
+    if (photo?.startsWith('data:')) event = await uploadEventPhotoAction(id, await dataUrlToFile(photo, 'event-photo.jpg'));
     return event;
 }
-export async function uploadEventPhoto(eventId: string, file: File): Promise<Event> {
+async function uploadEventPhotoAction(eventId: string, file: File): Promise<Event> {
     const form = new FormData(); form.append('photo', file);
     const payload = await apiRequest(`/provider/events/${eventId}/photo`, { method: 'PATCH', body: form });
     return normalizeEvent(payload.data);
 }
-export async function deleteEvent(id: string): Promise<void> { await apiRequest(`/provider/events/${id}`, { method: 'DELETE' }); }
-export async function generateEventAttendanceQr(eventId: string): Promise<AttendanceQr> {
+async function deleteEventAction(id: string): Promise<void> { await apiRequest(`/provider/events/${id}`, { method: 'DELETE' }); }
+async function generateEventAttendanceQrAction(eventId: string): Promise<AttendanceQr> {
     const payload = await apiRequest(`/provider/events/${eventId}/attendance-qr`, { method: 'POST' });
     return payload.data;
 }
@@ -379,10 +380,10 @@ export async function getEventAttendanceQr(eventId: string): Promise<AttendanceQ
 }
 
 // Applications
-export async function applyToEvent(eventId: string, _talentId: string): Promise<Application> {
+async function applyToEventAction(eventId: string, _talentId: string): Promise<Application> {
     const payload = await apiRequest('/talent/events/apply', { method: 'POST', body: { eventId } }); return normalizeApplication(payload.data);
 }
-export async function directBookTalent(eventId: string, talentId: string): Promise<Application> {
+async function directBookTalentAction(eventId: string, talentId: string): Promise<Application> {
     const payload = await apiRequest('/provider/direct-book', { method: 'POST', body: { eventId, talentId } }); return normalizeApplication(payload.data);
 }
 export async function getEventApplicants(eventId: string): Promise<(Application & { talent: TalentProfile })[]> {
@@ -393,7 +394,7 @@ export async function getTalentApplications(_talentId: string): Promise<(Applica
     const payload = await apiRequest('/talent/applications/my?limit=100');
     return (payload.data || []).map((value: any) => ({ ...normalizeApplication(value), event: normalizeEvent(value.event) }));
 }
-export async function updateApplicationStatus(appId: string, status: ApplicationStatus): Promise<Application> {
+async function updateApplicationStatusAction(appId: string, status: ApplicationStatus): Promise<Application> {
     const payload = await apiRequest(`/provider/applications/${appId}/status`, { method: 'PATCH', body: { status } }); return normalizeApplication(payload.data);
 }
 
@@ -402,10 +403,10 @@ export async function getEventAttendance(eventId: string): Promise<(Attendance &
     const payload = await apiRequest(`/provider/events/${eventId}/attendance`);
     return (payload.data || []).map((value: any) => ({ ...normalizeAttendance(value), talent: normalizeTalent(value.talent) }));
 }
-export async function markAttendance(eventId: string, talentId: string, status: AttendanceStatus): Promise<Attendance> {
+async function markAttendanceAction(eventId: string, talentId: string, status: AttendanceStatus): Promise<Attendance> {
     const payload = await apiRequest(`/provider/events/${eventId}/attendance`, { method: 'POST', body: { talentId, status } }); return normalizeAttendance(payload.data);
 }
-export async function checkInWithAttendanceQr(token: string): Promise<AttendanceCheckInResult> {
+async function checkInWithAttendanceQrAction(token: string): Promise<AttendanceCheckInResult> {
     const payload = await apiRequest('/talent/attendance/check-in', { method: 'POST', body: { token } });
     return {
         attendance: normalizeAttendance(payload.data.attendance),
@@ -413,14 +414,14 @@ export async function checkInWithAttendanceQr(token: string): Promise<Attendance
         alreadyCheckedIn: Boolean(payload.data.alreadyCheckedIn),
     };
 }
-export async function excuseFromEvent(talentId: string, eventId: string): Promise<{ isLate: boolean; lateExcuseCount: number }> {
+async function excuseFromEventAction(talentId: string, eventId: string): Promise<{ isLate: boolean; lateExcuseCount: number }> {
     const applications = await getTalentApplications(talentId);
     const application = applications.find((item) => item.eventId === eventId && item.status === ApplicationStatus.ACCEPTED);
     if (!application) throw new Error('No accepted application found for this event');
     const payload = await apiRequest(`/talent/applications/${application._id}/excuse`, { method: 'PATCH' });
     return { isLate: Boolean(payload.data?.isLateExcuse), lateExcuseCount: Number(payload.data?.lateExcuseCount || 0) };
 }
-export async function submitReview(data: {
+async function submitReviewAction(data: {
     eventId: string; reviewerId: string; reviewedUserId: string; rating: number; comment: string;
 }): Promise<Review> {
     const payload = await apiRequest(`/provider/events/${data.eventId}/reviews`, {
@@ -493,10 +494,10 @@ export async function getProviderDashboardStats(_providerId: string): Promise<Pr
 }
 
 // Referrals
-export async function referTalentToEvent(eventId: string, _referrerTalentId: string, referredTalentId: string): Promise<Referral> {
+async function referTalentToEventAction(eventId: string, _referrerTalentId: string, referredTalentId: string): Promise<Referral> {
     const payload = await apiRequest('/talent/refer', { method: 'POST', body: { eventId, referredTalentId } }); return normalizeReferral(payload.data);
 }
-export async function createReferralInvite(eventId: string): Promise<string> {
+async function createReferralInviteAction(eventId: string): Promise<string> {
     const payload = await apiRequest('/talent/referral-invites', { method: 'POST', body: { eventId } });
     return payload.data.token;
 }
@@ -504,7 +505,7 @@ export async function getReferralInvite(token: string): Promise<{ event: Event; 
     const payload = await apiRequest(`/auth/referral-invites/${encodeURIComponent(token)}`, {}, false);
     return { event: normalizeEvent(payload.data.event), referrer: normalizeTalent(payload.data.referrer) };
 }
-export async function redeemReferralInvite(token: string): Promise<Referral> {
+async function redeemReferralInviteAction(token: string): Promise<Referral> {
     const payload = await apiRequest(`/talent/referral-invites/${encodeURIComponent(token)}/redeem`, { method: 'POST' });
     return normalizeReferral(payload.data);
 }
@@ -512,10 +513,10 @@ export async function getTalentPendingReferrals(_talentId: string): Promise<(Ref
     const payload = await apiRequest('/talent/referrals/pending');
     return (payload.data || []).map((value: any) => ({ ...normalizeReferral(value), event: normalizeEvent(value.event), referrer: normalizeTalent(value.referrer) }));
 }
-export async function acceptReferral(referralId: string): Promise<Application> {
+async function acceptReferralAction(referralId: string): Promise<Application> {
     const payload = await apiRequest(`/talent/referrals/${referralId}/accept`, { method: 'PATCH' }); return normalizeApplication(payload.data);
 }
-export async function declineReferral(referralId: string): Promise<void> { await apiRequest(`/talent/referrals/${referralId}/decline`, { method: 'PATCH' }); }
+async function declineReferralAction(referralId: string): Promise<void> { await apiRequest(`/talent/referrals/${referralId}/decline`, { method: 'PATCH' }); }
 export async function getEventReferrals(eventId: string): Promise<(Referral & { referrer: TalentProfile; referred: TalentProfile })[]> {
     const payload = await apiRequest(`/provider/events/${eventId}/referrals`);
     return (payload.data || []).map((value: any) => ({
@@ -528,14 +529,14 @@ export async function getAllTalents(): Promise<TalentProfile[]> {
 }
 
 // Staff
-export async function inviteStaffMember(
+async function inviteStaffMemberAction(
     fullName: string, email: string, password = 'member123', role: UserRole = UserRole.PROVIDER_MEMBER,
 ): Promise<User> {
     const payload = await apiRequest('/provider/staff', { method: 'POST', body: { fullName, email, password, role } }); return normalizeUser(payload.data) as User;
 }
-export async function providerBlockStaff(memberUserId: string): Promise<void> { await apiRequest(`/provider/staff/${memberUserId}/block`, { method: 'PATCH' }); }
-export async function providerUnblockStaff(memberUserId: string): Promise<void> { await apiRequest(`/provider/staff/${memberUserId}/unblock`, { method: 'PATCH' }); }
-export async function providerUpdateStaff(
+async function providerBlockStaffAction(memberUserId: string): Promise<void> { await apiRequest(`/provider/staff/${memberUserId}/block`, { method: 'PATCH' }); }
+async function providerUnblockStaffAction(memberUserId: string): Promise<void> { await apiRequest(`/provider/staff/${memberUserId}/unblock`, { method: 'PATCH' }); }
+async function providerUpdateStaffAction(
     memberUserId: string, data: { fullName?: string; email?: string; password?: string; role?: UserRole },
 ): Promise<User> {
     const payload = await apiRequest(`/provider/staff/${memberUserId}`, { method: 'PUT', body: data }); return normalizeUser(payload.data) as User;
@@ -543,8 +544,8 @@ export async function providerUpdateStaff(
 export async function getStaffMembers(): Promise<Omit<User, 'password'>[]> {
     const payload = await apiRequest('/provider/staff'); return (payload.data || []).map(normalizeUser);
 }
-export async function removeStaffMember(memberUserId: string): Promise<void> { await apiRequest(`/provider/staff/${memberUserId}`, { method: 'DELETE' }); }
-export async function assignSupervisorToEvent(eventId: string, supervisorUserId: string, add: boolean): Promise<Event> {
+async function removeStaffMemberAction(memberUserId: string): Promise<void> { await apiRequest(`/provider/staff/${memberUserId}`, { method: 'DELETE' }); }
+async function assignSupervisorToEventAction(eventId: string, supervisorUserId: string, add: boolean): Promise<Event> {
     const payload = await apiRequest(`/provider/events/${eventId}/supervisor`, { method: 'PATCH', body: { supervisorUserId, add } }); return normalizeEvent(payload.data);
 }
 
@@ -556,7 +557,7 @@ function normalizeEventActionRequest(value: any): EventActionRequest {
         reason: value?.reason || undefined, status: value?.status, createdAt: value?.createdAt || '',
     };
 }
-export async function requestEventAction(eventId: string, requestType: EventActionRequestType, reason?: string): Promise<EventActionRequest> {
+async function requestEventActionAction(eventId: string, requestType: EventActionRequestType, reason?: string): Promise<EventActionRequest> {
     const payload = await apiRequest(`/provider/events/${eventId}/action-requests`, { method: 'POST', body: { requestType, reason } }); return normalizeEventActionRequest(payload.data);
 }
 export async function getPendingEventActionRequests(): Promise<(EventActionRequest & { event: Event; provider: ProviderProfile })[]> {
@@ -565,14 +566,14 @@ export async function getPendingEventActionRequests(): Promise<(EventActionReque
         ...normalizeEventActionRequest(value), event: normalizeEvent(value.event), provider: normalizeProvider(value.provider || value.organizer),
     }));
 }
-export async function resolveEventActionRequest(requestId: string, decision: 'approved' | 'rejected'): Promise<EventActionRequest> {
+async function resolveEventActionRequestAction(requestId: string, decision: 'approved' | 'rejected'): Promise<EventActionRequest> {
     const payload = await apiRequest(`/admin/event-action-requests/${requestId}`, { method: 'PATCH', body: { decision, status: decision } });
     return normalizeEventActionRequest(payload.data);
 }
 export interface CreateGroupResult {
     groupLink: string; groupId: string; includedTalents: TalentProfile[]; excludedNoPhone: TalentProfile[];
 }
-export async function createEventWhatsAppGroup(eventId: string): Promise<CreateGroupResult> {
+async function createEventWhatsAppGroupAction(eventId: string): Promise<CreateGroupResult> {
     const payload = await apiRequest(`/provider/events/${eventId}/whatsapp-group`, { method: 'POST' }); const data = payload.data || payload;
     return {
         groupLink: data.groupLink, groupId: data.groupId,
@@ -585,8 +586,8 @@ export async function getNotifications(_userId: string): Promise<AppNotification
     const payload = await apiRequest('/notifications'); return (payload.data || []).map(normalizeNotification);
 }
 export async function markNotificationAsRead(notificationId: string): Promise<void> { await apiRequest(`/notifications/${notificationId}/read`, { method: 'PATCH' }); }
-export async function markAllNotificationsAsRead(_userId: string): Promise<void> { await apiRequest('/notifications/read-all', { method: 'PATCH' }); }
-export async function clearAllNotifications(_userId: string): Promise<void> { await apiRequest('/notifications', { method: 'DELETE' }); }
+async function markAllNotificationsAsReadAction(_userId: string): Promise<void> { await apiRequest('/notifications/read-all', { method: 'PATCH' }); }
+async function clearAllNotificationsAction(_userId: string): Promise<void> { await apiRequest('/notifications', { method: 'DELETE' }); }
 
 // Paymob test settlements
 export async function getEventSettlementPreview(eventId: string): Promise<EventSettlementPreview> {
@@ -602,7 +603,7 @@ export async function getEventSettlementPreview(eventId: string): Promise<EventS
         })),
     };
 }
-export async function createEventSettlement(eventId: string, cardId?: string): Promise<EventSettlement> {
+async function createEventSettlementAction(eventId: string, cardId?: string): Promise<EventSettlement> {
     const payload = await apiRequest(`/provider/events/${eventId}/settlement`, { method: 'POST', body: cardId ? { cardId } : {} }); return normalizeSettlement(payload.data);
 }
 export async function getEventSettlement(eventId: string): Promise<EventSettlement | null> {
@@ -613,23 +614,80 @@ export async function getEventSettlement(eventId: string): Promise<EventSettleme
 export async function getSettlement(settlementId: string): Promise<EventSettlement> {
     const payload = await apiRequest(`/payments/${settlementId}`); return normalizeSettlement(payload.data);
 }
-export async function markCashSettlementLinePaid(settlementId: string, lineId: string): Promise<EventSettlement> {
+async function markCashSettlementLinePaidAction(settlementId: string, lineId: string): Promise<EventSettlement> {
     const payload = await apiRequest(`/provider/settlements/${settlementId}/lines/${lineId}/cash-paid`, { method: 'PATCH' }); return normalizeSettlement(payload.data);
 }
 export async function getOrganizerCards(): Promise<OrganizerCard[]> {
     const payload = await apiRequest('/provider/payment-cards'); return payload.data || [];
 }
-export async function startOrganizerCardEnrollment(): Promise<{ id: string; checkoutUrl: string }> {
+async function startOrganizerCardEnrollmentAction(): Promise<{ id: string; checkoutUrl: string }> {
     const payload = await apiRequest('/provider/payment-cards/enrollments', { method: 'POST' }); return payload.data;
 }
 export async function getOrganizerCardEnrollment(enrollmentId: string): Promise<'pending' | 'completed' | 'failed'> {
     const payload = await apiRequest(`/provider/payment-cards/enrollments/${enrollmentId}`); return payload.data.status;
 }
-export async function setDefaultOrganizerCard(cardId: string): Promise<void> {
+async function setDefaultOrganizerCardAction(cardId: string): Promise<void> {
     await apiRequest(`/provider/payment-cards/${cardId}/default`, { method: 'PATCH' });
 }
-export async function removeOrganizerCard(cardId: string): Promise<void> { await apiRequest(`/provider/payment-cards/${cardId}`, { method: 'DELETE' }); }
+async function removeOrganizerCardAction(cardId: string): Promise<void> { await apiRequest(`/provider/payment-cards/${cardId}`, { method: 'DELETE' }); }
 
 export { API_URL };
 export function canCreateOrBook(profile: ProviderProfile | null): boolean { return isProviderProfileComplete(profile); }
 export function canApply(profile: TalentProfile | null): boolean { return isTalentProfileComplete(profile); }
+
+// Action feedback is emitted once per logical operation; data reads remain silent.
+export const updateTalentProfile = withFeedback(updateTalentProfileAction, { en: 'Profile saved.', ar: 'تم حفظ الملف الشخصي.', 'ar-eg': 'تم حفظ الملف الشخصي.' });
+export const updateProviderProfile = withFeedback(updateProviderProfileAction, { en: 'Profile saved.', ar: 'تم حفظ الملف الشخصي.', 'ar-eg': 'تم حفظ الملف الشخصي.' });
+export const uploadTalentPortfolioImage = withFeedback(uploadTalentPortfolioImageAction, { en: 'Image uploaded.', ar: 'تم رفع الصورة.', 'ar-eg': 'تم رفع الصورة.' });
+export const uploadEventPhoto = withFeedback(uploadEventPhotoAction, { en: 'Image uploaded.', ar: 'تم رفع الصورة.', 'ar-eg': 'تم رفع الصورة.' });
+export const deleteTalentPortfolioImage = withFeedback(deleteTalentPortfolioImageAction, { en: 'Image removed.', ar: 'تم حذف الصورة.', 'ar-eg': 'تم حذف الصورة.' });
+export const addPaymentMethod = withFeedback(addPaymentMethodAction, { en: 'Payment method added.', ar: 'تمت إضافة وسيلة الدفع.', 'ar-eg': 'تمت إضافة وسيلة الدفع.' });
+export const deletePaymentMethod = withFeedback(deletePaymentMethodAction, { en: 'Payment method removed.', ar: 'تم حذف وسيلة الدفع.', 'ar-eg': 'تم حذف وسيلة الدفع.' });
+export const setDefaultPaymentMethod = withFeedback(setDefaultPaymentMethodAction, { en: 'Default payment method updated.', ar: 'تم تحديث وسيلة الدفع الافتراضية.', 'ar-eg': 'تم تحديث وسيلة الدفع الافتراضية.' });
+export const setDefaultOrganizerCard = withFeedback(setDefaultOrganizerCardAction, { en: 'Default payment method updated.', ar: 'تم تحديث وسيلة الدفع الافتراضية.', 'ar-eg': 'تم تحديث وسيلة الدفع الافتراضية.' });
+export const createEvent = withFeedback(createEventAction, { en: 'Event created.', ar: 'تم إنشاء الفعالية.', 'ar-eg': 'تم إنشاء الفعالية.' });
+export const updateEvent = withFeedback(updateEventAction, { en: 'Event updated.', ar: 'تم تحديث الفعالية.', 'ar-eg': 'تم تحديث الفعالية.' });
+export const adminUpdateEventStatus = withFeedback(adminUpdateEventStatusAction, { en: 'Event updated.', ar: 'تم تحديث الفعالية.', 'ar-eg': 'تم تحديث الفعالية.' });
+export const deleteEvent = withFeedback(deleteEventAction, { en: 'Event deleted.', ar: 'تم حذف الفعالية.', 'ar-eg': 'تم حذف الفعالية.' });
+export const adminDeleteEvent = withFeedback(adminDeleteEventAction, { en: 'Event deleted.', ar: 'تم حذف الفعالية.', 'ar-eg': 'تم حذف الفعالية.' });
+export const applyToEvent = withFeedback(applyToEventAction, { en: 'Application submitted.', ar: 'تم إرسال طلب التقديم.', 'ar-eg': 'تم إرسال طلب التقديم.' });
+export const directBookTalent = withFeedback(directBookTalentAction, { en: 'Booking request sent.', ar: 'تم إرسال طلب الحجز.', 'ar-eg': 'تم إرسال طلب الحجز.' });
+export const updateApplicationStatus = withFeedback(updateApplicationStatusAction, { en: 'Application status updated.', ar: 'تم تحديث حالة الطلب.', 'ar-eg': 'تم تحديث حالة الطلب.' });
+export const markAttendance = withFeedback(markAttendanceAction, { en: 'Attendance updated.', ar: 'تم تحديث الحضور.', 'ar-eg': 'تم تحديث الحضور.' });
+export const checkInWithAttendanceQr = withFeedback(checkInWithAttendanceQrAction, { en: 'Attendance confirmed.', ar: 'تم تأكيد الحضور.', 'ar-eg': 'تم تأكيد الحضور.' });
+export const excuseFromEvent = withFeedback(excuseFromEventAction, { en: 'Excuse submitted.', ar: 'تم إرسال الاعتذار.', 'ar-eg': 'تم إرسال الاعتذار.' });
+export const submitReview = withFeedback(submitReviewAction, { en: 'Review submitted.', ar: 'تم إرسال التقييم.', 'ar-eg': 'تم إرسال التقييم.' });
+export const referTalentToEvent = withFeedback(referTalentToEventAction, { en: 'Referral sent.', ar: 'تم إرسال الترشيح.', 'ar-eg': 'تم إرسال الترشيح.' });
+export const redeemReferralInvite = withFeedback(redeemReferralInviteAction, { en: 'Referral sent.', ar: 'تم إرسال الترشيح.', 'ar-eg': 'تم إرسال الترشيح.' });
+export const createReferralInvite = withFeedback(createReferralInviteAction, { en: 'Invite link created.', ar: 'تم إنشاء رابط الدعوة.', 'ar-eg': 'تم إنشاء رابط الدعوة.' });
+export const acceptReferral = withFeedback(acceptReferralAction, { en: 'Referral accepted.', ar: 'تم قبول الترشيح.', 'ar-eg': 'تم قبول الترشيح.' });
+export const declineReferral = withFeedback(declineReferralAction, { en: 'Referral declined.', ar: 'تم رفض الترشيح.', 'ar-eg': 'تم رفض الترشيح.' });
+export const inviteStaffMember = withFeedback(inviteStaffMemberAction, { en: 'Staff account created.', ar: 'تم إنشاء حساب الموظف.', 'ar-eg': 'تم إنشاء حساب الموظف.' });
+export const adminInviteUser = withFeedback(adminInviteUserAction, { en: 'Staff account created.', ar: 'تم إنشاء حساب الموظف.', 'ar-eg': 'تم إنشاء حساب الموظف.' });
+export const providerUpdateStaff = withFeedback(providerUpdateStaffAction, { en: 'Staff details saved.', ar: 'تم حفظ بيانات الموظف.', 'ar-eg': 'تم حفظ بيانات الموظف.' });
+export const removeStaffMember = withFeedback(removeStaffMemberAction, { en: 'Staff member removed.', ar: 'تم حذف الموظف.', 'ar-eg': 'تم حذف الموظف.' });
+export const assignSupervisorToEvent = withFeedback(assignSupervisorToEventAction, { en: 'Supervisor assignment updated.', ar: 'تم تحديث تعيين المشرف.', 'ar-eg': 'تم تحديث تعيين المشرف.' });
+export const requestEventAction = withFeedback(requestEventActionAction, { en: 'Request submitted for admin review.', ar: 'تم إرسال الطلب لمراجعة الإدارة.', 'ar-eg': 'تم إرسال الطلب لمراجعة الإدارة.' });
+export const resolveEventActionRequest = withFeedback(resolveEventActionRequestAction, { en: 'Request resolved.', ar: 'تمت مراجعة الطلب.', 'ar-eg': 'تمت مراجعة الطلب.' });
+export const adminBlockUser = withFeedback(adminBlockUserAction, { en: 'Account blocked.', ar: 'تم حظر الحساب.', 'ar-eg': 'تم حظر الحساب.' });
+export const providerBlockStaff = withFeedback(providerBlockStaffAction, { en: 'Account blocked.', ar: 'تم حظر الحساب.', 'ar-eg': 'تم حظر الحساب.' });
+export const adminUnblockUser = withFeedback(adminUnblockUserAction, { en: 'Account unblocked.', ar: 'تم إلغاء حظر الحساب.', 'ar-eg': 'تم إلغاء حظر الحساب.' });
+export const providerUnblockStaff = withFeedback(providerUnblockStaffAction, { en: 'Account unblocked.', ar: 'تم إلغاء حظر الحساب.', 'ar-eg': 'تم إلغاء حظر الحساب.' });
+export const adminDeleteUser = withFeedback(adminDeleteUserAction, { en: 'Account deleted.', ar: 'تم حذف الحساب.', 'ar-eg': 'تم حذف الحساب.' });
+export const adminVerifyUser = withFeedback(adminVerifyUserAction, { en: 'Account verified.', ar: 'تم توثيق الحساب.', 'ar-eg': 'تم توثيق الحساب.' });
+export const adminUnverifyUser = withFeedback(adminUnverifyUserAction, { en: 'Account verification removed.', ar: 'تم إلغاء توثيق الحساب.', 'ar-eg': 'تم إلغاء توثيق الحساب.' });
+export const adminResetLateExcuses = withFeedback(adminResetLateExcusesAction, { en: 'Late excuse count reset.', ar: 'تمت إعادة تعيين عدد الاعتذارات المتأخرة.', 'ar-eg': 'تمت إعادة تعيين عدد الاعتذارات المتأخرة.' });
+export const markAllNotificationsAsRead = withFeedback(markAllNotificationsAsReadAction, { en: 'Notifications marked as read.', ar: 'تم تحديد التنبيهات كمقروءة.', 'ar-eg': 'تم تحديد التنبيهات كمقروءة.' });
+export const clearAllNotifications = withFeedback(clearAllNotificationsAction, { en: 'Notifications cleared.', ar: 'تم مسح التنبيهات.', 'ar-eg': 'تم مسح التنبيهات.' });
+export const markCashSettlementLinePaid = withFeedback(markCashSettlementLinePaidAction, { en: 'Cash payment recorded.', ar: 'تم تسجيل الدفع النقدي.', 'ar-eg': 'تم تسجيل الدفع النقدي.' });
+export const removeOrganizerCard = withFeedback(removeOrganizerCardAction, { en: 'Saved card removed.', ar: 'تم حذف البطاقة المحفوظة.', 'ar-eg': 'تم حذف البطاقة المحفوظة.' });
+export const forgotPassword = withFeedback(forgotPasswordAction, { en: 'Recovery code sent. Check your email.', ar: 'تم إرسال رمز الاستعادة. تحقق من بريدك الإلكتروني.', 'ar-eg': 'تم إرسال رمز الاستعادة. تحقق من بريدك الإلكتروني.' });
+export const verifyResetOtp = withFeedback(verifyResetOtpAction, { en: 'Code verified.', ar: 'تم التحقق من الرمز.', 'ar-eg': 'تم التحقق من الرمز.' });
+export const resetPassword = withFeedback(resetPasswordAction, { en: 'Password updated. You can now sign in.', ar: 'تم تحديث كلمة المرور. يمكنك تسجيل الدخول الآن.', 'ar-eg': 'تم تحديث كلمة المرور. يمكنك تسجيل الدخول الآن.' });
+export const register = withFeedback(registerAction, { en: 'Account created. Check your verification email.', ar: 'تم إنشاء الحساب. تحقق من رسالة تفعيل البريد الإلكتروني.', 'ar-eg': 'تم إنشاء الحساب. تحقق من رسالة تفعيل البريد الإلكتروني.' });
+export const login = withFeedback(loginAction, { en: 'Signed in successfully.', ar: 'تم تسجيل الدخول بنجاح.', 'ar-eg': 'تم تسجيل الدخول بنجاح.' });
+export const generateEventAttendanceQr = withFeedback(generateEventAttendanceQrAction, { en: 'Attendance QR created.', ar: 'تم إنشاء رمز الحضور.', 'ar-eg': 'تم إنشاء رمز الحضور.' });
+export const createEventSettlement = withFeedback(createEventSettlementAction, { en: 'Settlement prepared.', ar: 'تم تجهيز التسوية.', 'ar-eg': 'تم تجهيز التسوية.' });
+export const startOrganizerCardEnrollment = withFeedback(startOrganizerCardEnrollmentAction, { en: 'Card setup started.', ar: 'بدأ إعداد البطاقة.', 'ar-eg': 'بدأ إعداد البطاقة.' });
+
+export const createEventWhatsAppGroup = withFeedback(createEventWhatsAppGroupAction, { en: 'WhatsApp sharing link prepared.', ar: 'تم تجهيز رابط المشاركة عبر واتساب.' });

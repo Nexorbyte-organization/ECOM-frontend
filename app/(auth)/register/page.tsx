@@ -1,5 +1,7 @@
 'use client';
 
+import ContentSkeleton, { PageSkeleton } from '@/components/ui/Skeleton';
+
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -31,6 +33,7 @@ function RegisterForm() {
     const searchParams = useSearchParams();
     const inviteToken = searchParams.get('invite');
 
+    const [inviteLoading, setInviteLoading] = useState(Boolean(inviteToken));
     const [referredEvent, setReferredEvent] = useState<Event | null>(null);
     const [referrerProfile, setReferrerProfile] = useState<TalentProfile | null>(null);
 
@@ -40,7 +43,7 @@ function RegisterForm() {
             getReferralInvite(inviteToken).then(({ event, referrer }) => {
                 setReferredEvent(event);
                 setReferrerProfile(referrer);
-            }).catch((err) => setError(err instanceof Error ? err.message : 'This invite is no longer available'));
+            }).catch((err) => setError(err instanceof Error ? err.message : 'This invite is no longer available')).finally(() => setInviteLoading(false));
         }
     }, [inviteToken]);
 
@@ -127,6 +130,7 @@ function RegisterForm() {
                         </Link>
                     </p>
 
+                    {inviteLoading && <ContentSkeleton variant="list" count={1} />}
                     {referredEvent && referrerProfile && (
                         <div className="mb-6 p-4 rounded-2xl bg-gradient-to-br from-primary-500/10 to-accent-500/10 border border-primary-500/20 shadow-lg shadow-primary-500/5">
                             <div className="flex items-start gap-3">
@@ -238,7 +242,7 @@ function RegisterForm() {
 
 export default function RegisterPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-dark-950 text-dark-50">Loading...</div>}>
+        <Suspense fallback={<PageSkeleton variant="form" />}>
             <RegisterForm />
         </Suspense>
     );

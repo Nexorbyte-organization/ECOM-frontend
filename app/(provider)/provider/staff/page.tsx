@@ -1,5 +1,9 @@
 'use client';
 
+import { toast } from '@/lib/toast';
+
+import ContentSkeleton, { Skeleton } from '@/components/ui/Skeleton';
+
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import {
@@ -42,9 +46,13 @@ export default function StaffManagementPage() {
     const [eventsModalOpen, setEventsModalOpen] = useState(false);
     const [assigningSupervisor, setAssigningSupervisor] = useState<Omit<User, 'password'> | null>(null);
     const [events, setEvents] = useState<Event[]>([]);
+    const [staffBusy, setStaffBusy] = useState<string | null>(null);
+    const [assignmentBusy, setAssignmentBusy] = useState<string | null>(null);
     const [eventsLoading, setEventsLoading] = useState(false);
 
     const handleBlock = async (memberId: string) => {
+        if (staffBusy) return;
+        setStaffBusy(memberId);
         setError('');
         setSuccess('');
         try {
@@ -53,10 +61,12 @@ export default function StaffManagementPage() {
             fetchStaff();
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'Failed to block staff member.');
-        }
+        } finally { setStaffBusy(null); }
     };
 
     const handleUnblock = async (memberId: string) => {
+        if (staffBusy) return;
+        setStaffBusy(memberId);
         setError('');
         setSuccess('');
         try {
@@ -65,7 +75,7 @@ export default function StaffManagementPage() {
             fetchStaff();
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'Failed to unblock staff member.');
-        }
+        } finally { setStaffBusy(null); }
     };
 
     const handleEditOpen = (member: Omit<User, 'password'>) => {
@@ -123,7 +133,8 @@ export default function StaffManagementPage() {
     };
 
     const handleToggleAssignment = async (eventId: string, currentSupervisorIds: string[]) => {
-        if (!assigningSupervisor) return;
+        if (!assigningSupervisor || assignmentBusy) return;
+        setAssignmentBusy(eventId);
         const isAssigned = currentSupervisorIds.includes(assigningSupervisor._id);
         try {
             await assignSupervisorToEvent(eventId, assigningSupervisor._id, !isAssigned);
@@ -136,8 +147,8 @@ export default function StaffManagementPage() {
                 }
             }
         } catch (err: unknown) {
-            alert(err instanceof Error ? err.message : 'Failed to update event supervisor assignment');
-        }
+            toast.error(err instanceof Error ? err.message : 'Failed to update event supervisor assignment');
+        } finally { setAssignmentBusy(null); }
     };
 
     const fetchStaff = async () => {
@@ -186,22 +197,19 @@ export default function StaffManagementPage() {
             return;
         }
 
+        if (staffBusy) return;
+        setStaffBusy(memberId);
         try {
             await removeStaffMember(memberId);
             setSuccess(`Removed staff member (${memberEmail}) successfully.`);
             fetchStaff();
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Failed to remove staff member');
-        }
+            toast.error(err instanceof Error ? err.message : 'Failed to remove staff member');
+        } finally { setStaffBusy(null); }
     };
 
     if (loading) {
-        return (
-            <div className="space-y-4">
-                <div className="h-12 w-48 bg-dark-800 rounded animate-pulse" />
-                <div className="h-32 bg-dark-800 rounded-2xl animate-pulse" />
-            </div>
-        );
+        return <ContentSkeleton variant="list" />;
     }
 
     if (!isOrganizer) {
@@ -311,27 +319,27 @@ export default function StaffManagementPage() {
                                                      </button>
                                                      {member.isBlocked ? (
                                                          <button
-                                                             onClick={() => handleUnblock(member._id)}
+                                                             disabled={Boolean(staffBusy)} aria-busy={staffBusy === member._id} onClick={() => handleUnblock(member._id)}
                                                              className="p-2 text-success-500 hover:bg-success-500/10 rounded-xl transition-all cursor-pointer"
                                                              title="Unblock staff member"
                                                          >
-                                                             <CheckCircle size={15} />
+                                                             {staffBusy === member._id ? <Skeleton className="h-4 w-4" /> : <CheckCircle size={15} />}
                                                          </button>
                                                      ) : (
                                                          <button
-                                                             onClick={() => handleBlock(member._id)}
+                                                             disabled={Boolean(staffBusy)} aria-busy={staffBusy === member._id} onClick={() => handleBlock(member._id)}
                                                              className="p-2 text-danger-500 hover:bg-danger-500/10 rounded-xl transition-all cursor-pointer"
                                                              title="Block staff member"
                                                          >
-                                                             <Ban size={15} />
+                                                             {staffBusy === member._id ? <Skeleton className="h-4 w-4" /> : <Ban size={15} />}
                                                          </button>
                                                      )}
                                                      <button
-                                                         onClick={() => handleRemove(member._id, member.email)}
+                                                         disabled={Boolean(staffBusy)} aria-busy={staffBusy === member._id} onClick={() => handleRemove(member._id, member.email)}
                                                          className="p-2 text-dark-400 hover:text-danger-500 hover:bg-danger-500/10 rounded-xl transition-all cursor-pointer"
                                                          title="Remove staff member"
                                                      >
-                                                         <Trash2 size={15} />
+                                                         {staffBusy === member._id ? <Skeleton className="h-4 w-4" /> : <Trash2 size={15} />}
                                                      </button>
                                                  </div>
                                              </td>
@@ -467,11 +475,7 @@ export default function StaffManagementPage() {
 
                     <div className="max-h-[60vh] overflow-y-auto pr-1 space-y-3">
                         {eventsLoading ? (
-                            <div className="space-y-3">
-                                <div className="h-16 bg-dark-800/50 rounded-xl animate-pulse" />
-                                <div className="h-16 bg-dark-800/50 rounded-xl animate-pulse" />
-                                <div className="h-16 bg-dark-800/50 rounded-xl animate-pulse" />
-                            </div>
+                            <ContentSkeleton variant="list" />
                         ) : events.length === 0 ? (
                             <p className="text-sm text-dark-500 text-center py-6">No events found. Please create an event first.</p>
                         ) : (
@@ -503,7 +507,7 @@ export default function StaffManagementPage() {
                                                 <Button
                                                     size="sm"
                                                     variant="success"
-                                                    onClick={() => handleToggleAssignment(event._id, supervisorIds)}
+                                                    disabled={Boolean(assignmentBusy)} isLoading={assignmentBusy === event._id} onClick={() => handleToggleAssignment(event._id, supervisorIds)}
                                                 >
                                                     Assigned ✕
                                                 </Button>
@@ -512,7 +516,7 @@ export default function StaffManagementPage() {
                                                     size="sm"
                                                     variant="secondary"
                                                     className="border-warning-500/30 text-warning-500 hover:bg-warning-500/10 text-xs"
-                                                    onClick={() => handleToggleAssignment(event._id, supervisorIds)}
+                                                    disabled={Boolean(assignmentBusy)} isLoading={assignmentBusy === event._id} onClick={() => handleToggleAssignment(event._id, supervisorIds)}
                                                 >
                                                     Also Assign
                                                 </Button>
@@ -520,7 +524,7 @@ export default function StaffManagementPage() {
                                                 <Button
                                                     size="sm"
                                                     variant="primary"
-                                                    onClick={() => handleToggleAssignment(event._id, supervisorIds)}
+                                                    disabled={Boolean(assignmentBusy)} isLoading={assignmentBusy === event._id} onClick={() => handleToggleAssignment(event._id, supervisorIds)}
                                                 >
                                                     Assign
                                                 </Button>

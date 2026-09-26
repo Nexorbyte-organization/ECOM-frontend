@@ -1,5 +1,7 @@
 'use client';
 
+import ContentSkeleton from '@/components/ui/Skeleton';
+
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import {
@@ -168,7 +170,7 @@ export default function AdminUsersPage() {
     };
 
     if (loading) {
-        return <div className="space-y-4">{[1, 2, 3].map((i) => <div key={i} className="h-24 glass rounded-2xl animate-pulse" />)}</div>;
+        return <ContentSkeleton variant="list" />;
     }
 
     return (

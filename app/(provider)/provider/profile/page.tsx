@@ -1,5 +1,9 @@
 'use client';
 
+import { toast } from '@/lib/toast';
+
+import ContentSkeleton from '@/components/ui/Skeleton';
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/lib/auth';
 import {
@@ -137,12 +141,7 @@ export default function ProviderProfilePage() {
     };
 
     if (loading) {
-        return (
-            <div className="space-y-4">
-                <div className="h-12 w-48 bg-dark-800 rounded animate-pulse" />
-                <div className="h-32 bg-dark-800 rounded-2xl animate-pulse" />
-            </div>
-        );
+        return <ContentSkeleton variant="profile" />;
     }
 
     if (!isOrganizer) {
@@ -165,7 +164,7 @@ export default function ProviderProfilePage() {
     const handleSave = async () => {
         if (!user) return;
         if (!companyName.trim() || !(logoPreview || profile?.logo) || !description.trim() || !location || !phone.trim()) {
-            alert('Complete the company logo, name, description, location, and phone number.');
+            toast.error('Complete the company logo, name, description, location, and phone number.');
             return;
         }
         if (companyName.trim().length < 2 || companyName.trim().length > 100) {
@@ -220,7 +219,7 @@ export default function ProviderProfilePage() {
     };
 
     if (loading) {
-        return <div className="space-y-4">{[1, 2].map((i) => <div key={i} className="h-32 glass rounded-2xl animate-pulse" />)}</div>;
+        return <ContentSkeleton variant="profile" />;
     }
 
     return (
@@ -358,8 +357,8 @@ export default function ProviderProfilePage() {
                                 {card.isDefault && <Badge variant="success">Default</Badge>}
                             </div>
                             <div className="flex gap-2">
-                                {!card.isDefault && <Button type="button" size="sm" variant="secondary" disabled={cardBusy} onClick={() => handleSetDefaultCard(card._id)}>Set default</Button>}
-                                <Button type="button" size="sm" variant="danger" disabled={cardBusy} onClick={() => handleRemoveCard(card._id)} aria-label={`Remove card ${card.maskedPan}`} icon={<Trash2 size={14} />}>Remove</Button>
+                                {!card.isDefault && <Button type="button" size="sm" variant="secondary" isLoading={cardBusy} onClick={() => handleSetDefaultCard(card._id)}>Set default</Button>}
+                                <Button type="button" size="sm" variant="danger" isLoading={cardBusy} onClick={() => handleRemoveCard(card._id)} aria-label={`Remove card ${card.maskedPan}`} icon={<Trash2 size={14} />}>Remove</Button>
                             </div>
                         </div>
                     ))}
