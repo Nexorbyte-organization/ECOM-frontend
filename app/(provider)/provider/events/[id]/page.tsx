@@ -1,5 +1,9 @@
 'use client';
 
+import { toast } from '@/lib/toast';
+
+import ContentSkeleton, { Skeleton } from '@/components/ui/Skeleton';
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -63,6 +67,9 @@ export default function EventDetailPage() {
     const [selectedCardId, setSelectedCardId] = useState('');
 
     const [supervisors, setSupervisors] = useState<Omit<User, 'password'>[]>([]);
+    const [applicationBusy, setApplicationBusy] = useState<string | null>(null);
+    const [attendanceBusy, setAttendanceBusy] = useState<string | null>(null);
+    const [reviewBusy, setReviewBusy] = useState(false);
     const [assigning, setAssigning] = useState(false);
 
     const [bookModalOpen, setBookModalOpen] = useState(false);
@@ -72,6 +79,7 @@ export default function EventDetailPage() {
     const [allTalents, setAllTalents] = useState<TalentProfile[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedSearchQuery, setSelectedSearchQuery] = useState('');
+    const [bookOptionsLoading, setBookOptionsLoading] = useState(false);
     const [bookSubmitting, setBookSubmitting] = useState(false);
 
     // Cancel / Delete state
@@ -119,7 +127,7 @@ export default function EventDetailPage() {
             await assignSupervisorToEvent(event._id, supervisorUserId, add);
             await fetchData();
         } catch (err: unknown) {
-            alert(err instanceof Error ? err.message : 'Failed to update supervisor assignment');
+            toast.error(err instanceof Error ? err.message : 'Failed to update supervisor assignment');
         } finally {
             setAssigning(false);
         }
@@ -166,7 +174,7 @@ export default function EventDetailPage() {
                 setActionSuccess('');
             }, 2000);
         } catch (err: unknown) {
-            alert(err instanceof Error ? err.message : 'Action failed');
+            toast.error(err instanceof Error ? err.message : 'Action failed');
         } finally {
             setActionSubmitting(false);
         }
@@ -179,7 +187,7 @@ export default function EventDetailPage() {
             await updateEvent(event._id, { whatsappGroupLink: waLink.trim() || undefined });
             await fetchData();
         } catch (err: unknown) {
-            alert(err instanceof Error ? err.message : 'Failed to save WhatsApp group link');
+            toast.error(err instanceof Error ? err.message : 'Failed to save WhatsApp group link');
         } finally {
             setWaLinkSaving(false);
         }
@@ -190,6 +198,11 @@ export default function EventDetailPage() {
         setSearchQuery('');
         setSelectedSearchQuery('');
         setBookSubmitting(false);
+        setBookOptionsLoading(true);
+        setBookModalOpen(true);
+        setAllTalents([]);
+        setProviderEvents([]);
+        setSelectedTalents([]);
         try {
             const [talentsList, profile] = await Promise.all([
                 getAllTalents(),
@@ -214,7 +227,9 @@ export default function EventDetailPage() {
             }
             setBookModalOpen(true);
         } catch (err: unknown) {
-            alert(err instanceof Error ? err.message : 'Failed to initialize booking list');
+            toast.error(err instanceof Error ? err.message : 'Failed to initialize booking list');
+        } finally {
+            setBookOptionsLoading(false);
         }
     };
 
@@ -231,11 +246,11 @@ export default function EventDetailPage() {
 
     const handleBookSubmit = async () => {
         if (!selectedTargetEventId) {
-            alert('Please select a target event to book talents to.');
+            toast.error('Please select a target event to book talents to.');
             return;
         }
         if (selectedTalents.length === 0) {
-            alert('Please select at least one talent to book.');
+            toast.error('Please select at least one talent to book.');
             return;
         }
         setBookSubmitting(true);
@@ -244,10 +259,10 @@ export default function EventDetailPage() {
             await Promise.all(
                 selectedTalents.map((t) => directBookTalent(selectedTargetEventId, t._id))
             );
-            alert(`Successfully booked ${selectedTalents.length} talents!`);
+            toast.success(`Booking requests sent for ${selectedTalents.length} talents.`);
             setBookModalOpen(false);
         } catch (err: unknown) {
-            alert(err instanceof Error ? err.message : 'Failed to send bookings.');
+            toast.error(err instanceof Error ? err.message : 'Failed to send bookings.');
         } finally {
             setBookSubmitting(false);
         }
@@ -262,24 +277,27 @@ export default function EventDetailPage() {
     }, [params.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleApplicationAction = async (appId: string, status: ApplicationStatus) => {
+        if (applicationBusy) return;
+        setApplicationBusy(appId);
         setError('');
         try {
             await updateApplicationStatus(appId, status);
             await fetchData();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Could not update application.');
-        }
+        } finally { setApplicationBusy(null); }
     };
 
     const handleMarkAttendance = async (talentId: string, status: AttendanceStatus) => {
-        if (!event) return;
+        if (!event || attendanceBusy) return;
+        setAttendanceBusy(talentId);
         setError('');
         try {
             await markAttendance(event._id, talentId, status);
             await fetchData();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Could not mark attendance.');
-        }
+        } finally { setAttendanceBusy(null); }
     };
 
     const handleOpenAttendanceQr = async () => {
@@ -353,7 +371,8 @@ export default function EventDetailPage() {
     };
 
     const handleSubmitReview = async () => {
-        if (!user || !event) return;
+        if (!user || !event || reviewBusy) return;
+        setReviewBusy(true);
         setError('');
         try {
             await submitReview({
@@ -368,13 +387,13 @@ export default function EventDetailPage() {
             setReviewComment('');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Could not submit review.');
-        }
+        } finally { setReviewBusy(false); }
     };
 
     const statusVariant = (s: string) =>
         s === 'open' ? 'success' as const : s === 'confirmed' ? 'primary' as const : s === 'completed' ? 'default' as const : 'danger' as const;
 
-    if (loading) return <div className="max-w-4xl mx-auto"><div className="h-96 glass rounded-2xl animate-pulse" /></div>;
+    if (loading) return <ContentSkeleton variant="detail" className="mx-auto max-w-4xl" />;
 
     if (!event) return (
         <div className="text-center py-20">
@@ -621,7 +640,7 @@ export default function EventDetailPage() {
                                             return (
                                                 <button
                                                     key={s._id}
-                                                    disabled={assigning}
+                                                    aria-busy={assigning} disabled={assigning}
                                                     onClick={() => handleToggleSupervisor(s._id, !isAssigned)}
                                                     className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer disabled:opacity-50 ${
                                                         isAssigned
@@ -630,6 +649,7 @@ export default function EventDetailPage() {
                                                     }`}
                                                     title={isAssigned ? `Remove ${s.fullName || s.email} from supervisors` : `Add ${s.fullName || s.email} as supervisor`}
                                                 >
+                                                    {assigning && <Skeleton className="h-3 w-3" />}
                                                     <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isAssigned ? 'bg-primary-400' : 'bg-dark-600'}`} />
                                                     {s.fullName || s.email.split('@')[0]}
                                                     {isAssigned && <span className="text-[10px] opacity-60 ml-0.5">✕</span>}
@@ -721,10 +741,10 @@ export default function EventDetailPage() {
                                 <div className="flex items-center gap-2">
                                     {app.status === 'pending' ? (
                                         <>
-                                            <Button size="sm" variant="success" icon={<Check size={14} />} onClick={() => handleApplicationAction(app._id, ApplicationStatus.ACCEPTED)}>
+                                            <Button size="sm" variant="success" icon={<Check size={14} />} disabled={Boolean(applicationBusy)} isLoading={applicationBusy === app._id} onClick={() => handleApplicationAction(app._id, ApplicationStatus.ACCEPTED)}>
                                                 Accept
                                             </Button>
-                                            <Button size="sm" variant="danger" icon={<X size={14} />} onClick={() => handleApplicationAction(app._id, ApplicationStatus.REJECTED)}>
+                                            <Button size="sm" variant="danger" icon={<X size={14} />} disabled={Boolean(applicationBusy)} isLoading={applicationBusy === app._id} onClick={() => handleApplicationAction(app._id, ApplicationStatus.REJECTED)}>
                                                 Reject
                                             </Button>
                                         </>
@@ -813,13 +833,13 @@ export default function EventDetailPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Button size="sm" variant={record?.status === 'present' ? 'success' : 'secondary'} onClick={() => handleMarkAttendance(app.talentId, AttendanceStatus.PRESENT)}>
+                                        <Button size="sm" variant={record?.status === 'present' ? 'success' : 'secondary'} disabled={Boolean(attendanceBusy)} isLoading={attendanceBusy === app.talentId} onClick={() => handleMarkAttendance(app.talentId, AttendanceStatus.PRESENT)}>
                                             Present
                                         </Button>
-                                        <Button size="sm" variant={record?.status === 'late' ? 'success' : 'secondary'} onClick={() => handleMarkAttendance(app.talentId, AttendanceStatus.LATE)}>
+                                        <Button size="sm" variant={record?.status === 'late' ? 'success' : 'secondary'} disabled={Boolean(attendanceBusy)} isLoading={attendanceBusy === app.talentId} onClick={() => handleMarkAttendance(app.talentId, AttendanceStatus.LATE)}>
                                             Late
                                         </Button>
-                                        <Button size="sm" variant={record?.status === 'absent' ? 'danger' : 'secondary'} onClick={() => handleMarkAttendance(app.talentId, AttendanceStatus.ABSENT)}>
+                                        <Button size="sm" variant={record?.status === 'absent' ? 'danger' : 'secondary'} disabled={Boolean(attendanceBusy)} isLoading={attendanceBusy === app.talentId} onClick={() => handleMarkAttendance(app.talentId, AttendanceStatus.ABSENT)}>
                                             Absent
                                         </Button>
                                         <Button
@@ -846,10 +866,7 @@ export default function EventDetailPage() {
             >
                 <div className="text-center">
                     {qrLoading && (
-                        <div className="space-y-3 py-14" role="status">
-                            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-dark-700 border-t-primary-500" />
-                            <p className="text-sm text-dark-400">Preparing the event QR...</p>
-                        </div>
+                        <ContentSkeleton variant="qr" />
                     )}
                     {qrError && (
                         <div className="space-y-4 py-8" role="alert">
@@ -908,13 +925,13 @@ export default function EventDetailPage() {
                         />
                     </div>
                     {error && <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}
-                    <Button onClick={handleSubmitReview} className="w-full">Submit Review</Button>
+                    <Button isLoading={reviewBusy} onClick={handleSubmitReview} className="w-full">Submit Review</Button>
                 </div>
             </Modal>
 
             {/* Re-book Talents Modal */}
             <Modal isOpen={bookModalOpen} onClose={() => setBookModalOpen(false)} title="Re-book Talents to Event">
-                <div className="space-y-4">
+                {bookOptionsLoading ? <ContentSkeleton variant="form" /> : <div className="space-y-4">
                     {providerEvents.length === 0 ? (
                         <div className="p-4 rounded-xl bg-warning-500/10 border border-warning-500/20 text-warning-400 text-sm">
                             No open events found. You must create an active, open event first to re-book talents.
@@ -1037,7 +1054,7 @@ export default function EventDetailPage() {
                             Re-book Talents
                         </Button>
                     </div>
-                </div>
+                </div>}
             </Modal>
 
             {/* Pay-all settlement modal */}
@@ -1052,7 +1069,7 @@ export default function EventDetailPage() {
                     </div>
 
                     {paymentLoading && !settlementPreview ? (
-                        <div className="py-10 text-center text-sm text-dark-400">Preparing the event settlement…</div>
+                        <ContentSkeleton variant="dashboard" />
                     ) : paymentError && !settlementPreview ? (
                         <div className="rounded-xl border border-danger-500/30 bg-danger-500/10 p-4 text-sm text-danger-500">{paymentError}</div>
                     ) : settlementPreview && (

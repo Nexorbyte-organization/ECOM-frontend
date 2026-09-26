@@ -1,5 +1,7 @@
 'use client';
 
+import ContentSkeleton from '@/components/ui/Skeleton';
+
 import React, { useEffect, useState } from 'react';
 import { searchTalents, getProviderProfileByUserId, getProviderEvents, directBookTalent, isVerifiedTalent } from '@/lib/api';
 import { TalentProfile, Event, TalentSearchFilters } from '@/types';
@@ -26,6 +28,7 @@ export default function TalentSearchPage() {
     const [bookingModal, setBookingModal] = useState<{ open: boolean; talent: TalentProfile | null }>({ open: false, talent: null });
     const [providerEvents, setProviderEvents] = useState<Event[]>([]);
     const [selectedEventId, setSelectedEventId] = useState('');
+    const [bookingOptionsLoading, setBookingOptionsLoading] = useState(false);
     const [bookingLoading, setBookingLoading] = useState(false);
     const [bookingSuccess, setBookingSuccess] = useState(false);
     const [error, setError] = useState('');
@@ -53,6 +56,11 @@ export default function TalentSearchPage() {
     const openBookingModal = async (talent: TalentProfile) => {
         if (!user || !isProfileComplete) return;
         setError('');
+        setBookingOptionsLoading(true);
+        setBookingSuccess(false);
+        setProviderEvents([]);
+        setSelectedEventId('');
+        setBookingModal({ open: true, talent });
         try {
             const profile = await getProviderProfileByUserId(user._id);
             if (!profile) return;
@@ -63,6 +71,8 @@ export default function TalentSearchPage() {
             setBookingSuccess(false);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Could not load events for booking.');
+        } finally {
+            setBookingOptionsLoading(false);
         }
     };
 
@@ -118,9 +128,7 @@ export default function TalentSearchPage() {
 
             {/* Results */}
             {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[1, 2, 3].map((i) => <div key={i} className="h-64 glass rounded-2xl animate-pulse" />)}
-                </div>
+                <ContentSkeleton variant="cards" />
             ) : talents.length === 0 ? (
                 <Card className="text-center py-12">
                     <Search size={32} className="mx-auto text-dark-600 mb-3" />
@@ -172,7 +180,7 @@ export default function TalentSearchPage() {
                 title={`Book ${bookingModal.talent?.fullName}`}
             >
                 {error && <p role="alert" className="mb-4 rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}
-                {bookingSuccess ? (
+                {bookingOptionsLoading ? <ContentSkeleton variant="form" count={2} /> : bookingSuccess ? (
                     <div className="text-center py-4">
                         <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-success-500/15 flex items-center justify-center">
                             <Briefcase size={20} className="text-success-400" />

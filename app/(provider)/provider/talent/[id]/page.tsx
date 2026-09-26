@@ -1,5 +1,7 @@
 'use client';
 
+import ContentSkeleton from '@/components/ui/Skeleton';
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getTalentProfile, getTalentEventHistory, getReviewsForTalent, isVerifiedTalent } from '@/lib/api';
@@ -45,7 +47,7 @@ export default function TalentDetailPage() {
     }, [params.id]);
 
     if (loading) {
-        return <div className="space-y-4">{[1, 2, 3].map((i) => <div key={i} className="h-32 glass rounded-2xl animate-pulse" />)}</div>;
+        return <ContentSkeleton variant="profile" />;
     }
 
     if (!profile) {

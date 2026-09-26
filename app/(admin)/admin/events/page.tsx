@@ -1,5 +1,9 @@
 'use client';
 
+import { toast } from '@/lib/toast';
+
+import ContentSkeleton from '@/components/ui/Skeleton';
+
 import React, { useEffect, useState } from 'react';
 import {
     getAllEvents, getAllProviderProfiles,
@@ -76,7 +80,7 @@ export default function AdminEventsPage() {
             await resolveEventActionRequest(requestId, decision);
             await fetchData();
         } catch (err: unknown) {
-            alert(err instanceof Error ? err.message : 'Failed to resolve request');
+            toast.error(err instanceof Error ? err.message : 'Failed to resolve request');
         } finally {
             setResolveLoading(null);
         }
@@ -117,7 +121,7 @@ export default function AdminEventsPage() {
     };
 
     if (loading) {
-        return <div className="space-y-4">{[1, 2, 3].map((i) => <div key={i} className="h-24 glass rounded-2xl animate-pulse" />)}</div>;
+        return <ContentSkeleton variant="list" />;
     }
 
     return (

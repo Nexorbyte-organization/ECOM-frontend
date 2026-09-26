@@ -1,5 +1,7 @@
 'use client';
 
+import { PageSkeleton } from '@/components/ui/Skeleton';
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -19,11 +21,7 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
     }, [user, isLoading, isProvider, router]);
 
     if (isLoading || !user) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-pulse text-dark-400">Loading...</div>
-            </div>
-        );
+        return <PageSkeleton workspace />;
     }
 
     return (
