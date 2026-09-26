@@ -1,12 +1,15 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 import { useLanguage } from '@/lib/i18n';
+import { getProviderProfileByUserId, getTalentProfileByUserId } from '@/lib/api';
+import { PROFILE_UPDATED_EVENT } from '@/lib/profile-completion';
 import Avatar from '@/components/ui/Avatar';
+import { Skeleton, SkeletonGroup } from '@/components/ui/Skeleton';
 import BrandLogo from '@/components/shared/BrandLogo';
 import {
     LayoutDashboard,
@@ -28,6 +31,36 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     const { user, isTalent, isOrganizer, isAdmin } = useAuth();
     const pathname = usePathname();
     const { t, dir } = useLanguage();
+    const userId = user?._id;
+    const accountKey = `${userId}:${user?.role}`;
+    const [profileIdentity, setProfileIdentity] = useState<{ accountKey: string; photo?: string; name?: string } | null>(null);
+    const currentIdentity = profileIdentity?.accountKey === accountKey ? profileIdentity : null;
+
+    useEffect(() => {
+        if (!userId || (!isTalent && !isOrganizer)) return;
+        let active = true;
+        let requestId = 0;
+        const refreshIdentity = async () => {
+            const currentRequest = ++requestId;
+            try {
+                const identity = isTalent
+                    ? await getTalentProfileByUserId(userId).then((profile) => ({ photo: profile?.photo, name: profile?.fullName }))
+                    : await getProviderProfileByUserId(userId).then((profile) => ({ photo: profile?.logo, name: profile?.companyName }));
+                if (active && currentRequest === requestId) setProfileIdentity({ accountKey, ...identity });
+            } catch {
+                if (active && currentRequest === requestId) {
+                    setProfileIdentity((current) => current?.accountKey === accountKey ? current : { accountKey });
+                }
+            }
+        };
+        const handleProfileUpdate = () => { void refreshIdentity(); };
+        void refreshIdentity();
+        window.addEventListener(PROFILE_UPDATED_EVENT, handleProfileUpdate);
+        return () => {
+            active = false;
+            window.removeEventListener(PROFILE_UPDATED_EVENT, handleProfileUpdate);
+        };
+    }, [accountKey, userId, isTalent, isOrganizer]);
 
     const talentLinks = [
         { href: '/talent/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -131,7 +164,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 {/* User Info */}
                 <div className="p-4 border-t border-dark-700">
                     <div className="flex items-center gap-3 px-2 py-2 rounded-xl bg-dark-900">
-                        <Avatar name={user?.email || ''} size="sm" />
+                        {(isTalent || isOrganizer) && !currentIdentity ? (
+                            <SkeletonGroup className="shrink-0"><Skeleton className="h-8 w-8 rounded-full" /></SkeletonGroup>
+                        ) : (
+                            <Avatar src={currentIdentity?.photo} name={currentIdentity?.name || user?.fullName || user?.email || ''} size="sm" className="shrink-0" />
+                        )}
                         <div className="flex-1 min-w-0 text-start">
                             <p className="text-xs font-medium text-dark-100 truncate">{user?.email}</p>
                             <p className="text-[10px] text-dark-400 capitalize mt-0.5">{user?.role}</p>
