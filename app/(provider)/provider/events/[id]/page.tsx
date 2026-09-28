@@ -13,6 +13,7 @@ import {
     getProviderProfileByUserId, getProviderEvents, directBookTalent,
     requestEventAction, updateEvent, deleteEvent,
     createEventSettlement, getEventSettlement, getEventSettlementPreview,
+    createIndividualSettlement, getIndividualSettlements, retrySettlementLinePayout,
     getOrganizerCards,
     markCashSettlementLinePaid,
     generateEventAttendanceQr, getEventAttendanceQr,
@@ -58,6 +59,7 @@ export default function EventDetailPage() {
     const [payModalOpen, setPayModalOpen] = useState(false);
     const [settlementPreview, setSettlementPreview] = useState<EventSettlementPreview | null>(null);
     const [settlement, setSettlement] = useState<EventSettlement | null>(null);
+    const [individualSettlements, setIndividualSettlements] = useState<EventSettlement[]>([]);
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [paymentError, setPaymentError] = useState('');
     const [attendanceQr, setAttendanceQr] = useState<AttendanceQr | null>(null);
@@ -65,6 +67,7 @@ export default function EventDetailPage() {
     const [qrLoading, setQrLoading] = useState(false);
     const [qrError, setQrError] = useState('');
     const [selectedCardId, setSelectedCardId] = useState('');
+    const [cashTalentIds, setCashTalentIds] = useState<string[]>([]);
 
     const [supervisors, setSupervisors] = useState<Omit<User, 'password'>[]>([]);
     const [applicationBusy, setApplicationBusy] = useState<string | null>(null);
@@ -115,7 +118,11 @@ export default function EventDetailPage() {
         // Sync WhatsApp link input with saved event value
         setWaLink(e?.whatsappGroupLink ?? '');
         if (e?.status === EventStatus.COMPLETED && user?.role === UserRole.PROVIDER) {
-            setSettlement(await getEventSettlement(id));
+            const [bulkSettlement, individualPayments] = await Promise.all([
+                getEventSettlement(id), getIndividualSettlements(id),
+            ]);
+            setSettlement(bulkSettlement);
+            setIndividualSettlements(individualPayments);
         }
         setLoading(false);
     };
@@ -325,10 +332,16 @@ export default function EventDetailPage() {
         setPayModalOpen(true);
         try {
             const preview = await getEventSettlementPreview(event._id);
-            const currentSettlement = await getEventSettlement(event._id);
+            const [currentSettlement, individualPayments] = await Promise.all([
+                getEventSettlement(event._id), getIndividualSettlements(event._id),
+            ]);
             const savedCards = await getOrganizerCards().catch(() => preview.savedCards);
             setSettlementPreview({ ...preview, savedCards });
             setSettlement(currentSettlement);
+            setIndividualSettlements(individualPayments);
+            setCashTalentIds(hasActiveCheckout(currentSettlement)
+                ? currentSettlement!.lines.filter((line) => line.payoutMethodType === 'cash').map((line) => line.talentId)
+                : []);
             setSelectedCardId(hasActiveCheckout(currentSettlement)
                 ? currentSettlement?.selectedCardId || ''
                 : savedCards.find((card) => card.isDefault)?._id || '');
@@ -341,13 +354,17 @@ export default function EventDetailPage() {
 
     const handleContinueToCheckout = async () => {
         if (!event) return;
+        if (individualSettlements.length > 0) {
+            setPaymentError('Individual payment has started. Pay the remaining ushers one by one to avoid charging anyone twice.');
+            return;
+        }
         setPaymentLoading(true);
         setPaymentError('');
         try {
             const cardId = hasActiveCheckout(settlement)
                 ? settlement?.selectedCardId || undefined
                 : selectedCardId || undefined;
-            const nextSettlement = await createEventSettlement(event._id, cardId);
+            const nextSettlement = await createEventSettlement(event._id, cardId, cashTalentIds);
             setSettlement(nextSettlement);
             if (!nextSettlement.checkoutUrl) throw new Error('Paymob did not return a checkout link.');
             window.location.assign(nextSettlement.checkoutUrl);
@@ -357,12 +374,56 @@ export default function EventDetailPage() {
         }
     };
 
-    const handleMarkCashPaid = async (lineId: string) => {
-        if (!settlement) return;
+    const handlePayIndividual = async (talentId: string) => {
+        if (!event) return;
+        const current = individualSettlements.find((item) => item.targetTalentId === talentId);
+        if (hasActiveCheckout(current || null) && current?.checkoutUrl) {
+            window.location.assign(current.checkoutUrl);
+            return;
+        }
         setPaymentLoading(true);
         setPaymentError('');
         try {
-            setSettlement(await markCashSettlementLinePaid(settlement._id, lineId));
+            const previewLine = settlementPreview?.lines.find((line) => line.talentId === talentId);
+            const payInCash = cashTalentIds.includes(talentId) || previewLine?.payoutMethodType === 'cash'
+                || current?.lines[0]?.payoutMethodType === 'cash';
+            const next = await createIndividualSettlement(event._id, talentId, selectedCardId || undefined, payInCash);
+            setIndividualSettlements((items) => [...items.filter((item) => item.targetTalentId !== talentId), next]);
+            if (!next.checkoutUrl) throw new Error('Paymob did not return a checkout link.');
+            window.location.assign(next.checkoutUrl);
+        } catch (error) {
+            setPaymentError(error instanceof Error ? error.message : 'Could not prepare this usher payment.');
+            setPaymentLoading(false);
+        }
+    };
+
+    const handleRetryPayout = async (payment: EventSettlement, lineId: string) => {
+        setPaymentLoading(true);
+        setPaymentError('');
+        try {
+            const updated = await retrySettlementLinePayout(payment._id, lineId);
+            if (updated.targetTalentId) {
+                setIndividualSettlements((items) => items.map((item) => item._id === updated._id ? updated : item));
+            } else {
+                setSettlement(updated);
+            }
+        } catch (error) {
+            setPaymentError(error instanceof Error ? error.message : 'Could not retry this usher payout.');
+        } finally {
+            setPaymentLoading(false);
+        }
+    };
+
+    const handleMarkCashPaid = async (lineId: string, payment: EventSettlement) => {
+        setPaymentLoading(true);
+        setPaymentError('');
+        try {
+            const updated = await markCashSettlementLinePaid(payment._id, lineId);
+            if (updated.targetTalentId) {
+                setIndividualSettlements((items) => items.map((item) => item._id === updated._id ? updated : item));
+            } else {
+                setSettlement(updated);
+            }
         } catch (error) {
             setPaymentError(error instanceof Error ? error.message : 'Could not record the cash payment.');
         } finally {
@@ -402,8 +463,27 @@ export default function EventDetailPage() {
         </div>
     );
 
+    const lockedSettlement = settlement?.collectionStatus === 'paid' || hasActiveCheckout(settlement) ? settlement : null;
+    const paymentLines = lockedSettlement?.lines || settlementPreview?.lines.map((line) => {
+        const individualLine = individualSettlements.find((item) => item.targetTalentId === line.talentId)?.lines[0];
+        if (individualLine) return individualLine;
+        return cashTalentIds.includes(line.talentId) ? {
+            ...line,
+            payoutMethodType: 'cash' as const,
+            payoutStatus: 'cash_due' as const,
+            payoutProvider: undefined,
+            payoutDestinationMasked: undefined,
+            collectionAmount: line.platformFee,
+        } : line;
+    }) || [];
+    const paymobCharge = lockedSettlement?.collectionAmount ?? Math.round(paymentLines.reduce((total, line) => total + line.collectionAmount * 100, 0)) / 100;
+    const cashDue = lockedSettlement?.cashDueAmount ?? Math.round(paymentLines.reduce((total, line) => total + (line.payoutMethodType === 'cash' ? line.usherAmount * 100 : 0), 0)) / 100;
+    const automaticPayoutsUnavailable = settlementPreview && !settlementPreview.payoutSandboxConfigured
+        && paymentLines.some((line) => line.payoutMethodType !== 'cash');
+
     return (
         <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
+            <Link href={`/provider/events/${event._id}/map`} className="inline-flex items-center gap-2 rounded-xl border border-primary-500/40 bg-primary-500/10 px-4 py-3 text-sm font-semibold text-primary-400 hover:bg-primary-500/20 focus-visible:outline-2 focus-visible:outline-primary-400"><MapPin size={17} /> Open event map and locations</Link>
             {error && <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}
             <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-dark-400 hover:text-dark-200 transition-colors cursor-pointer">
                 <ArrowLeft size={16} /> Back
@@ -785,7 +865,7 @@ export default function EventDetailPage() {
                                     onClick={handleOpenPayAll}
                                     className="shrink-0"
                                 >
-                                    {settlement?.collectionStatus === 'paid' ? 'View payments' : 'Pay all ushers'}
+                                    {settlement?.collectionStatus === 'paid' || individualSettlements.length > 0 ? 'View usher payments' : 'Pay all ushers'}
                                 </Button>
                             </div>
                         </Card>
@@ -799,6 +879,14 @@ export default function EventDetailPage() {
                         applicants.filter((a) => a.status === 'accepted').map((app) => {
                             const record = attendanceRecords.find((att) => att.talentId === app.talentId);
                             const attVariant = record?.status === 'present' ? 'success' as const : record?.status === 'late' ? 'warning' as const : record?.status === 'absent' ? 'danger' as const : 'default' as const;
+                            const payment = individualSettlements.find((item) => item.targetTalentId === app.talentId) || settlement;
+                            const paymentLine = payment?.lines.find((line) => line.talentId === app.talentId);
+                            const paymentLabel = paymentLine && (payment?.collectionStatus === 'failed' ? 'Payment failed'
+                                : payment?.collectionStatus === 'pending' ? 'Payment pending'
+                                    : payment?.collectionStatus === 'paid' ? paymentLine.payoutStatus === 'paid' ? 'Paid'
+                                        : paymentLine.payoutStatus === 'failed' ? 'Payout failed'
+                                            : paymentLine.payoutStatus === 'cash_due' ? 'Cash due' : 'Payout pending'
+                                        : null);
                             return (
                                 <Card key={app._id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="flex items-center gap-3">
@@ -807,6 +895,7 @@ export default function EventDetailPage() {
                                             <p className="text-sm font-semibold text-dark-100">{app.talent.fullName}</p>
                                             <div className="flex items-center gap-2.5 mt-1 flex-wrap">
                                                  {record && <Badge variant={attVariant}>{record.status}</Badge>}
+                                                 {paymentLabel && <Badge variant={paymentLabel === 'Paid' ? 'success' : paymentLabel.includes('failed') ? 'danger' : 'warning'}>{paymentLabel}</Badge>}
                                                  {app.talent.phoneNumber && (
                                                      <span className="text-xs text-dark-300 font-medium flex items-center gap-1">
                                                          <Phone size={11} className="text-dark-500" />
@@ -1080,8 +1169,8 @@ export default function EventDetailPage() {
                                     <p className="mt-1 font-bold text-dark-50">{settlementPreview.grossAmount} EGP</p>
                                 </div>
                                 <div className="rounded-xl border border-primary-500/25 bg-primary-500/5 p-3">
-                                    <p className="text-[11px] font-semibold uppercase text-dark-400">Paymob charge</p>
-                                    <p className="mt-1 font-bold text-primary-500">{settlementPreview.collectionAmount} EGP</p>
+                                    <p className="text-[11px] font-semibold uppercase text-dark-400">{individualSettlements.length ? 'Estimated Paymob total' : 'Paymob charge'}</p>
+                                    <p className="mt-1 font-bold text-primary-500">{paymobCharge} EGP</p>
                                 </div>
                                 <div className="rounded-xl border border-success-500/25 bg-success-500/5 p-3">
                                     <p className="text-[11px] font-semibold uppercase text-dark-400">Usher payouts</p>
@@ -1089,17 +1178,24 @@ export default function EventDetailPage() {
                                 </div>
                                 <div className="rounded-xl border border-warning-500/25 bg-warning-500/5 p-3">
                                     <p className="text-[11px] font-semibold uppercase text-dark-400">Cash due</p>
-                                    <p className="mt-1 font-bold text-warning-500">{settlementPreview.cashDueAmount} EGP</p>
+                                    <p className="mt-1 font-bold text-warning-500">{cashDue} EGP</p>
                                 </div>
                             </div>
 
                             <div>
                                 <p className="mb-2 text-xs font-bold uppercase tracking-wider text-dark-400">Payment breakdown</p>
+                                {individualSettlements.length > 0 && <p className="mb-2 text-xs text-warning-500">Individual checkout has started for this event. Complete remaining ushers individually.</p>}
+                                <p className="mb-2 text-xs text-dark-400">After Paymob confirms your checkout, automatic payouts start for every usher with a supported payout account. Cash is used only for the ushers shown below.</p>
+                                {!lockedSettlement && <p className="mb-2 text-xs text-dark-400">Select Pay in cash instead for any usher you want to pay directly, even if they have a payout account.</p>}
                                 <div className="max-h-72 space-y-2 overflow-y-auto pe-1">
-                                    {(settlement?.lines || settlementPreview.lines).map((line) => {
+                                    {paymentLines.map((line) => {
                                         const savedLine = '_id' in line;
                                         const isCash = line.payoutMethodType === 'cash';
                                         const name = savedLine ? line.talent.fullName : line.talentName;
+                                        const individualPayment = individualSettlements.find((item) => item.targetTalentId === line.talentId);
+                                        const linePayment = individualPayment || (savedLine ? settlement : null);
+                                        const canStartIndividual = (!settlement || settlement.collectionStatus === 'failed')
+                                            && (!individualPayment || individualPayment.collectionStatus === 'failed');
                                         return (
                                             <div
                                                 key={savedLine ? line._id : line.talentId}
@@ -1118,22 +1214,50 @@ export default function EventDetailPage() {
                                                         </p>
                                                         {isCash && (
                                                             <p className="mt-1 text-xs font-semibold text-warning-500">
-                                                                No supported payout account. Pay {line.usherAmount} EGP in cash.
+                                                                Pay {line.usherAmount} EGP in cash.
                                                             </p>
                                                         )}
                                                         {savedLine && line.failureReason && <p className="mt-1 text-xs text-danger-500">{line.failureReason}</p>}
+                                                        {savedLine && linePayment?.collectionStatus === 'paid' && line.payoutStatus === 'failed' && !line.payoutRetrySafe && (
+                                                            <p className="mt-1 text-xs text-warning-500">Confirm this payout with support before retrying to avoid sending it twice.</p>
+                                                        )}
+                                                        {individualPayment?.collectionStatus === 'failed' && individualPayment.collectionFailureReason && (
+                                                            <p className="mt-1 text-xs text-danger-500">{individualPayment.collectionFailureReason}</p>
+                                                        )}
                                                     </div>
+                                                    {!individualPayment && !savedLine && settlementPreview.lines.some((previewLine) => previewLine.talentId === line.talentId && previewLine.payoutMethodType !== 'cash') && !lockedSettlement && (
+                                                        <label className="flex items-center gap-2 text-xs text-dark-200">
+                                                            <input type="checkbox" checked={cashTalentIds.includes(line.talentId)}
+                                                                onChange={(event) => setCashTalentIds((ids) => event.target.checked ? [...ids, line.talentId] : ids.filter((id) => id !== line.talentId))}
+                                                                disabled={paymentLoading} />
+                                                            Pay in cash instead
+                                                        </label>
+                                                    )}
                                                     {savedLine && (
                                                         <div className="flex items-center gap-2">
-                                                            <Badge variant={line.payoutStatus === 'paid' ? 'success' : line.payoutStatus === 'failed' ? 'danger' : isCash ? 'warning' : 'primary'}>
-                                                                {line.payoutStatus.replace('_', ' ')}
+                                                            <Badge variant={linePayment?.collectionStatus === 'failed' || (linePayment?.collectionStatus === 'paid' && line.payoutStatus === 'failed') ? 'danger' : linePayment?.collectionStatus === 'paid' && line.payoutStatus === 'paid' ? 'success' : 'warning'}>
+                                                                {linePayment?.collectionStatus === 'failed' ? 'Payment failed'
+                                                                    : linePayment?.collectionStatus === 'pending' ? 'Checkout pending'
+                                                                        : linePayment?.collectionStatus === 'paid' ? line.payoutStatus === 'paid' ? 'Paid' : line.payoutStatus.replace('_', ' ')
+                                                                            : 'Not paid'}
                                                             </Badge>
-                                                            {isCash && settlement?.collectionStatus === 'paid' && line.payoutStatus !== 'paid' && (
-                                                                <Button size="sm" variant="secondary" className="border-warning-500/40 text-warning-500" onClick={() => handleMarkCashPaid(line._id)} disabled={paymentLoading}>
+                                                            {isCash && linePayment?.collectionStatus === 'paid' && line.payoutStatus !== 'paid' && (
+                                                                <Button size="sm" variant="secondary" className="border-warning-500/40 text-warning-500" onClick={() => handleMarkCashPaid(line._id, linePayment)} disabled={paymentLoading}>
                                                                     Mark cash paid
                                                                 </Button>
                                                             )}
+                                                            {!isCash && linePayment?.collectionStatus === 'paid' && line.payoutStatus === 'failed' && line.payoutRetrySafe && (
+                                                                <Button size="sm" variant="secondary" onClick={() => handleRetryPayout(linePayment, line._id)} disabled={paymentLoading}>Retry payout</Button>
+                                                            )}
                                                         </div>
+                                                    )}
+                                                    {canStartIndividual && (
+                                                        <Button size="sm" variant="secondary" onClick={() => handlePayIndividual(line.talentId)} disabled={paymentLoading || (!isCash && !settlementPreview.payoutSandboxConfigured)}>
+                                                            {individualPayment ? 'Retry usher checkout' : 'Pay this usher'}
+                                                        </Button>
+                                                    )}
+                                                    {individualPayment && hasActiveCheckout(individualPayment) && (
+                                                        <Button size="sm" variant="secondary" onClick={() => handlePayIndividual(line.talentId)} disabled={paymentLoading}>Continue usher checkout</Button>
                                                     )}
                                                 </div>
                                             </div>
@@ -1142,9 +1266,15 @@ export default function EventDetailPage() {
                                 </div>
                             </div>
 
-                            {settlementPreview.cashDueAmount > 0 && (
+                            {cashDue > 0 && (
                                 <p className="rounded-xl border border-warning-500/30 bg-warning-500/10 p-3 text-xs text-warning-500">
                                     For cash ushers, Paymob collects only OO-Ushers&apos; 5% fee. You give their remaining 95% to them in cash, so you are never charged twice.
+                                </p>
+                            )}
+
+                            {automaticPayoutsUnavailable && (
+                                <p role="alert" className="rounded-xl border border-danger-500/30 bg-danger-500/10 p-3 text-xs text-danger-500">
+                                    Automatic Paymob payouts are not connected yet. Checkout is unavailable until the Payouts sandbox is configured for ushers receiving digital payments.
                                 </p>
                             )}
 
@@ -1175,8 +1305,8 @@ export default function EventDetailPage() {
 
                             <div className="flex flex-col-reverse gap-3 border-t border-dark-700 pt-4 sm:flex-row sm:justify-end">
                                 <Button variant="secondary" onClick={() => setPayModalOpen(false)}>Close</Button>
-                                {settlement?.collectionStatus !== 'paid' && (
-                                    <Button variant="primary" onClick={handleContinueToCheckout} isLoading={paymentLoading} icon={<CreditCard size={15} />}>
+                                {settlement?.collectionStatus !== 'paid' && individualSettlements.length === 0 && (
+                                    <Button variant="primary" onClick={handleContinueToCheckout} isLoading={paymentLoading} disabled={Boolean(automaticPayoutsUnavailable)} icon={<CreditCard size={15} />}>
                                         Continue to Paymob Test Checkout
                                     </Button>
                                 )}

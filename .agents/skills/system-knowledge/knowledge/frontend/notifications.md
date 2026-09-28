@@ -7,6 +7,8 @@ The initial notification fetch renders a shared skeleton before displaying its l
 
 Links target app routes. Email delivery is backend behavior; frontend notification existence is not proof of email delivery. A legacy SimulatedEmail type remains in types/index.ts but is not an implemented email log.
 
+Map assignment notifications link to `/talent/events/:id/map`.
+
 ## Source entry points
 - `components/shared/Navbar.tsx`
 - `lib/api.ts`
