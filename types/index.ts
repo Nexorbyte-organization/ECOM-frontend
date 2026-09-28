@@ -247,6 +247,7 @@ export interface SettlementLine {
     payoutDestinationMasked?: string;
     payoutStatus: SettlementLinePayoutStatus;
     failureReason?: string;
+    payoutRetrySafe?: boolean;
     paidAt?: string;
     talent: Pick<TalentProfile, '_id' | 'userId' | 'fullName' | 'photo'>;
 }
@@ -259,6 +260,7 @@ export interface SettlementPreviewLine extends Omit<SettlementLine, '_id' | 'tal
 export interface EventSettlement {
     _id: string;
     eventId: string;
+    targetTalentId?: string | null;
     organizerId: string;
     grossAmount: number;
     collectionAmount: number;
