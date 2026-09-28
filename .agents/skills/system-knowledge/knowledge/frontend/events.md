@@ -9,6 +9,8 @@ Talent events browses eligible open work; jobs/[id] presents event details from 
 
 Event detail also contains applicant, supervisor, attendance, QR, review, and settlement controls; route here first and then load the relevant domain knowledge.
 
+Provider event detail links to a dedicated large map page. The owner uploads/replaces the map, clicks it to place and name pins, selects hired ushers for each pin, and can expand the map to full screen. Staff can view the company map. Assigned ushers have a map link from job detail; the map page shows the whole image and only their assigned location, with access enforced by the backend. The map uses percentage coordinates so pins remain in place as the image scales.
+
 ## Source entry points
 - `app/(provider)/provider/events/page.tsx`
 - `app/(provider)/provider/events/new/page.tsx`
@@ -17,6 +19,9 @@ Event detail also contains applicant, supervisor, attendance, QR, review, and se
 - `app/(talent)/talent/jobs/[id]/page.tsx`
 - `lib/api.ts`
 - `types/index.ts`
+- `app/(provider)/provider/events/[id]/map/page.tsx`
+- `app/(talent)/talent/events/[id]/map/page.tsx`
+- `components/events/EventMapCanvas.tsx`
 
 ## Change coupling
 Lifecycle changes can affect applications, attendance, payments, and admin views. Backend determines completion and ownership.

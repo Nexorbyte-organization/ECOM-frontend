@@ -2,7 +2,7 @@ import { withFeedback } from '@/lib/toast';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
     AppNotification, Application, ApplicationStatus, Attendance, AttendanceCheckInResult, AttendanceQr, AttendanceStatus,
-    AuthResponse, Event, EventActionRequest, EventActionRequestType, EventFilters,
+    AuthResponse, Event, EventMap, EventActionRequest, EventActionRequestType, EventFilters,
     EventSettlement, EventSettlementPreview, EventStatus, OrganizerCard,
     PaginatedResponse, PaymentMethod, ProviderProfile, Referral,
     RegistrationResponse, Review, TalentProfile, TalentSearchFilters, User,
@@ -350,6 +350,27 @@ export async function getEvent(id: string): Promise<Event | null> {
         const prefix = user?.role === UserRole.TALENT ? '/talent/events' : '/provider/events';
         const payload = await apiRequest(`${prefix}/${id}`); return normalizeEvent(payload.data);
     } catch (error) { if (error instanceof Error && /not found/i.test(error.message)) return null; throw error; }
+}
+export async function getEventMap(eventId: string, role: 'provider' | 'talent'): Promise<EventMap> {
+    const payload = await apiRequest(`/` + role + `/events/${eventId}/map`);
+    return payload.data;
+}
+export async function uploadEventMap(eventId: string, file: File): Promise<EventMap> {
+    const form = new FormData(); form.append('map', file);
+    const payload = await apiRequest(`/provider/events/${eventId}/map/image`, { method: 'PATCH', body: form });
+    return payload.data;
+}
+export async function createEventMapPin(eventId: string, pin: { name: string; x: number; y: number }): Promise<EventMap> {
+    const payload = await apiRequest(`/provider/events/${eventId}/map/pins`, { method: 'POST', body: pin });
+    return payload.data;
+}
+export async function updateEventMapPin(eventId: string, pinId: string, changes: { name?: string; x?: number; y?: number; usherIds?: string[] }): Promise<EventMap> {
+    const payload = await apiRequest(`/provider/events/${eventId}/map/pins/${pinId}`, { method: 'PATCH', body: changes });
+    return payload.data;
+}
+export async function deleteEventMapPin(eventId: string, pinId: string): Promise<EventMap> {
+    const payload = await apiRequest(`/provider/events/${eventId}/map/pins/${pinId}`, { method: 'DELETE' });
+    return payload.data;
 }
 export async function getProviderEvents(_providerId: string, filters?: EventFilters): Promise<PaginatedResponse<Event>> {
     const payload = await apiRequest(`/provider/events${queryString({ ...filters, limit: filters?.limit || 100 })}`); return listResponse(payload, normalizeEvent);

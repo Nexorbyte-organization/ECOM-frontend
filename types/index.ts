@@ -137,6 +137,21 @@ export interface Event {
     whatsappGroupId?: string;
     whatsappGroupLink?: string;
     attendanceQrGenerated?: boolean;
+    hasMapAssignment?: boolean;
+}
+
+export interface EventMapPin {
+    id: string;
+    name: string;
+    x: number;
+    y: number;
+    usherIds?: string[];
+}
+
+export interface EventMap {
+    imageUrl: string | null;
+    pins: EventMapPin[];
+    ushers?: { id: string; name: string }[];
 }
 
 export interface AttendanceQr {
@@ -247,6 +262,7 @@ export interface SettlementLine {
     payoutDestinationMasked?: string;
     payoutStatus: SettlementLinePayoutStatus;
     failureReason?: string;
+    payoutRetrySafe?: boolean;
     paidAt?: string;
     talent: Pick<TalentProfile, '_id' | 'userId' | 'fullName' | 'photo'>;
 }
@@ -259,6 +275,7 @@ export interface SettlementPreviewLine extends Omit<SettlementLine, '_id' | 'tal
 export interface EventSettlement {
     _id: string;
     eventId: string;
+    targetTalentId?: string | null;
     organizerId: string;
     grossAmount: number;
     collectionAmount: number;
