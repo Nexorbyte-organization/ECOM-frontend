@@ -624,13 +624,27 @@ export async function getEventSettlementPreview(eventId: string): Promise<EventS
         })),
     };
 }
-async function createEventSettlementAction(eventId: string, cardId?: string): Promise<EventSettlement> {
-    const payload = await apiRequest(`/provider/events/${eventId}/settlement`, { method: 'POST', body: cardId ? { cardId } : {} }); return normalizeSettlement(payload.data);
+async function createEventSettlementAction(eventId: string, cardId?: string, excludedTalentIds: string[] = []): Promise<EventSettlement> {
+    const payload = await apiRequest(`/provider/events/${eventId}/settlement`, { method: 'POST', body: { ...(cardId ? { cardId } : {}), excludedTalentIds } }); return normalizeSettlement(payload.data);
 }
 export async function getEventSettlement(eventId: string): Promise<EventSettlement | null> {
     try {
         const payload = await apiRequest(`/provider/events/${eventId}/settlement`); return payload.data ? normalizeSettlement(payload.data) : null;
     } catch (error) { if (error instanceof Error && /not found|no settlement/i.test(error.message)) return null; throw error; }
+}
+export async function getIndividualSettlements(eventId: string): Promise<EventSettlement[]> {
+    const payload = await apiRequest(`/provider/events/${eventId}/individual-settlements`);
+    return (payload.data || []).map(normalizeSettlement);
+}
+async function createIndividualSettlementAction(eventId: string, talentId: string, cardId?: string, payInCash = false): Promise<EventSettlement> {
+    const payload = await apiRequest(`/provider/events/${eventId}/ushers/${talentId}/settlement`, {
+        method: 'POST', body: { ...(cardId ? { cardId } : {}), payInCash },
+    });
+    return normalizeSettlement(payload.data);
+}
+async function retrySettlementLinePayoutAction(settlementId: string, lineId: string): Promise<EventSettlement> {
+    const payload = await apiRequest(`/provider/settlements/${settlementId}/lines/${lineId}/retry-payout`, { method: 'POST' });
+    return normalizeSettlement(payload.data);
 }
 export async function getSettlement(settlementId: string): Promise<EventSettlement> {
     const payload = await apiRequest(`/payments/${settlementId}`); return normalizeSettlement(payload.data);
@@ -709,6 +723,8 @@ export const register = withFeedback(registerAction, { en: 'Account created. Che
 export const login = withFeedback(loginAction, { en: 'Signed in successfully.', ar: 'تم تسجيل الدخول بنجاح.', 'ar-eg': 'تم تسجيل الدخول بنجاح.' });
 export const generateEventAttendanceQr = withFeedback(generateEventAttendanceQrAction, { en: 'Attendance QR created.', ar: 'تم إنشاء رمز الحضور.', 'ar-eg': 'تم إنشاء رمز الحضور.' });
 export const createEventSettlement = withFeedback(createEventSettlementAction, { en: 'Settlement prepared.', ar: 'تم تجهيز التسوية.', 'ar-eg': 'تم تجهيز التسوية.' });
+export const createIndividualSettlement = withFeedback(createIndividualSettlementAction, { en: 'Usher checkout prepared.', ar: 'تم تجهيز دفع العامل.', 'ar-eg': 'تم تجهيز دفع العامل.' });
+export const retrySettlementLinePayout = withFeedback(retrySettlementLinePayoutAction, { en: 'Usher payout attempted.', ar: 'تمت محاولة دفع مستحقات العامل.', 'ar-eg': 'تمت محاولة دفع مستحقات العامل.' });
 export const startOrganizerCardEnrollment = withFeedback(startOrganizerCardEnrollmentAction, { en: 'Card setup started.', ar: 'بدأ إعداد البطاقة.', 'ar-eg': 'بدأ إعداد البطاقة.' });
 
 export const createEventWhatsAppGroup = withFeedback(createEventWhatsAppGroupAction, { en: 'WhatsApp sharing link prepared.', ar: 'تم تجهيز رابط المشاركة عبر واتساب.' });
