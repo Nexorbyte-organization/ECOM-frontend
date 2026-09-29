@@ -1,5 +1,7 @@
 'use client';
 
+import ContentSkeleton from '@/components/ui/Skeleton';
+
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useLanguage } from '@/lib/i18n';
@@ -32,11 +34,7 @@ export default function ProviderDashboard() {
     }, [user]);
 
     if (loading) {
-        return (
-            <div className="space-y-6">
-                {[1, 2, 3, 4].map((i) => <div key={i} className="h-28 glass rounded-2xl animate-pulse" />)}
-            </div>
-        );
+        return <ContentSkeleton variant="dashboard" />;
     }
 
     const statusVariant = (s: string) =>

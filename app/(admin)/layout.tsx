@@ -1,5 +1,7 @@
 'use client';
 
+import { PageSkeleton } from '@/components/ui/Skeleton';
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -8,7 +10,7 @@ import Navbar from '@/components/shared/Navbar';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const { user, isLoading, isAdmin } = useAuth();
+    const { user, isLoading, isAdmin  } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
@@ -18,11 +20,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }, [user, isLoading, isAdmin, router]);
 
     if (isLoading || !user) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-pulse text-dark-400">Loading...</div>
-            </div>
-        );
+        return <PageSkeleton workspace />;
     }
 
     return (

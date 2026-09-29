@@ -1,5 +1,7 @@
 'use client';
 
+import ContentSkeleton from '@/components/ui/Skeleton';
+
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -30,13 +32,7 @@ export default function AttendanceCheckInPage() {
         <div className="mx-auto flex min-h-[60vh] max-w-xl items-center justify-center">
             <Card className="w-full text-center">
                 {loading && (
-                    <div className="space-y-4 py-8" role="status">
-                        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-dark-700 border-t-primary-500" />
-                        <div>
-                            <h1 className="text-xl font-bold text-dark-50">Confirming attendance</h1>
-                            <p className="mt-1 text-sm text-dark-400">Please keep this page open.</p>
-                        </div>
-                    </div>
+                    <ContentSkeleton variant="status" />
                 )}
 
                 {result && (

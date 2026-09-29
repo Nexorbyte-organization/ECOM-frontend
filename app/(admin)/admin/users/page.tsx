@@ -1,5 +1,7 @@
 'use client';
 
+import ContentSkeleton from '@/components/ui/Skeleton';
+
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import {
@@ -164,11 +166,11 @@ export default function AdminUsersPage() {
         verify: { label: 'Verify User', description: 'This user will be marked as verified.' },
         unverify: { label: 'Remove Verification', description: 'This user will lose their verified status.' },
         resetExcuses: { label: 'Reset Late Excuses', description: 'This talent\'s late excuse counter will be reset to 0.' },
-        delete: { label: 'Delete User', description: 'This user and their profile will be permanently deleted.' },
+        delete: { label: 'Delete User', description: 'This user and their profile will be hidden and their data retained. Deleting an organization also hides its staff and events.' },
     };
 
     if (loading) {
-        return <div className="space-y-4">{[1, 2, 3].map((i) => <div key={i} className="h-24 glass rounded-2xl animate-pulse" />)}</div>;
+        return <ContentSkeleton variant="list" />;
     }
 
     return (

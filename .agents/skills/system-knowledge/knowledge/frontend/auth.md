@@ -5,6 +5,8 @@ AuthProvider loads /auth/me on mount, caches non-secret user metadata under ushe
 
 lib/api.ts is the HTTP boundary: credentials include, no-store, JSON/FormData handling, response normalization, and backend error messages. A 401 outside excluded auth paths shares one refresh request and retries once; remaining unauthorized responses emit usher:unauthorized to clear the session.
 
+User-facing mutations are exported through `withFeedback` from `lib/toast.ts`. Feedback runs after the complete logical action resolves, including follow-up image uploads; failures emit an error notice and rethrow for existing inline handling. Data reads, session initialization/refresh, notification clicks, logout, and background polling do not emit automatic success notices. Payment settlement preparation does not claim that a payment is confirmed. Transport payloads and backend contracts are unchanged.
+
 Login/recovery pages implement email/password and token-bound password recovery. Talent layout saves a pending check-in destination in sessionStorage before redirecting to login.
 
 Default browser prefix /api is rewritten to the backend by next.config.ts; API_URL configures the destination and NEXT_PUBLIC_API_URL can override browser prefix.

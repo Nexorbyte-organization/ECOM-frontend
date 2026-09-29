@@ -1,5 +1,9 @@
 'use client';
 
+import { toast } from '@/lib/toast';
+
+import ContentSkeleton from '@/components/ui/Skeleton';
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -28,6 +32,7 @@ export default function JobDetailPage() {
     const [applyError, setApplyError] = useState('');
 
     // Referral state
+    const [referralLoading, setReferralLoading] = useState(false);
     const [referralModal, setReferralModal] = useState(false);
     const [allTalents, setAllTalents] = useState<TalentProfile[]>([]);
     const [referralSearch, setReferralSearch] = useState('');
@@ -37,11 +42,16 @@ export default function JobDetailPage() {
     const [copied, setCopied] = useState(false);
     const [inviteLink, setInviteLink] = useState('');
 
-    const handleCopyLink = () => {
+    const handleCopyLink = async () => {
         if (!inviteLink) return;
-        navigator.clipboard.writeText(inviteLink);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        try {
+            await navigator.clipboard.writeText(inviteLink);
+            setCopied(true);
+            toast.success({ en: 'Invite link copied.', ar: 'تم نسخ رابط الدعوة.', 'ar-eg': 'لينك الدعوة اتنسخ.' });
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            toast.error({ en: 'Could not copy the link. Copy it from the field below.', ar: 'تعذر نسخ الرابط. انسخه من الحقل أدناه.' });
+        }
     };
 
     useEffect(() => {
@@ -83,12 +93,17 @@ export default function JobDetailPage() {
         setReferralError('');
         setReferralModal(true);
         if (!event) return;
+        setReferralLoading(true);
+        setAllTalents([]);
+        setInviteLink('');
         try {
             const [talents, token] = await Promise.all([getAllTalents(), createReferralInvite(event._id)]);
             setAllTalents(talents.filter((t) => t._id !== myProfile?._id));
             setInviteLink(`${window.location.origin}/register?invite=${encodeURIComponent(token)}`);
         } catch (err) {
             setReferralError(err instanceof Error ? err.message : 'Could not create an invite link');
+        } finally {
+            setReferralLoading(false);
         }
     };
 
@@ -115,7 +130,7 @@ export default function JobDetailPage() {
         : allTalents;
 
     if (loading) {
-        return <div className="max-w-3xl mx-auto"><div className="h-96 glass rounded-2xl animate-pulse" /></div>;
+        return <ContentSkeleton variant="detail" />;
     }
 
     if (!event) {
@@ -137,6 +152,7 @@ export default function JobDetailPage() {
 
     return (
         <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+            {event.hasMapAssignment && <Link href={`/talent/events/${event._id}/map`} className="inline-flex items-center gap-2 rounded-xl border border-primary-500/40 bg-primary-500/10 px-4 py-3 text-sm font-semibold text-primary-400 hover:bg-primary-500/20 focus-visible:outline-2 focus-visible:outline-primary-400"><MapPin size={17} /> View my map location</Link>}
             {applyError && <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{applyError}</p>}
             <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-dark-400 hover:text-dark-200 transition-colors cursor-pointer">
                 <ArrowLeft size={16} /> Back to jobs
@@ -322,7 +338,7 @@ export default function JobDetailPage() {
 
             {/* Referral Modal */}
             <Modal isOpen={referralModal} onClose={() => setReferralModal(false)} title="Refer a Friend">
-                <div className="space-y-4">
+                {referralLoading ? <ContentSkeleton variant="list" /> : <div className="space-y-4">
                     <p className="text-sm text-dark-300">Select a talent to refer. They&apos;ll need to accept the referral before it becomes an application.</p>
 
                     {referralSuccess && (
@@ -404,7 +420,7 @@ export default function JobDetailPage() {
                             </Button>
                         </div>
                     </div>
-                </div>
+                </div>}
             </Modal>
         </div>
     );

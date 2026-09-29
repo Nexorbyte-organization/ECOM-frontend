@@ -1,5 +1,9 @@
 'use client';
 
+import { toast } from '@/lib/toast';
+
+import ContentSkeleton, { Skeleton, SkeletonGroup } from '@/components/ui/Skeleton';
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useLanguage } from '@/lib/i18n';
@@ -28,6 +32,8 @@ export default function TalentProfilePage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [historyError, setHistoryError] = useState('');
     const [history, setHistory] = useState<{ event: Event; application: Application; attendance: Attendance | null; review: Review | null }[]>([]);
     const [photoPreview, setPhotoPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -55,7 +61,6 @@ export default function TalentProfilePage() {
     const [addingPayment, setAddingPayment] = useState(false);
     const [paymentError, setPaymentError] = useState('');
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-    const [toastError, setToastError] = useState('');
     const paymentPhonePlaceholder: Record<string, string> = {
         'Vodafone Cash': '010 1234 5678',
         'Orange Cash': '012 1234 5678',
@@ -67,10 +72,6 @@ export default function TalentProfilePage() {
     const isBankPayment = newProvider === 'Bank Account';
     const isCashPayment = newProvider === 'Cash - don\'t have account';
 
-    const showErrorToast = (message: string) => {
-        setToastError(message);
-        window.setTimeout(() => setToastError(''), 4000);
-    };
 
     const addPortfolioImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -80,7 +81,7 @@ export default function TalentProfilePage() {
             const portfolioImages = await uploadTalentPortfolioImage(file);
             setProfile({ ...profile, portfolioImages });
         } catch (error) {
-            showErrorToast(error instanceof Error ? error.message : 'Could not upload portfolio image');
+            toast.error(error instanceof Error ? error.message : 'Could not upload portfolio image');
         } finally {
             setPortfolioBusy(false);
             event.target.value = '';
@@ -94,7 +95,7 @@ export default function TalentProfilePage() {
             const portfolioImages = await deleteTalentPortfolioImage(index);
             setProfile({ ...profile, portfolioImages });
         } catch (error) {
-            showErrorToast(error instanceof Error ? error.message : 'Could not remove portfolio image');
+            toast.error(error instanceof Error ? error.message : 'Could not remove portfolio image');
         } finally {
             setPortfolioBusy(false);
         }
@@ -125,9 +126,10 @@ export default function TalentProfilePage() {
                 setPhoneNumber(formatEgyptianMobile(p.phoneNumber || ''));
                 setWhatsappNumber(formatEgyptianMobile(p.whatsappNumber || ''));
                 setHasNoWhatsapp(!!p.whatsappNumber && p.whatsappNumber !== p.phoneNumber);
-                getTalentEventHistory(p._id).then(setHistory).catch((err) => showErrorToast(err instanceof Error ? err.message : 'Could not load event history.'));
+                setHistoryLoading(true);
+                getTalentEventHistory(p._id).then(setHistory).catch((err) => setHistoryError(err instanceof Error ? err.message : 'Could not load event history.')).finally(() => setHistoryLoading(false));
             }
-        }).catch((err) => showErrorToast(err instanceof Error ? err.message : 'Could not load profile.'))
+        }).catch((err) => toast.error(err instanceof Error ? err.message : 'Could not load profile.'))
             .finally(() => setLoading(false));
     }, [user]);
 
@@ -174,7 +176,7 @@ export default function TalentProfilePage() {
             setNewAccountHolder('');
             setNewBankCode('');
         } catch (err: unknown) {
-            showErrorToast(err instanceof Error ? err.message : 'Failed to add payment method');
+            toast.error(err instanceof Error ? err.message : 'Failed to add payment method');
         } finally {
             setAddingPayment(false);
         }
@@ -187,7 +189,7 @@ export default function TalentProfilePage() {
             setPaymentMethods(updated);
             announceProfileUpdated();
         } catch (err: unknown) {
-            showErrorToast(err instanceof Error ? err.message : 'Failed to delete payment method');
+            toast.error(err instanceof Error ? err.message : 'Failed to delete payment method');
         }
     };
 
@@ -197,14 +199,13 @@ export default function TalentProfilePage() {
             const updated = await setDefaultPaymentMethod(user._id, methodId);
             setPaymentMethods(updated);
         } catch (err: unknown) {
-            showErrorToast(err instanceof Error ? err.message : 'Failed to set default payment method');
+            toast.error(err instanceof Error ? err.message : 'Failed to set default payment method');
         }
     };
 
     const handleSave = async () => {
         if (!user) return;
         setSuccess(false);
-        setToastError('');
         const errors: Record<string, string> = {};
         const required = isArabic ? 'هذا الحقل مطلوب.' : 'This field is required.';
         if (!(photoPreview || profile?.photo?.trim())) errors.photo = isArabic ? 'يرجى إضافة صورة شخصية.' : 'Please upload a profile picture.';
@@ -250,7 +251,7 @@ export default function TalentProfilePage() {
             setSuccess(true);
             setTimeout(() => setSuccess(false), 3000);
         } catch (err) {
-            showErrorToast(err instanceof Error ? err.message : 'Could not save profile.');
+            toast.error(err instanceof Error ? err.message : 'Could not save profile.');
         } finally {
             setSaving(false);
         }
@@ -289,18 +290,11 @@ export default function TalentProfilePage() {
     };
 
     if (loading) {
-        return <div className="space-y-4">{[1, 2, 3].map((i) => <div key={i} className="h-32 glass rounded-2xl animate-pulse" />)}</div>;
+        return <ContentSkeleton variant="profile" />;
     }
 
     return (
         <div ref={pageRef} className="max-w-3xl mx-auto space-y-6 animate-fade-in text-start">
-            {toastError && (
-                <div role="alert" className="fixed bottom-5 end-5 z-50 flex max-w-sm items-start gap-3 rounded-xl border border-danger-500/30 bg-dark-900 px-4 py-3 text-sm text-dark-100 shadow-xl">
-                    <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-danger-500" />
-                    <p className="flex-1">{toastError}</p>
-                    <button type="button" onClick={() => setToastError('')} aria-label="Dismiss" className="text-dark-400 hover:text-dark-100"><X size={16} /></button>
-                </div>
-            )}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-black text-dark-50">{t('my_profile_title')}</h1>
@@ -588,8 +582,7 @@ export default function TalentProfilePage() {
                     ))}
                     <input ref={portfolioInputRef} type="file" accept="image/jpeg,image/png" className="hidden" onChange={addPortfolioImage} />
                     <button type="button" disabled={portfolioBusy || (profile?.portfolioImages.length || 0) >= 12} onClick={() => portfolioInputRef.current?.click()} className="rounded-xl border-2 border-dashed border-dark-50 hover:border-primary-500/50 aspect-video flex flex-col items-center justify-center text-dark-400 hover:text-primary-500 transition-all cursor-pointer bg-dark-950 disabled:opacity-50">
-                        <Plus size={20} />
-                        <span className="text-xs mt-1 font-bold">{t('add_photo')}</span>
+                        {portfolioBusy ? <SkeletonGroup className="w-2/3"><Skeleton className="mx-auto h-6 w-6" /><Skeleton className="mt-2 h-3 w-full" /></SkeletonGroup> : <><Plus size={20} /><span className="text-xs mt-1 font-bold">{t('add_photo')}</span></>}
                     </button>
                 </div>
             </Card>
@@ -599,7 +592,7 @@ export default function TalentProfilePage() {
                 <h3 className="text-xs font-black text-dark-300 uppercase tracking-wider mb-4">
                     {t('event_history_title')} ({history.length})
                 </h3>
-                {history.length === 0 ? (
+                {historyLoading ? <ContentSkeleton variant="list" count={2} /> : historyError ? <p role="alert" className="text-sm text-danger-500">{historyError}</p> : history.length === 0 ? (
                     <p className="text-sm text-dark-500 text-center py-6 font-semibold">{t('no_history')}</p>
                 ) : (
                     <div className="space-y-3">
