@@ -2,6 +2,7 @@
 
 ## Current behavior
 Owner staff page invites, edits role/details, blocks/unblocks, and removes staff. Members and supervisors share the provider workspace; ownership is distinct from isProvider.
+The temporary password on staff invitations and the optional edit password are masked by default and can be revealed with the shared input control.
 
 Event detail loads staff, filters supervisor-role options, and assigns/removes supervisors through the backend. User.providerProfileId normalizes backend providerOwnerId.
 

@@ -9,6 +9,8 @@ User-facing mutations are exported through `withFeedback` from `lib/toast.ts`. F
 
 Login/recovery pages implement email/password and token-bound password recovery. Talent layout saves a pending check-in destination in sessionStorage before redirecting to login.
 
+The shared `components/ui/Input.tsx` masks password inputs by default and provides a localized eye button to show or hide each field independently. This also applies to registration confirmation, reset confirmation, and password fields in staff/admin forms.
+
 Default browser prefix /api is rewritten to the backend by next.config.ts; API_URL configures the destination and NEXT_PUBLIC_API_URL can override browser prefix.
 
 ## Source entry points
