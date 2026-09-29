@@ -166,7 +166,7 @@ export default function AdminUsersPage() {
         verify: { label: 'Verify User', description: 'This user will be marked as verified.' },
         unverify: { label: 'Remove Verification', description: 'This user will lose their verified status.' },
         resetExcuses: { label: 'Reset Late Excuses', description: 'This talent\'s late excuse counter will be reset to 0.' },
-        delete: { label: 'Delete User', description: 'This user and their profile will be permanently deleted.' },
+        delete: { label: 'Delete User', description: 'This user and their profile will be hidden and their data retained. Deleting an organization also hides its staff and events.' },
     };
 
     if (loading) {
