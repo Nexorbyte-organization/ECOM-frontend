@@ -2,7 +2,7 @@
 
 import { toast } from '@/lib/toast';
 
-import ContentSkeleton, { Skeleton } from '@/components/ui/Skeleton';
+import ContentSkeleton from '@/components/ui/Skeleton';
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -30,7 +30,7 @@ import { formatDate } from '@/lib/utils';
 import {
     MapPin, Clock, Users, Shirt, FileText, ArrowLeft, Check, X,
     UserCheck, Star, CalendarX, Search, Plus, Minus, Send, Phone, MessageCircle, CreditCard,
-    XCircle, Trash2, AlertTriangle, QrCode, ShieldCheck,
+    XCircle, Trash2, AlertTriangle, QrCode, ShieldCheck, LoaderCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
@@ -729,7 +729,7 @@ export default function EventDetailPage() {
                                                     }`}
                                                     title={isAssigned ? `Remove ${s.fullName || s.email} from supervisors` : `Add ${s.fullName || s.email} as supervisor`}
                                                 >
-                                                    {assigning && <Skeleton className="h-3 w-3" />}
+                                                    {assigning && <LoaderCircle aria-hidden="true" size={12} className="motion-safe:animate-spin" />}
                                                     <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isAssigned ? 'bg-primary-400' : 'bg-dark-600'}`} />
                                                     {s.fullName || s.email.split('@')[0]}
                                                     {isAssigned && <span className="text-[10px] opacity-60 ml-0.5">✕</span>}
