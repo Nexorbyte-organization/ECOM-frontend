@@ -379,7 +379,7 @@ export default function StaffManagementPage() {
 
                     <Input
                         label="Temporary Password"
-                        type="text"
+                        type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="member123"
