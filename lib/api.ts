@@ -92,6 +92,11 @@ function normalizeUser(value: any): Omit<User, 'password'> {
         createdAt: value?.createdAt || '',
         providerProfileId: value?.providerProfileId || value?.providerOwnerId || undefined,
         fullName: value?.fullName || undefined,
+        actingAs: value?.actingAs ? {
+            adminId: String(value.actingAs.adminId),
+            organizationId: String(value.actingAs.organizationId),
+            organizationName: String(value.actingAs.organizationName),
+        } : undefined,
     };
 }
 
@@ -211,6 +216,12 @@ async function dataUrlToFile(dataUrl: string, filename: string): Promise<File> {
 export async function getAllUsers(): Promise<Omit<User, 'password'>[]> {
     const payload = await apiRequest('/admin/users?limit=100');
     return (payload.data || []).map(normalizeUser);
+}
+export async function switchToOrganization(organizationId: string): Promise<void> {
+    await apiRequest(`/admin/organizations/${encodeURIComponent(organizationId)}/switch`, { method: 'POST' });
+}
+export async function stopActingAsOrganization(): Promise<void> {
+    await apiRequest('/admin/organizations/stop', { method: 'POST' });
 }
 export async function getAllEvents(): Promise<Event[]> {
     const payload = await apiRequest('/admin/events?limit=100'); return (payload.data || []).map(normalizeEvent);
