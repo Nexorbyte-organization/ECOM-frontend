@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, UserRole, RegistrationResponse } from '@/types';
-import { getCurrentUser, login as apiLogin, logoutSession, register as apiRegister } from '@/lib/api';
+import { getCurrentUser, login as apiLogin, logoutSession, register as apiRegister,
+    switchToOrganization as apiSwitchToOrganization, stopActingAsOrganization as apiStopActing } from '@/lib/api';
 
 interface AuthState {
     user: Omit<User, 'password'> | null;
@@ -14,6 +15,8 @@ interface AuthContextType extends AuthState {
     login: (email: string, password: string) => Promise<void>;
     register: (email: string, password: string, role: 'talent' | 'provider') => Promise<RegistrationResponse>;
     logout: () => Promise<void>;
+    switchToOrganization: (organizationId: string) => Promise<void>;
+    stopActingAsOrganization: () => Promise<void>;
     isTalent: boolean;
     isProvider: boolean;
     isOrganizer: boolean;
@@ -62,6 +65,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setState({ user: null, token: null, isLoading: false });
     }, []);
 
+    const switchToOrganization = useCallback(async (organizationId: string) => {
+        await apiSwitchToOrganization(organizationId);
+        persist(await getCurrentUser());
+    }, []);
+
+    const stopActingAsOrganization = useCallback(async () => {
+        await apiStopActing();
+        persist(await getCurrentUser());
+    }, []);
+
     useEffect(() => {
         window.addEventListener('usher:unauthorized', logout);
         return () => window.removeEventListener('usher:unauthorized', logout);
@@ -72,6 +85,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         register,
         logout,
+        switchToOrganization,
+        stopActingAsOrganization,
         isTalent: state.user?.role === UserRole.TALENT,
         isProvider: state.user?.role === UserRole.PROVIDER || state.user?.role === UserRole.PROVIDER_MEMBER || state.user?.role === UserRole.PROVIDER_SUPERVISOR,
         isOrganizer: state.user?.role === UserRole.PROVIDER,

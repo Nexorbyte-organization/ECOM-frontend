@@ -57,6 +57,11 @@ export interface User {
     createdAt: string;
     providerProfileId?: string;
     fullName?: string;
+    actingAs?: {
+        adminId: string;
+        organizationId: string;
+        organizationName: string;
+    };
 }
 
 export interface PaymentMethod {

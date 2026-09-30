@@ -1,4 +1,5 @@
 import React from 'react';
+import { LoaderCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
@@ -55,7 +56,7 @@ export default function Button({
             {...props}
         >
             {isLoading ? (
-                <span aria-hidden="true" className="h-4 w-4 rounded bg-current opacity-30 motion-safe:animate-pulse" />
+                <LoaderCircle aria-hidden="true" size={16} className="shrink-0 motion-safe:animate-spin" />
             ) : icon ? (
                 <span className="flex-shrink-0">{icon}</span>
             ) : null}

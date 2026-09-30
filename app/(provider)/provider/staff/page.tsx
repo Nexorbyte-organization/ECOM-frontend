@@ -2,7 +2,7 @@
 
 import { toast } from '@/lib/toast';
 
-import ContentSkeleton, { Skeleton } from '@/components/ui/Skeleton';
+import ContentSkeleton from '@/components/ui/Skeleton';
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
@@ -19,7 +19,7 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Avatar from '@/components/ui/Avatar';
 import Modal from '@/components/ui/Modal';
-import { Users, UserPlus, Trash2, ShieldAlert, Shield, Mail, Ban, CheckCircle, Edit2, CalendarCheck } from 'lucide-react';
+import { Users, UserPlus, Trash2, ShieldAlert, Shield, Mail, Ban, CheckCircle, Edit2, CalendarCheck, LoaderCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function StaffManagementPage() {
@@ -323,7 +323,7 @@ export default function StaffManagementPage() {
                                                              className="p-2 text-success-500 hover:bg-success-500/10 rounded-xl transition-all cursor-pointer"
                                                              title="Unblock staff member"
                                                          >
-                                                             {staffBusy === member._id ? <Skeleton className="h-4 w-4" /> : <CheckCircle size={15} />}
+                                                             {staffBusy === member._id ? <LoaderCircle aria-hidden="true" size={16} className="motion-safe:animate-spin" /> : <CheckCircle size={15} />}
                                                          </button>
                                                      ) : (
                                                          <button
@@ -331,7 +331,7 @@ export default function StaffManagementPage() {
                                                              className="p-2 text-danger-500 hover:bg-danger-500/10 rounded-xl transition-all cursor-pointer"
                                                              title="Block staff member"
                                                          >
-                                                             {staffBusy === member._id ? <Skeleton className="h-4 w-4" /> : <Ban size={15} />}
+                                                             {staffBusy === member._id ? <LoaderCircle aria-hidden="true" size={16} className="motion-safe:animate-spin" /> : <Ban size={15} />}
                                                          </button>
                                                      )}
                                                      <button
@@ -339,7 +339,7 @@ export default function StaffManagementPage() {
                                                          className="p-2 text-dark-400 hover:text-danger-500 hover:bg-danger-500/10 rounded-xl transition-all cursor-pointer"
                                                          title="Remove staff member"
                                                      >
-                                                         {staffBusy === member._id ? <Skeleton className="h-4 w-4" /> : <Trash2 size={15} />}
+                                                         {staffBusy === member._id ? <LoaderCircle aria-hidden="true" size={16} className="motion-safe:animate-spin" /> : <Trash2 size={15} />}
                                                      </button>
                                                  </div>
                                              </td>
@@ -379,7 +379,7 @@ export default function StaffManagementPage() {
 
                     <Input
                         label="Temporary Password"
-                        type="text"
+                        type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="member123"

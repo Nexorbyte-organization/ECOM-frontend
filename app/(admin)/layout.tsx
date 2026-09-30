@@ -10,16 +10,16 @@ import Navbar from '@/components/shared/Navbar';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const { user, isLoading, isAdmin  } = useAuth();
+    const { user, isLoading, isAdmin, isProvider } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
         if (!isLoading && (!user || !isAdmin)) {
-            router.replace('/login');
+            router.replace(isProvider ? '/provider/dashboard' : '/login');
         }
-    }, [user, isLoading, isAdmin, router]);
+    }, [user, isLoading, isAdmin, isProvider, router]);
 
-    if (isLoading || !user) {
+    if (isLoading || !user || !isAdmin) {
         return <PageSkeleton workspace />;
     }
 
