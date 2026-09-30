@@ -3,6 +3,7 @@
 import ContentSkeleton from '@/components/ui/Skeleton';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import {
     getAllUsers, getAllTalentProfiles, getAllProviderProfiles,
@@ -18,10 +19,11 @@ import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { formatDate, CITIES } from '@/lib/utils';
-import { Users, Search, MapPin, Star, Shield, AlertTriangle, Ban, CheckCircle, RotateCcw, ShieldCheck, ShieldOff, UserPlus, Trash2 } from 'lucide-react';
+import { Users, Search, MapPin, Star, Shield, AlertTriangle, Ban, CheckCircle, RotateCcw, ShieldCheck, ShieldOff, UserPlus, Trash2, LogIn } from 'lucide-react';
 
 export default function AdminUsersPage() {
-    const { user: currentUser } = useAuth();
+    const { user: currentUser, switchToOrganization } = useAuth();
+    const router = useRouter();
     const [users, setUsers] = useState<Omit<User, 'password'>[]>([]);
     const [talents, setTalents] = useState<TalentProfile[]>([]);
     const [providers, setProviders] = useState<ProviderProfile[]>([]);
@@ -132,6 +134,18 @@ export default function AdminUsersPage() {
 
     const openConfirm = (action: string, userId: string, userName: string) => {
         setConfirmModal({ open: true, action, userId, userName });
+    };
+
+    const handleSwitch = async (organizationId: string) => {
+        setActionLoading(organizationId);
+        setActionError('');
+        try {
+            await switchToOrganization(organizationId);
+            router.push('/provider/dashboard');
+        } catch (error) {
+            setActionError(error instanceof Error ? error.message : 'Could not switch to this organization.');
+            setActionLoading(null);
+        }
     };
 
     const getTalent = (userId: string) => talents.find(t => t.userId === userId);
@@ -283,6 +297,17 @@ export default function AdminUsersPage() {
                                     {/* Action Buttons */}
                                     {user._id !== currentUser?._id && (
                                         <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                                            {user.role === UserRole.PROVIDER && !user.isBlocked && (
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    icon={<LogIn size={14} />}
+                                                    onClick={() => handleSwitch(user._id)}
+                                                    isLoading={isActioning}
+                                                >
+                                                    Switch to {provider?.companyName || name}
+                                                </Button>
+                                            )}
                                             {/* Block / Unblock */}
                                             {user.isBlocked ? (
                                                 <Button
