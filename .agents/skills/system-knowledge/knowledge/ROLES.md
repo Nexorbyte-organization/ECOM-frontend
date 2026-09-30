@@ -4,6 +4,7 @@
 - Backend organizer → frontend provider (UserRole.PROVIDER), company owner in /provider.
 - Backend organizer_member → provider_member; organizer_supervisor → provider_supervisor. Both share /provider; providerProfileId maps providerOwnerId.
 - Admin → admin, /admin workspace.
+- While an admin acts as an organization owner, /auth/me reports the provider role plus `actingAs` metadata. The provider workspace shows a persistent warning and Stop action; the backend owns the permission switch.
 - Public registration offers talent/provider only; staff is invited.
 
 - Event map editing is owner-only; provider staff can view the full company map. Hired talent can open their event map only when assigned and sees only their own pin. Backend enforces both checks.
