@@ -47,10 +47,10 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
             <main className="min-w-0 flex-1 lg:ml-0">
                 <Navbar onMenuClick={() => setSidebarOpen(true)} />
                 {user.actingAs && (
-                    <div role="status" className="mx-4 mt-4 sm:mx-6 lg:mx-8 rounded-xl border border-warning-500 bg-warning-400/70 p-3 text-accent-700 shadow-sm">
+                    <div role="status" className="mx-4 mt-4 sm:mx-6 lg:mx-8 rounded-xl border border-warning-500 bg-warning-400/50 p-3 text-accent-700 shadow-sm dark:text-white">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-start gap-2 text-sm font-semibold">
-                                <ShieldAlert size={18} className="mt-0.5 shrink-0 text-accent-700" aria-hidden="true" />
+                                <ShieldAlert size={18} className="mt-0.5 shrink-0 text-accent-700 dark:text-white" aria-hidden="true" />
                                 <span>Warning: You are an admin acting as {user.actingAs.organizationName} owner.</span>
                             </div>
                             <Button type="button" variant="secondary" size="sm" onClick={stopActing} isLoading={stopping}>
