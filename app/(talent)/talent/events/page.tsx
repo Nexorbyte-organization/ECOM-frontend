@@ -147,6 +147,9 @@ export default function TalentEventsPage() {
                                     <Badge variant="primary">{app.event.category}</Badge>
                                     <Badge variant={statusVariant(app.status)}>{app.status}</Badge>
                                     {app.isDirect && <Badge variant="info">{isArabic ? 'حجز مباشر' : 'Direct Booking'}</Badge>}
+                                    {app.isDirect && app.status === 'pending' && (
+                                        <Badge variant="warning">{isArabic ? 'بانتظار ردك' : 'Awaiting your answer'}</Badge>
+                                    )}
                                     {app.referredBy && (
                                         <Badge variant="info">👥 {isArabic ? `ترشيح من ${referrerNames[app.referredBy] || ''}` : `Referred by ${referrerNames[app.referredBy] || ''}`}</Badge>
                                     )}

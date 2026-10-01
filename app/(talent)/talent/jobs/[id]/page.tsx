@@ -7,7 +7,7 @@ import ContentSkeleton from '@/components/ui/Skeleton';
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
-import { getEvent, applyToEvent, getTalentProfileByUserId, getTalentApplications, isVerifiedTalent, getAllTalents, referTalentToEvent, createReferralInvite } from '@/lib/api';
+import { getEvent, applyToEvent, acceptBookingInvitation, declineBookingInvitation, getTalentProfileByUserId, getTalentApplications, isVerifiedTalent, getAllTalents, referTalentToEvent, createReferralInvite } from '@/lib/api';
 import { Event, Application, TalentProfile } from '@/types';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
@@ -82,6 +82,25 @@ export default function JobDetailPage() {
             setApplyError(err instanceof Error ? err.message : 'Could not apply to this event.');
         } finally {
             setApplying(false);
+        }
+    };
+
+    const [responding, setResponding] = useState<'accept' | 'decline' | null>(null);
+    const isPendingInvitation = Boolean(existingApp?.isDirect && existingApp.status === 'pending');
+
+    const handleRespond = async (decision: 'accept' | 'decline') => {
+        if (!existingApp || !isProfileComplete) return;
+        setResponding(decision);
+        setApplyError('');
+        try {
+            const updated = decision === 'accept'
+                ? await acceptBookingInvitation(existingApp._id)
+                : await declineBookingInvitation(existingApp._id);
+            setExistingApp({ ...existingApp, ...updated });
+        } catch (err) {
+            setApplyError(err instanceof Error ? err.message : 'Could not answer this booking invitation.');
+        } finally {
+            setResponding(null);
         }
     };
 
@@ -279,12 +298,32 @@ export default function JobDetailPage() {
                             <div className="flex items-center gap-3">
                                 <CheckCircle size={20} className={existingApp.status === 'accepted' ? 'text-success-400' : existingApp.status === 'rejected' ? 'text-danger-400' : 'text-warning-400'} />
                                 <div>
-                                    <p className="text-sm font-medium text-dark-100">Application {existingApp.status}</p>
-                                    <p className="text-xs text-dark-500">Applied {formatDate(existingApp.appliedAt)}</p>
+                                    <p className="text-sm font-medium text-dark-100">
+                                        {isPendingInvitation ? 'Booking invitation' : `${existingApp.isDirect ? 'Booking' : 'Application'} ${existingApp.status}`}
+                                    </p>
+                                    <p className="text-xs text-dark-500">{existingApp.isDirect ? 'Invited' : 'Applied'} {formatDate(existingApp.appliedAt)}</p>
                                 </div>
                             </div>
                             <Badge variant={statusBadgeVariant}>{existingApp.status}</Badge>
                         </div>
+
+                        {isPendingInvitation && (
+                            <div className="pt-3 border-t border-dark-700/50 space-y-3">
+                                <p className="text-xs text-dark-300">
+                                    The organization invited you to work at this event. You are only booked after you accept.
+                                </p>
+                                <div className="flex gap-2">
+                                    <Button className="flex-1" variant="success" onClick={() => handleRespond('accept')} isLoading={responding === 'accept'}
+                                        disabled={Boolean(responding) || isCheckingProfile || !isProfileComplete} icon={<Check size={16} />}>
+                                        {isProfileComplete ? 'Accept booking' : 'Complete profile to accept'}
+                                    </Button>
+                                    <Button className="flex-1" variant="secondary" onClick={() => handleRespond('decline')} isLoading={responding === 'decline'}
+                                        disabled={Boolean(responding) || isCheckingProfile || !isProfileComplete}>
+                                        Decline
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
 
                         {/* WhatsApp Group Link — visible only to accepted ushers */}
                         {existingApp.status === 'accepted' && event.whatsappGroupLink && (

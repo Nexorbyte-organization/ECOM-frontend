@@ -3,7 +3,7 @@
 ## Current behavior
 Provider event list/new/detail implement event creation and management, per-usher budget, dates/times/deadline, locations/gathering point, photo, staffing/gender counts, dress code, and notes.
 
-States are open/confirmed/completed/cancelled. Detail UI offers eligible edits/close, direct open-event cancel/delete, and action requests for restricted states. Backend decides allowed transitions.
+States are open/confirmed/completed/cancelled. Detail UI offers eligible edits/close, direct open-event cancel/delete, and action requests for restricted states. From the event date onward the owner sees "Mark completed" (`completeEvent`) on open/confirmed events; the backend only completes events that have ended, and completion unlocks payments. Backend decides allowed transitions.
 
 Talent events browses eligible open work; jobs/[id] presents event details from API. WhatsApp link visibility comes from server serialization; accepted participants may see it. Group workflow uses a supplied link or backend-generated wa.me message-sharing URL; it does not provision a WhatsApp group.
 
