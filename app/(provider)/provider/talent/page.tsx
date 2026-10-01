@@ -3,7 +3,7 @@
 import ContentSkeleton from '@/components/ui/Skeleton';
 
 import React, { useEffect, useState } from 'react';
-import { searchTalents, getProviderProfileByUserId, getProviderEvents, directBookTalent, isVerifiedTalent } from '@/lib/api';
+import { searchTalents, getFavoriteTalents, addFavoriteTalent, removeFavoriteTalent, getProviderProfileByUserId, getProviderEvents, directBookTalent, isVerifiedTalent } from '@/lib/api';
 import { TalentProfile, Event, TalentSearchFilters } from '@/types';
 import { useAuth } from '@/lib/auth';
 import Card from '@/components/ui/Card';
@@ -12,7 +12,7 @@ import Button from '@/components/ui/Button';
 import Avatar from '@/components/ui/Avatar';
 import Modal from '@/components/ui/Modal';
 import { formatDate, EVENT_CATEGORIES, CITIES } from '@/lib/utils';
-import { Search, MapPin, Star, Shield, Clock, UserPlus, Briefcase } from 'lucide-react';
+import { Search, MapPin, Star, Shield, Clock, UserPlus, Briefcase, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { useProfileCompletion } from '@/components/shared/ProfileCompletionGate';
 
@@ -20,6 +20,9 @@ export default function TalentSearchPage() {
     const { user } = useAuth();
     const { isComplete: isProfileComplete, isChecking: isCheckingProfile } = useProfileCompletion();
     const [talents, setTalents] = useState<TalentProfile[]>([]);
+    const [favorites, setFavorites] = useState<TalentProfile[]>([]);
+    const [favoritesOnly, setFavoritesOnly] = useState(false);
+    const [favoriteBusy, setFavoriteBusy] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [searchCity, setSearchCity] = useState('');
     const [searchCategory, setSearchCategory] = useState('');
@@ -48,6 +51,32 @@ export default function TalentSearchPage() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        getFavoriteTalents().then(setFavorites).catch((err) => {
+            setError(err instanceof Error ? err.message : 'Could not load favorites.');
+        });
+    }, []);
+
+    const toggleFavorite = async (talent: TalentProfile) => {
+        const saved = favorites.some((item) => item._id === talent._id);
+        setFavoriteBusy(talent._id);
+        try {
+            if (saved) {
+                await removeFavoriteTalent(talent._id);
+                setFavorites((items) => items.filter((item) => item._id !== talent._id));
+            } else {
+                await addFavoriteTalent(talent._id);
+                setFavorites((items) => [...items, talent]);
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Could not update favorites.');
+        } finally {
+            setFavoriteBusy(null);
+        }
+    };
+
+    const shownTalents = favoritesOnly ? favorites : talents;
 
     // Search results follow the two server-side filters.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -96,6 +125,12 @@ export default function TalentSearchPage() {
             <div>
                 <h1 className="text-2xl font-bold text-dark-50">Search Talent</h1>
                 <p className="text-dark-400 mt-1">Find and book the perfect talent for your events</p>
+                <button type="button" onClick={() => setFavoritesOnly((value) => !value)}
+                    aria-pressed={favoritesOnly}
+                    className="mt-3 inline-flex items-center gap-2 rounded-xl border border-dark-700 px-3 py-2 text-sm text-dark-200 hover:border-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-500">
+                    <Heart size={15} fill={favoritesOnly ? 'currentColor' : 'none'} />
+                    {favoritesOnly ? 'Show all talent' : 'Favorites (' + favorites.length + ')'}
+                </button>
             </div>
 
             {/* Filters */}
@@ -127,18 +162,25 @@ export default function TalentSearchPage() {
             </Card>
 
             {/* Results */}
-            {loading ? (
+            {loading && !favoritesOnly ? (
                 <ContentSkeleton variant="cards" />
-            ) : talents.length === 0 ? (
+            ) : shownTalents.length === 0 ? (
                 <Card className="text-center py-12">
                     <Search size={32} className="mx-auto text-dark-600 mb-3" />
-                    <p className="text-dark-400">No talent found matching your criteria</p>
+                    <p className="text-dark-400">{favoritesOnly ? 'No favorite ushers yet' : 'No talent found matching your criteria'}</p>
                 </Card>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
-                    {talents.map((talent) => (
+                    {shownTalents.map((talent) => (
                         <Card key={talent._id} className="flex flex-col">
                             <div className="flex items-center gap-3 mb-4">
+                                <button type="button" onClick={() => toggleFavorite(talent)}
+                                    disabled={favoriteBusy === talent._id}
+                                    aria-label={favorites.some((item) => item._id === talent._id) ? 'Remove ' + talent.fullName + ' from favorites' : 'Add ' + talent.fullName + ' to favorites'}
+                                    aria-pressed={favorites.some((item) => item._id === talent._id)}
+                                    className="rounded-lg p-2 text-primary-400 hover:bg-dark-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-500 disabled:opacity-50">
+                                    <Heart size={18} fill={favorites.some((item) => item._id === talent._id) ? 'currentColor' : 'none'} />
+                                </button>
                                 <Avatar src={talent.photo} name={talent.fullName} size="lg" />
                                 <div>
                                     <div className="flex items-center gap-1.5">

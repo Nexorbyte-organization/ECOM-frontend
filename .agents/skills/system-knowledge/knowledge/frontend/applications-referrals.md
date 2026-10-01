@@ -7,6 +7,8 @@ Direct bookings are invitations. On the job detail page a pending direct applica
 
 Provider detail accepts/rejects applicants and directly books talents; the server enforces duplicates, capacity, profile completion, and same-date conflicts. Organizer profile preference can auto-accept highly rated talents; do not implement independent frontend acceptance rules.
 
+Provider event detail offers “Rebook last team” on an open event when the backend finds a previous team. The action sends pending direct invitations through `/provider/events/:id/rebook-last-team`, reports the number invited, and refreshes applicants.
+
 Referral adapters support existing-talent referrals, signed invite creation/preview/redemption, incoming accept/decline, and event referral listing. Registration can preview an invite; session and backend eligibility are still required.
 
 ## Source entry points
