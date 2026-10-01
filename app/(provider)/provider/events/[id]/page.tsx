@@ -557,35 +557,24 @@ export default function EventDetailPage() {
             )}
 
             {/* Tabs */}
-            {(() => {
-                const deadlinePassed = new Date() > new Date(event.applicationDeadline);
-                const eventClosed = event.status !== 'open';
-                const canTakeAttendance = deadlinePassed || eventClosed;
-                return (
-                    <div className="flex gap-2">
-                        {[
-                            { key: 'details' as const, label: 'Details', disabled: false },
-                            { key: 'applicants' as const, label: `Applicants (${applicants.length})`, disabled: false },
-                            { key: 'attendance' as const, label: 'Attendance', disabled: !canTakeAttendance },
-                        ].map((t) => (
-                            <button
-                                key={t.key}
-                                onClick={() => !t.disabled && setActiveTab(t.key)}
-                                disabled={t.disabled}
-                                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${t.disabled
-                                    ? 'text-dark-600 border-dark-800 cursor-not-allowed opacity-50'
-                                    : activeTab === t.key
-                                        ? 'bg-primary-500/15 text-primary-300 border-primary-500/30 cursor-pointer'
-                                        : 'text-dark-400 border-dark-700 hover:border-dark-600 cursor-pointer'
-                                    }`}
-                                title={t.disabled ? 'Available after application deadline passes or event is closed' : ''}
-                            >
-                                {t.label}
-                            </button>
-                        ))}
-                    </div>
-                );
-            })()}
+            <div className="flex gap-2">
+                {[
+                    { key: 'details' as const, label: 'Details' },
+                    { key: 'applicants' as const, label: `Applicants (${applicants.length})` },
+                    { key: 'attendance' as const, label: 'Attendance' },
+                ].map((t) => (
+                    <button
+                        key={t.key}
+                        onClick={() => setActiveTab(t.key)}
+                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border cursor-pointer ${activeTab === t.key
+                            ? 'bg-primary-500/15 text-primary-300 border-primary-500/30'
+                            : 'text-dark-400 border-dark-700 hover:border-dark-600'
+                            }`}
+                    >
+                        {t.label}
+                    </button>
+                ))}
+            </div>
 
             {/* Tab Content */}
             {activeTab === 'details' && (
