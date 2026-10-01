@@ -1,7 +1,7 @@
 # QR check-in, attendance, and reviews
 
 ## Current behavior
-Provider event detail offers attendance recording, reviews, and an attendance QR modal using QRCodeSVG. It creates the QR when not generated or reads the existing one. Creation is disabled outside open status; the backend controls uniqueness and eligibility.
+Provider event detail offers attendance recording (the Attendance tab is always available), reviews, and an attendance QR modal using QRCodeSVG. It creates the QR when not generated or reads the existing one. Creation is disabled outside open status; the backend controls uniqueness and eligibility.
 
 QR encodes the server's checkInUrl. /talent/check-in/[token] submits the token and shows confirmation/errors, including whether the backend recorded the arrival as present or late. The backend only accepts scans from 2 hours before the event starts until 2 hours after it ends. Talent layout preserves the destination through login.
 
