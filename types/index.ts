@@ -143,7 +143,14 @@ export interface Event {
     whatsappGroupLink?: string;
     attendanceQrGenerated?: boolean;
     hasMapAssignment?: boolean;
+    fundingMode?: FundingMode;
+    fundsReleasedAt?: string | null;
+    /** Usher view only: whether the organization already funded the pay for this event. */
+    paymentProtection?: PaymentProtection;
 }
+
+export type FundingMode = 'prefund' | 'pay_after';
+export type PaymentProtection = 'secured' | 'awaiting_funding' | 'released' | 'pay_after';
 
 export interface EventMapPin {
     id: string;
@@ -206,6 +213,8 @@ export interface Attendance {
     status: AttendanceStatus;
     checkInTime: string | null;
     checkOutTime: string | null;
+    /** qr: the usher scanned the event QR code, so the organization cannot mark them absent. */
+    checkInMethod?: 'qr' | 'manual' | 'admin';
 }
 
 export interface Review {
@@ -241,7 +250,7 @@ export interface RegistrationResponse {
 
 export type SettlementCollectionStatus = 'not_started' | 'pending' | 'paid' | 'failed' | 'refunded';
 export type SettlementPayoutStatus = 'not_started' | 'queued' | 'processing' | 'partially_paid' | 'paid' | 'failed';
-export type SettlementLinePayoutStatus = 'cash_due' | 'queued' | 'processing' | 'paid' | 'failed';
+export type SettlementLinePayoutStatus = 'cash_due' | 'queued' | 'processing' | 'paid' | 'failed' | 'awaiting_method';
 
 export interface OrganizerCard {
     _id: string;
@@ -257,7 +266,8 @@ export interface OrganizerCard {
 export interface SettlementLine {
     _id: string;
     talentId: string;
-    attendanceStatus: 'present' | 'late';
+    attendanceStatus: 'present' | 'late' | null;
+    lineType?: 'attendance' | 'cancellation_compensation' | 'dispute_award';
     grossAmount: number;
     collectionAmount: number;
     platformFee: number;
@@ -298,7 +308,164 @@ export interface EventSettlement {
     paymentMethod?: string;
     payoutSandboxConfigured: boolean;
     testMode: true;
+    fundingSource?: 'checkout' | 'prefund';
     lines: SettlementLine[];
+}
+
+export type PaymentTier = 'standard' | 'trusted';
+export type TierReason = 'not_enough_paid_events' | 'overdue_payment' | 'lost_attendance_dispute' | 'negative_credit_balance';
+
+export interface PaymentTierStatus {
+    tier: PaymentTier;
+    automaticTier: PaymentTier;
+    override: PaymentTier | null;
+    reasons: TierReason[];
+    paidEventsCount: number;
+    requiredPaidEvents: number;
+    overdueEventsCount: number;
+    lostDisputesCount: number;
+    overdueEvents: { _id: string; title: string }[];
+}
+
+export interface EventFundingCheckout {
+    _id: string;
+    eventId: string;
+    source: 'paymob' | 'credit';
+    amount: number;
+    collectionStatus: SettlementCollectionStatus;
+    checkoutUrl?: string | null;
+    expiresAt?: string | null;
+    selectedCardId?: string | null;
+    collectionFailureReason?: string | null;
+    paymentMethod?: string | null;
+    collectedAt?: string | null;
+    createdAt: string;
+    active?: boolean;
+}
+
+export type AbsenceHoldStatus = 'held' | 'disputed' | 'returned_to_organizer' | 'paid_to_usher';
+
+export interface AbsenceHold {
+    _id: string;
+    eventId: string;
+    talentId: string;
+    organizerId?: string;
+    amount: number;
+    status: AbsenceHoldStatus;
+    releaseAfter: string;
+    disputeReason?: string | null;
+    disputedAt?: string | null;
+    resolution?: 'expired' | 'organizer_corrected' | 'admin_usher' | 'admin_organizer' | null;
+    resolutionNote?: string | null;
+    canDispute: boolean;
+    createdAt: string;
+    event: { _id: string; title: string; eventDate: string } | null;
+    talent?: { _id: string; fullName: string; photo: string } | null;
+    organization?: { _id?: string; fullName: string; photo?: string } | null;
+}
+
+export interface ReleaseUsher {
+    talentId: string;
+    fullName: string;
+    photo: string;
+    hasPayoutAccount: boolean;
+    attendanceStatus?: 'present' | 'late';
+    usherAmount?: number;
+    platformFee?: number;
+    grossAmount?: number;
+    amount?: number;
+}
+
+export interface ReleasePreview {
+    canRelease: boolean;
+    eventCompleted: boolean;
+    blockers: { code: 'unmarked_attendance' | 'underfunded'; talentIds?: string[]; shortfall?: number }[];
+    payable: ReleaseUsher[];
+    absent: ReleaseUsher[];
+    unmarked: ReleaseUsher[];
+    surplus: number;
+    disputeWindowHours: number;
+}
+
+export interface EventFundingSummary {
+    eventId: string;
+    fundingMode: FundingMode;
+    eventStatus: EventStatus;
+    tier: PaymentTierStatus;
+    hiredCount: number;
+    perUsherAmount: number;
+    requiredAmount: number;
+    fundedAmount: number;
+    shortfallAmount: number;
+    surplusAmount: number;
+    fullyFunded: boolean;
+    deadline: string | null;
+    deadlineHours: number;
+    overdue: boolean;
+    released: boolean;
+    fundsReleasedAt: string | null;
+    protection: PaymentProtection;
+    creditBalance: number;
+    creditToApply: number;
+    pendingCheckout: EventFundingCheckout | null;
+    fundings: EventFundingCheckout[];
+    cancellationPolicy: { tiers: { minHoursBeforeStart: number | null; refundPercent: number }[]; currentRefundPercent: number | null };
+    releasePreview: ReleasePreview | null;
+    settlements: EventSettlement[];
+    holds: AbsenceHold[];
+    payoutSandboxConfigured: boolean;
+    savedCards?: OrganizerCard[];
+}
+
+export type CreditEntryType = 'event_surplus' | 'absence_release' | 'cancellation_refund' | 'late_funding_refund'
+    | 'funding_applied' | 'withdrawal' | 'withdrawal_reversal' | 'chargeback' | 'admin_adjustment';
+
+export interface CreditEntry {
+    _id: string;
+    amount: number;
+    type: CreditEntryType;
+    eventId?: string | null;
+    eventTitle?: string | null;
+    note?: string | null;
+    createdAt: string;
+}
+
+export interface CreditWithdrawal {
+    _id: string;
+    amount: number;
+    status: 'pending' | 'paid' | 'rejected' | 'cancelled';
+    adminNote?: string | null;
+    payoutReference?: string | null;
+    createdAt: string;
+    resolvedAt?: string | null;
+    organization?: { _id: string; fullName: string; email?: string; mobileNumber?: string } | null;
+    remainingBalance?: number;
+}
+
+export interface OrganizerCreditOverview {
+    balance: number;
+    tier: PaymentTierStatus;
+    activeHolds: number;
+    entries: CreditEntry[];
+    withdrawals: CreditWithdrawal[];
+    pendingWithdrawal: CreditWithdrawal | null;
+    organization?: { _id: string; fullName: string };
+}
+
+export interface UnderfundedEvent {
+    event: { _id: string; title: string; eventDate: string; status: EventStatus };
+    organization: { _id: string; fullName: string };
+    requiredAmount: number;
+    fundedAmount: number;
+    shortfallAmount: number;
+    deadline: string | null;
+    overdue: boolean;
+}
+
+export interface AdminPaymentsOverview {
+    disputes: AbsenceHold[];
+    withdrawals: CreditWithdrawal[];
+    underfunded: UnderfundedEvent[];
 }
 
 export interface EventSettlementPreview {
