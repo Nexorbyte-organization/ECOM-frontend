@@ -7,7 +7,7 @@ import {
     AbsenceHold, AdminPaymentsOverview, EventFundingCheckout, EventFundingSummary, FundingMode,
     OrganizerCreditOverview, PaymentTierStatus,
     PaginatedResponse, PaymentMethod, ProviderProfile, Referral,
-    RegistrationResponse, Review, TalentProfile, TalentSearchFilters, User,
+    RegistrationResponse, Review, TalentProfile, TalentSearchFilters, LastTeam, RebookLastTeamResult, User,
     UserRole,
 } from '@/types';
 import { isProviderProfileComplete, isTalentProfileComplete } from '@/lib/profile-completion';
@@ -332,6 +332,24 @@ async function setDefaultPaymentMethodAction(_userId: string, methodId: string):
 }
 export async function searchTalents(filters: TalentSearchFilters): Promise<PaginatedResponse<TalentProfile>> {
     const payload = await apiRequest(`/provider/talents${queryString({ ...filters, limit: filters.limit || 12 })}`); return listResponse(payload, normalizeTalent);
+}
+export async function getFavoriteTalents(): Promise<TalentProfile[]> {
+    const payload = await apiRequest('/provider/favorite-talents');
+    return (payload.data || []).map(normalizeTalent);
+}
+export async function addFavoriteTalent(talentId: string): Promise<void> {
+    await apiRequest('/provider/favorite-talents/' + talentId, { method: 'PUT' });
+}
+export async function removeFavoriteTalent(talentId: string): Promise<void> {
+    await apiRequest('/provider/favorite-talents/' + talentId, { method: 'DELETE' });
+}
+export async function getLastTeam(eventId: string): Promise<LastTeam | null> {
+    const payload = await apiRequest('/provider/events/' + eventId + '/last-team');
+    return payload.data ? { ...payload.data, talents: payload.data.talents.map(normalizeTalent) } : null;
+}
+export async function rebookLastTeam(eventId: string): Promise<RebookLastTeamResult> {
+    const payload = await apiRequest('/provider/events/' + eventId + '/rebook-last-team', { method: 'POST' });
+    return payload.data;
 }
 export async function getProviderProfile(_id: string): Promise<ProviderProfile | null> {
     try { const payload = await apiRequest('/provider/profile'); return normalizeProvider(payload.data); }

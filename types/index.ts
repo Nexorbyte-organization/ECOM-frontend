@@ -152,6 +152,20 @@ export interface Event {
 export type FundingMode = 'prefund' | 'pay_after';
 export type PaymentProtection = 'secured' | 'awaiting_funding' | 'released' | 'pay_after';
 
+export interface LastTeam {
+    eventId: string;
+    eventTitle: string;
+    eventDate: string;
+    talents: TalentProfile[];
+    unavailableCount: number;
+}
+
+export interface RebookLastTeamResult {
+    sourceEventId: string;
+    invited: string[];
+    skipped: { talentId: string; reason: string }[];
+}
+
 export interface EventMapPin {
     id: string;
     name: string;
