@@ -18,7 +18,7 @@ import {
     markCashSettlementLinePaid,
     generateEventAttendanceQr, getEventAttendanceQr,
 } from '@/lib/api';
-import { Event, Application, TalentProfile, Attendance, AttendanceQr, ApplicationStatus, AttendanceStatus, User, UserRole, EventStatus, EventSettlement, EventSettlementPreview } from '@/types';
+import { Event, Application, TalentProfile, Attendance, AttendanceQr, ApplicationStatus, AttendanceStatus, User, UserRole, EventStatus, EventSettlement, EventSettlementPreview, EventFundingSummary } from '@/types';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -36,6 +36,8 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { QRCodeSVG } from 'qrcode.react';
 import EditEventModal, { canEditEvent } from '@/components/events/EditEventModal';
+import EventFundingCard from '@/components/events/EventFundingCard';
+import { holdStatus, lineStatus } from '@/components/payments/paymentLabels';
 
 const hasActiveCheckout = (settlement: EventSettlement | null) => Boolean(
     settlement?.collectionStatus === 'pending'
@@ -71,6 +73,8 @@ export default function EventDetailPage() {
     const [qrError, setQrError] = useState('');
     const [selectedCardId, setSelectedCardId] = useState('');
     const [cashTalentIds, setCashTalentIds] = useState<string[]>([]);
+    const [fundingSummary, setFundingSummary] = useState<EventFundingSummary | null>(null);
+    const [fundingRefreshKey, setFundingRefreshKey] = useState(0);
 
     const [supervisors, setSupervisors] = useState<Omit<User, 'password'>[]>([]);
     const [applicationBusy, setApplicationBusy] = useState<string | null>(null);
@@ -113,7 +117,8 @@ export default function EventDetailPage() {
         setReviewedUserIds(reviews.map((review) => review.reviewedUserId));
         // Sync WhatsApp link input with saved event value
         setWaLink(e?.whatsappGroupLink ?? '');
-        if (e?.status === EventStatus.COMPLETED && user?.role === UserRole.PROVIDER) {
+        // Prefunded events are paid from held funds, shown by the funding card instead.
+        if (e?.status === EventStatus.COMPLETED && user?.role === UserRole.PROVIDER && e.fundingMode === 'pay_after') {
             const [bulkSettlement, individualPayments] = await Promise.all([
                 getEventSettlement(id), getIndividualSettlements(id),
             ]);
@@ -265,6 +270,7 @@ export default function EventDetailPage() {
         try {
             await markAttendance(event._id, talentId, status);
             await fetchData();
+            setFundingRefreshKey((key) => key + 1);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Could not mark attendance.');
         } finally { setAttendanceBusy(null); }
@@ -520,6 +526,14 @@ export default function EventDetailPage() {
                     </div>
                 </div>
             </Card>
+
+            <EventFundingCard
+                event={event}
+                isOwner={user?.role === UserRole.PROVIDER}
+                refreshKey={fundingRefreshKey}
+                onEventChange={(updated) => setEvent((current) => current ? { ...current, ...updated } : updated)}
+                onSummary={setFundingSummary}
+            />
 
             {user?.role === UserRole.PROVIDER && (
                 <Card className="border-primary-500/25">
@@ -797,7 +811,7 @@ export default function EventDetailPage() {
 
             {activeTab === 'attendance' && (
                 <div className="space-y-3">
-                    {event.status === EventStatus.COMPLETED && user?.role === UserRole.PROVIDER && (
+                    {event.status === EventStatus.COMPLETED && user?.role === UserRole.PROVIDER && event.fundingMode === 'pay_after' && (
                         <Card className="border-primary-500/30 bg-gradient-to-br from-primary-500/10 to-transparent">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
@@ -841,7 +855,19 @@ export default function EventDetailPage() {
                             const paymentLine = payment?.lines.find((line) => line.talentId === app.talentId);
                             const attended = record?.status === 'present' || record?.status === 'late';
                             // Only present/late ushers are paid; absent or unmarked ushers are left out.
-                            const paymentStatus: { label: string; variant: 'success' | 'danger' | 'warning' | 'default' } | null = !showPaymentStatus ? null
+                            const prefunded = event.fundingMode !== 'pay_after';
+                            const prefundLine = fundingSummary?.settlements.flatMap((item) => item.lines).find((line) => line.talentId === app.talentId);
+                            const prefundHold = fundingSummary?.holds.find((hold) => hold.talentId === app.talentId);
+                            const prefundStatus = (): { label: string; variant: 'success' | 'danger' | 'warning' | 'default' | 'info' | 'primary' } => {
+                                if (prefundLine) { const status = lineStatus(prefundLine); return { label: status.label, variant: status.tone }; }
+                                if (prefundHold) { const status = holdStatus(prefundHold); return { label: status.label, variant: status.tone }; }
+                                if (event.fundsReleasedAt) return { label: 'Not paid', variant: 'default' };
+                                return !record ? { label: 'Mark attendance to release pay', variant: 'default' }
+                                    : attended ? { label: 'Paid when you release payments', variant: 'default' }
+                                        : { label: `Absent · pay held ${fundingSummary?.releasePreview?.disputeWindowHours ?? 72}h after release`, variant: 'warning' };
+                            };
+                            const paymentStatus: { label: string; variant: 'success' | 'danger' | 'warning' | 'default' | 'info' | 'primary' } | null = !showPaymentStatus ? null
+                                : prefunded ? prefundStatus()
                                 : !attended ? { label: record?.status === 'absent' ? 'Absent · not paid' : 'Mark attendance to pay', variant: 'default' }
                                     : !paymentLine || !payment || payment.collectionStatus === 'not_started' ? { label: 'Not paid yet', variant: 'default' }
                                         : payment.collectionStatus === 'failed' ? { label: 'Payment error', variant: 'danger' }
@@ -860,6 +886,7 @@ export default function EventDetailPage() {
                                             <p className="text-sm font-semibold text-dark-100">{app.talent.fullName}</p>
                                             <div className="flex items-center gap-2.5 mt-1 flex-wrap">
                                                  {record && <Badge variant={attVariant}>{record.status}</Badge>}
+                                                 {record?.checkInMethod === 'qr' && (record.status === 'present' || record.status === 'late') && <Badge variant="info">QR check-in</Badge>}
                                                  {paymentStatus && <Badge variant={paymentStatus.variant}>{paymentStatus.label}</Badge>}
                                                  {app.talent.phoneNumber && (
                                                      <span className="text-xs text-dark-300 font-medium flex items-center gap-1">
@@ -893,7 +920,7 @@ export default function EventDetailPage() {
                                         <Button size="sm" variant={record?.status === 'late' ? 'success' : 'secondary'} disabled={Boolean(attendanceBusy)} isLoading={attendanceBusy === app.talentId} onClick={() => handleMarkAttendance(app.talentId, AttendanceStatus.LATE)}>
                                             Late
                                         </Button>
-                                        <Button size="sm" variant={record?.status === 'absent' ? 'danger' : 'secondary'} disabled={Boolean(attendanceBusy)} isLoading={attendanceBusy === app.talentId} onClick={() => handleMarkAttendance(app.talentId, AttendanceStatus.ABSENT)}>
+                                        <Button size="sm" variant={record?.status === 'absent' ? 'danger' : 'secondary'} disabled={Boolean(attendanceBusy) || (record?.checkInMethod === 'qr' && record.status !== 'absent')} title={record?.checkInMethod === 'qr' && record.status !== 'absent' ? 'This usher checked in with the QR code' : undefined} isLoading={attendanceBusy === app.talentId} onClick={() => handleMarkAttendance(app.talentId, AttendanceStatus.ABSENT)}>
                                             Absent
                                         </Button>
                                         <Button

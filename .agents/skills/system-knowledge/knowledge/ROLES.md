@@ -8,6 +8,7 @@
 - Public registration offers talent/provider only; staff is invited.
 
 - Event editing is owner-only. Provider users cannot cancel or delete events; the event page offers no cancel, delete, or admin-request controls.
+- Funding actions (fund, confirm team, switch payment mode, release, retry payout), the /provider/payments credit page, and withdrawals are owner-only; staff see the event funding card read-only. Ushers see pay protection and their own held pay/disputes; admins use /admin/payments.
 - Event map editing is owner-only; provider staff can view the full company map. Hired talent can open their event map only when assigned and sees only their own pin. Backend enforces both checks.
 
 AuthProvider.isProvider includes owner/member/supervisor; isOrganizer means owner only. Layouts check workspace role; owner-only staff/financial controls must not treat isProvider as ownership. Current backend workspace event queries are company-wide even for supervisors.

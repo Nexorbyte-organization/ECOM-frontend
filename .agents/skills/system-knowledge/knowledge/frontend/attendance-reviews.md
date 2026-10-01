@@ -11,6 +11,8 @@ Attendance enum is present/absent/late; excused is an application state. Reviews
 
 Present/late attendance determines payable lines on the backend; frontend must use settlement preview rather than derive eligibility independently.
 
+Attendance records carry `checkInMethod`; QR-verified present/late ushers show a QR check-in badge and their Absent button is disabled (the backend also rejects it). For prefund events, correcting an absent mark to present after release sends the usher's held pay.
+
 ## Source entry points
 - `app/(provider)/provider/events/[id]/page.tsx`
 - `app/(talent)/talent/check-in/[token]/page.tsx`

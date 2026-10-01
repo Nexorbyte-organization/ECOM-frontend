@@ -18,6 +18,7 @@ import { formatDate } from '@/lib/utils';
 import { MapPin, Clock, Users, Shirt, FileText, ArrowLeft, Send, CheckCircle, UserPlus, Search, CalendarX, Copy, Check, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useProfileCompletion } from '@/components/shared/ProfileCompletionGate';
+import PayProtectionNotice from '@/components/payments/PayProtectionNotice';
 
 export default function JobDetailPage() {
     const params = useParams();
@@ -324,6 +325,8 @@ export default function JobDetailPage() {
                                 </div>
                             </div>
                         )}
+
+                        {existingApp.status === 'accepted' && <PayProtectionNotice protection={event.paymentProtection} />}
 
                         {/* WhatsApp Group Link — visible only to accepted ushers */}
                         {existingApp.status === 'accepted' && event.whatsappGroupLink && (

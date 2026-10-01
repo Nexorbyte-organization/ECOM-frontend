@@ -8,7 +8,7 @@ Load only relevant domains, then their source entry points.
 - Applications, jobs, excuses, and referrals → [applications-referrals](frontend/applications-referrals.md)
 - QR check-in, attendance, and reviews → [attendance-reviews](frontend/attendance-reviews.md)
 - Organization staff and supervisors → [staff](frontend/staff.md)
-- Post-event settlements and saved-card UI → [payments](frontend/payments.md)
+- Event funding, settlements, credit, disputes, and saved-card UI → [payments](frontend/payments.md)
 - Notifications and navigation → [notifications](frontend/notifications.md)
 - Administration UI → [admin](frontend/admin.md)
 - Public pages, localization, theme, and runtime → [shell-localization](frontend/shell-localization.md)

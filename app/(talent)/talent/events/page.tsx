@@ -14,6 +14,7 @@ import Modal from '@/components/ui/Modal';
 import { formatDate } from '@/lib/utils';
 import { CalendarDays, MapPin, Clock, LogOut, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
+import HeldPayList from '@/components/payments/HeldPayList';
 
 export default function TalentEventsPage() {
     const { user } = useAuth();
@@ -108,6 +109,8 @@ export default function TalentEventsPage() {
                 <h1 className="text-2xl font-black text-dark-50">{t('nav_my_events')}</h1>
                 <p className="text-dark-400 mt-1 font-semibold">{isArabic ? 'تتبع طلبات التقديم وحالة الفعاليات الخاصة بك' : 'Track your applications and events'}</p>
             </div>
+
+            <HeldPayList />
 
             {/* Tabs */}
             <div className="flex gap-2">
