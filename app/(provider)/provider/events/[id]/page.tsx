@@ -819,7 +819,14 @@ export default function EventDetailPage() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    {app.status === 'pending' ? (
+                                    {app.status === 'pending' && app.isDirect ? (
+                                        <>
+                                            <Badge variant="warning">Awaiting usher</Badge>
+                                            <Button size="sm" variant="danger" icon={<X size={14} />} disabled={Boolean(applicationBusy)} isLoading={applicationBusy === app._id} onClick={() => handleApplicationAction(app._id, ApplicationStatus.REJECTED)}>
+                                                Withdraw
+                                            </Button>
+                                        </>
+                                    ) : app.status === 'pending' ? (
                                         <>
                                             <Button size="sm" variant="success" icon={<Check size={14} />} disabled={Boolean(applicationBusy)} isLoading={applicationBusy === app._id} onClick={() => handleApplicationAction(app._id, ApplicationStatus.ACCEPTED)}>
                                                 Accept

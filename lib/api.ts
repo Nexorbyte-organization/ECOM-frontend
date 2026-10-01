@@ -426,6 +426,10 @@ export async function getTalentApplications(_talentId: string): Promise<(Applica
     const payload = await apiRequest('/talent/applications/my?limit=100');
     return (payload.data || []).map((value: any) => ({ ...normalizeApplication(value), event: normalizeEvent(value.event) }));
 }
+async function respondToBookingInvitationAction(applicationId: string, decision: 'accept' | 'decline'): Promise<Application> {
+    const payload = await apiRequest(`/talent/applications/${applicationId}/respond`, { method: 'PATCH', body: { decision } });
+    return normalizeApplication(payload.data);
+}
 async function updateApplicationStatusAction(appId: string, status: ApplicationStatus): Promise<Application> {
     const payload = await apiRequest(`/provider/applications/${appId}/status`, { method: 'PATCH', body: { status } }); return normalizeApplication(payload.data);
 }
@@ -698,6 +702,8 @@ export const deleteEvent = withFeedback(deleteEventAction, { en: 'Event deleted.
 export const adminDeleteEvent = withFeedback(adminDeleteEventAction, { en: 'Event deleted.', ar: 'تم حذف الفعالية.', 'ar-eg': 'تم حذف الفعالية.' });
 export const applyToEvent = withFeedback(applyToEventAction, { en: 'Application submitted.', ar: 'تم إرسال طلب التقديم.', 'ar-eg': 'تم إرسال طلب التقديم.' });
 export const directBookTalent = withFeedback(directBookTalentAction, { en: 'Booking request sent.', ar: 'تم إرسال طلب الحجز.', 'ar-eg': 'تم إرسال طلب الحجز.' });
+export const acceptBookingInvitation = withFeedback((applicationId: string) => respondToBookingInvitationAction(applicationId, 'accept'), { en: 'Booking accepted.', ar: 'تم قبول الحجز.', 'ar-eg': 'تم قبول الحجز.' });
+export const declineBookingInvitation = withFeedback((applicationId: string) => respondToBookingInvitationAction(applicationId, 'decline'), { en: 'Booking declined.', ar: 'تم رفض الحجز.', 'ar-eg': 'تم رفض الحجز.' });
 export const updateApplicationStatus = withFeedback(updateApplicationStatusAction, { en: 'Application status updated.', ar: 'تم تحديث حالة الطلب.', 'ar-eg': 'تم تحديث حالة الطلب.' });
 export const markAttendance = withFeedback(markAttendanceAction, { en: 'Attendance updated.', ar: 'تم تحديث الحضور.', 'ar-eg': 'تم تحديث الحضور.' });
 export const checkInWithAttendanceQr = withFeedback(checkInWithAttendanceQrAction, { en: 'Attendance confirmed.', ar: 'تم تأكيد الحضور.', 'ar-eg': 'تم تأكيد الحضور.' });

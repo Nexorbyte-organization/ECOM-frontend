@@ -3,6 +3,8 @@
 ## Current behavior
 Talent browse/detail applies through the backend; talent jobs lists applications and work with pending/accepted/rejected/excused states. Accepted jobs can be excused under backend rules. API adapter resolves application ID for the event before excusing.
 
+Direct bookings are invitations. On the job detail page a pending direct application shows Accept booking/Decline (profile-gated) through `acceptBookingInvitation`/`declineBookingInvitation` in `lib/api.ts`; the talent events list marks them "Awaiting your answer". The organization event page shows "Awaiting usher" with a Withdraw (reject) action instead of Accept, because the backend refuses organization acceptance of a pending invitation.
+
 Provider detail accepts/rejects applicants and directly books talents; the server enforces duplicates, capacity, profile completion, and same-date conflicts. Organizer profile preference can auto-accept highly rated talents; do not implement independent frontend acceptance rules.
 
 Referral adapters support existing-talent referrals, signed invite creation/preview/redemption, incoming accept/decline, and event referral listing. Registration can preview an invite; session and backend eligibility are still required.
