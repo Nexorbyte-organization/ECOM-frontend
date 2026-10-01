@@ -11,14 +11,14 @@ import {
     markAttendance, submitReview, isVerifiedTalent,
     getStaffMembers, assignSupervisorToEvent, getAllTalents,
     getProviderProfileByUserId, getProviderEvents, directBookTalent,
-    requestEventAction, updateEvent, deleteEvent, completeEvent,
+    updateEvent, completeEvent, getEventReviews,
     createEventSettlement, getEventSettlement, getEventSettlementPreview,
     createIndividualSettlement, getIndividualSettlements, retrySettlementLinePayout,
     getOrganizerCards,
     markCashSettlementLinePaid,
     generateEventAttendanceQr, getEventAttendanceQr,
 } from '@/lib/api';
-import { Event, Application, TalentProfile, Attendance, AttendanceQr, ApplicationStatus, AttendanceStatus, User, UserRole, EventActionRequestType, EventStatus, EventSettlement, EventSettlementPreview } from '@/types';
+import { Event, Application, TalentProfile, Attendance, AttendanceQr, ApplicationStatus, AttendanceStatus, User, UserRole, EventStatus, EventSettlement, EventSettlementPreview } from '@/types';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -30,11 +30,12 @@ import { formatDate } from '@/lib/utils';
 import {
     MapPin, Clock, Users, Shirt, FileText, ArrowLeft, Check, X,
     UserCheck, Star, CalendarX, Search, Plus, Minus, Send, Phone, MessageCircle, CreditCard,
-    XCircle, Trash2, AlertTriangle, QrCode, ShieldCheck, LoaderCircle,
+    XCircle, AlertTriangle, QrCode, ShieldCheck, LoaderCircle, Pencil,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { QRCodeSVG } from 'qrcode.react';
+import EditEventModal, { canEditEvent } from '@/components/events/EditEventModal';
 
 const hasActiveCheckout = (settlement: EventSettlement | null) => Boolean(
     settlement?.collectionStatus === 'pending'
@@ -56,6 +57,8 @@ export default function EventDetailPage() {
     const [reviewModal, setReviewModal] = useState<{ open: boolean; talentUserId: string; talentName: string }>({ open: false, talentUserId: '', talentName: '' });
     const [reviewRating, setReviewRating] = useState(5);
     const [reviewComment, setReviewComment] = useState('');
+    const [reviewedUserIds, setReviewedUserIds] = useState<string[]>([]);
+    const [editOpen, setEditOpen] = useState(false);
     const [payModalOpen, setPayModalOpen] = useState(false);
     const [settlementPreview, setSettlementPreview] = useState<EventSettlementPreview | null>(null);
     const [settlement, setSettlement] = useState<EventSettlement | null>(null);
@@ -85,16 +88,6 @@ export default function EventDetailPage() {
     const [bookOptionsLoading, setBookOptionsLoading] = useState(false);
     const [bookSubmitting, setBookSubmitting] = useState(false);
 
-    // Cancel / Delete state
-    const [actionModal, setActionModal] = useState<{
-        open: boolean;
-        type: 'cancel' | 'delete' | null;
-        mode: 'direct' | 'request';
-    }>({ open: false, type: null, mode: 'direct' });
-    const [actionReason, setActionReason] = useState('');
-    const [actionSubmitting, setActionSubmitting] = useState(false);
-    const [actionSuccess, setActionSuccess] = useState('');
-
     // WhatsApp group link (manual)
     const [waLink, setWaLink] = useState('');
     const [waLinkSaving, setWaLinkSaving] = useState(false);
@@ -115,6 +108,9 @@ export default function EventDetailPage() {
         setApplicants(apps);
         setAttendanceRecords(att);
         setSupervisors(staff.filter((s) => s.role === UserRole.PROVIDER_SUPERVISOR));
+        // Reviews only drive the filled star beside Rate, so a failed read leaves them empty.
+        const reviews = await getEventReviews(id).catch(() => []);
+        setReviewedUserIds(reviews.map((review) => review.reviewedUserId));
         // Sync WhatsApp link input with saved event value
         setWaLink(e?.whatsappGroupLink ?? '');
         if (e?.status === EventStatus.COMPLETED && user?.role === UserRole.PROVIDER) {
@@ -151,53 +147,6 @@ export default function EventDetailPage() {
             // The toast already explains why the event cannot be completed yet.
         } finally {
             setCompleting(false);
-        }
-    };
-
-    const openActionModal = (type: 'cancel' | 'delete') => {
-        if (!event) return;
-        const isOpen = event.status === EventStatus.OPEN;
-        setActionModal({ open: true, type, mode: isOpen ? 'direct' : 'request' });
-        setActionReason('');
-        setActionSuccess('');
-    };
-
-    const handleConfirmAction = async () => {
-        if (!event || !actionModal.type) return;
-        setActionSubmitting(true);
-        try {
-            if (actionModal.mode === 'direct') {
-                // Event is open — provider can act directly
-                if (actionModal.type === 'cancel') {
-                    await updateEvent(event._id, { status: EventStatus.CANCELLED });
-                    setActionSuccess('Event cancelled successfully.');
-                } else {
-                    await deleteEvent(event._id);
-                    setActionModal({ open: false, type: null, mode: 'direct' });
-                    router.push('/provider/events');
-                    return;
-                }
-            } else {
-                // Non-open event — submit a request to admin
-                const reqType = actionModal.type === 'cancel'
-                    ? EventActionRequestType.CANCEL
-                    : EventActionRequestType.DELETE;
-                await requestEventAction(event._id, reqType, actionReason || undefined);
-                setActionSuccess(
-                    actionModal.type === 'cancel'
-                        ? 'Cancellation request submitted. An admin will review it shortly.'
-                        : 'Deletion request submitted. An admin will review it shortly.'
-                );
-            }
-            await fetchData();
-            setTimeout(() => {
-                setActionModal({ open: false, type: null, mode: 'direct' });
-                setActionSuccess('');
-            }, 2000);
-        } catch (err: unknown) {
-            toast.error(err instanceof Error ? err.message : 'Action failed');
-        } finally {
-            setActionSubmitting(false);
         }
     };
 
@@ -455,8 +404,9 @@ export default function EventDetailPage() {
                 reviewerId: user._id,
                 reviewedUserId: reviewModal.talentUserId,
                 rating: reviewRating,
-                comment: reviewComment,
+                comment: reviewComment.trim(),
             });
+            setReviewedUserIds((ids) => [...ids, reviewModal.talentUserId]);
             setReviewModal({ open: false, talentUserId: '', talentName: '' });
             setReviewRating(5);
             setReviewComment('');
@@ -492,6 +442,11 @@ export default function EventDetailPage() {
     }) || [];
     const paymobCharge = lockedSettlement?.collectionAmount ?? Math.round(paymentLines.reduce((total, line) => total + line.collectionAmount * 100, 0)) / 100;
     const cashDue = lockedSettlement?.cashDueAmount ?? Math.round(paymentLines.reduce((total, line) => total + (line.payoutMethodType === 'cash' ? line.usherAmount * 100 : 0), 0)) / 100;
+    // Absent and unmarked ushers are never part of an event payment.
+    const notPayable = applicants
+        .filter((app) => app.status === ApplicationStatus.ACCEPTED)
+        .map((app) => ({ app, status: attendanceRecords.find((record) => record.talentId === app.talentId)?.status }))
+        .filter(({ status }) => status !== AttendanceStatus.PRESENT && status !== AttendanceStatus.LATE);
     const automaticPayoutsUnavailable = settlementPreview && !settlementPreview.payoutSandboxConfigured
         && paymentLines.some((line) => line.payoutMethodType !== 'cash');
 
@@ -556,28 +511,11 @@ export default function EventDetailPage() {
                             </Button>
                         )}
 
-                        {/* Cancel & Delete — available to organizers only */}
-                        {user?.role === UserRole.PROVIDER && event.status !== EventStatus.CANCELLED && (
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    icon={<XCircle size={15} />}
-                                    onClick={() => openActionModal('cancel')}
-                                    className="text-danger-500 hover:bg-danger-50 border border-danger-200"
-                                >
-                                    {event.status === EventStatus.OPEN ? 'Cancel Event' : 'Request Cancel'}
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    icon={<Trash2 size={15} />}
-                                    onClick={() => openActionModal('delete')}
-                                    className="text-danger-500 hover:bg-danger-50 border border-danger-200"
-                                >
-                                    {event.status === EventStatus.OPEN ? 'Delete' : 'Request Delete'}
-                                </Button>
-                            </div>
+                        {/* Organizations edit details by stage; cancelling or deleting is left to admins. */}
+                        {user?.role === UserRole.PROVIDER && canEditEvent(event) && (
+                            <Button variant="secondary" size="sm" icon={<Pencil size={15} />} onClick={() => setEditOpen(true)} className="flex-shrink-0">
+                                Edit event
+                            </Button>
                         )}
                     </div>
                 </div>
@@ -907,16 +845,24 @@ export default function EventDetailPage() {
                         </Card>
                     ) : (
                         applicants.filter((a) => a.status === 'accepted').map((app) => {
+                            const showPaymentStatus = event.status === EventStatus.COMPLETED && user?.role === UserRole.PROVIDER;
                             const record = attendanceRecords.find((att) => att.talentId === app.talentId);
                             const attVariant = record?.status === 'present' ? 'success' as const : record?.status === 'late' ? 'warning' as const : record?.status === 'absent' ? 'danger' as const : 'default' as const;
                             const payment = individualSettlements.find((item) => item.targetTalentId === app.talentId) || settlement;
                             const paymentLine = payment?.lines.find((line) => line.talentId === app.talentId);
-                            const paymentLabel = paymentLine && (payment?.collectionStatus === 'failed' ? 'Payment failed'
-                                : payment?.collectionStatus === 'pending' ? 'Payment pending'
-                                    : payment?.collectionStatus === 'paid' ? paymentLine.payoutStatus === 'paid' ? 'Paid'
-                                        : paymentLine.payoutStatus === 'failed' ? 'Payout failed'
-                                            : paymentLine.payoutStatus === 'cash_due' ? 'Cash due' : 'Payout pending'
-                                        : null);
+                            const attended = record?.status === 'present' || record?.status === 'late';
+                            // Only present/late ushers are paid; absent or unmarked ushers are left out.
+                            const paymentStatus: { label: string; variant: 'success' | 'danger' | 'warning' | 'default' } | null = !showPaymentStatus ? null
+                                : !attended ? { label: record?.status === 'absent' ? 'Absent · not paid' : 'Mark attendance to pay', variant: 'default' }
+                                    : !paymentLine || !payment || payment.collectionStatus === 'not_started' ? { label: 'Not paid yet', variant: 'default' }
+                                        : payment.collectionStatus === 'failed' ? { label: 'Payment error', variant: 'danger' }
+                                            : payment.collectionStatus === 'pending' ? { label: 'Payment pending', variant: 'warning' }
+                                                : payment.collectionStatus === 'refunded' ? { label: 'Refunded', variant: 'default' }
+                                                    : paymentLine.payoutStatus === 'paid' ? { label: 'Paid', variant: 'success' }
+                                                        : paymentLine.payoutStatus === 'failed' ? { label: 'Payout error', variant: 'danger' }
+                                                            : paymentLine.payoutStatus === 'cash_due' ? { label: 'Cash due', variant: 'warning' }
+                                                                : { label: 'Payout pending', variant: 'warning' };
+                            const reviewed = reviewedUserIds.includes(app.talent.userId);
                             return (
                                 <Card key={app._id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="flex items-center gap-3">
@@ -925,7 +871,7 @@ export default function EventDetailPage() {
                                             <p className="text-sm font-semibold text-dark-100">{app.talent.fullName}</p>
                                             <div className="flex items-center gap-2.5 mt-1 flex-wrap">
                                                  {record && <Badge variant={attVariant}>{record.status}</Badge>}
-                                                 {paymentLabel && <Badge variant={paymentLabel === 'Paid' ? 'success' : paymentLabel.includes('failed') ? 'danger' : 'warning'}>{paymentLabel}</Badge>}
+                                                 {paymentStatus && <Badge variant={paymentStatus.variant}>{paymentStatus.label}</Badge>}
                                                  {app.talent.phoneNumber && (
                                                      <span className="text-xs text-dark-300 font-medium flex items-center gap-1">
                                                          <Phone size={11} className="text-dark-500" />
@@ -964,10 +910,12 @@ export default function EventDetailPage() {
                                         <Button
                                             size="sm"
                                             variant="ghost"
-                                            icon={<Star size={14} />}
+                                            icon={<Star size={14} className={reviewed ? 'fill-warning-400 text-warning-400' : undefined} />}
+                                            disabled={reviewed}
+                                            title={reviewed ? 'You already rated this usher' : undefined}
                                             onClick={() => setReviewModal({ open: true, talentUserId: app.talent.userId, talentName: app.talent.fullName })}
                                         >
-                                            Rate
+                                            {reviewed ? 'Rated' : 'Rate'}
                                         </Button>
                                     </div>
                                 </Card>
@@ -1033,7 +981,7 @@ export default function EventDetailPage() {
                         </div>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="block text-sm font-medium text-dark-300">Comment</label>
+                        <label className="block text-sm font-medium text-dark-300">Comment <span className="font-normal text-dark-500">(optional)</span></label>
                         <textarea
                             value={reviewComment}
                             onChange={(e) => setReviewComment(e.target.value)}
@@ -1217,6 +1165,11 @@ export default function EventDetailPage() {
                                 {individualSettlements.length > 0 && <p className="mb-2 text-xs text-warning-500">Individual checkout has started for this event. Complete remaining ushers individually.</p>}
                                 <p className="mb-2 text-xs text-dark-400">After Paymob confirms your checkout, automatic payouts start for every usher with a supported payout account. Cash is used only for the ushers shown below.</p>
                                 {!lockedSettlement && <p className="mb-2 text-xs text-dark-400">Select Pay in cash instead for any usher you want to pay directly, even if they have a payout account.</p>}
+                                {notPayable.length > 0 && (
+                                    <p className="mb-2 rounded-lg border border-dark-700 bg-dark-900/20 p-2 text-xs text-dark-300">
+                                        Not included: {notPayable.map(({ app, status }) => `${app.talent.fullName} (${status === 'absent' ? 'absent' : 'attendance not marked'})`).join(', ')}.
+                                    </p>
+                                )}
                                 <div className="max-h-72 space-y-2 overflow-y-auto pe-1">
                                     {paymentLines.map((line) => {
                                         const savedLine = '_id' in line;
@@ -1237,6 +1190,7 @@ export default function EventDetailPage() {
                                                             <p className="text-sm font-bold text-dark-50">{name}</p>
                                                             <Badge variant={line.attendanceStatus === 'late' ? 'warning' : 'success'}>{line.attendanceStatus}</Badge>
                                                             {isCash && <Badge variant="warning">CASH</Badge>}
+                                                            {!savedLine && <Badge variant="default">Not paid yet</Badge>}
                                                         </div>
                                                         <p className="mt-1 text-xs text-dark-400">
                                                             Receives {line.usherAmount} EGP · 5% fee: {line.platformFee} EGP
@@ -1266,10 +1220,11 @@ export default function EventDetailPage() {
                                                     {savedLine && (
                                                         <div className="flex items-center gap-2">
                                                             <Badge variant={linePayment?.collectionStatus === 'failed' || (linePayment?.collectionStatus === 'paid' && line.payoutStatus === 'failed') ? 'danger' : linePayment?.collectionStatus === 'paid' && line.payoutStatus === 'paid' ? 'success' : 'warning'}>
-                                                                {linePayment?.collectionStatus === 'failed' ? 'Payment failed'
+                                                                {linePayment?.collectionStatus === 'failed' ? 'Payment error'
                                                                     : linePayment?.collectionStatus === 'pending' ? 'Checkout pending'
-                                                                        : linePayment?.collectionStatus === 'paid' ? line.payoutStatus === 'paid' ? 'Paid' : line.payoutStatus.replace('_', ' ')
-                                                                            : 'Not paid'}
+                                                                        : linePayment?.collectionStatus === 'paid' ? line.payoutStatus === 'paid' ? 'Paid'
+                                                                            : line.payoutStatus === 'failed' ? 'Payout error' : line.payoutStatus.replace('_', ' ')
+                                                                            : 'Not paid yet'}
                                                             </Badge>
                                                             {isCash && linePayment?.collectionStatus === 'paid' && line.payoutStatus !== 'paid' && (
                                                                 <Button size="sm" variant="secondary" className="border-warning-500/40 text-warning-500" onClick={() => handleMarkCashPaid(line._id, linePayment)} disabled={paymentLoading}>
@@ -1346,82 +1301,13 @@ export default function EventDetailPage() {
                 </div>
             </Modal>
 
-            {/* Cancel / Delete Action Modal */}
-            <Modal
-                isOpen={actionModal.open}
-                onClose={() => setActionModal({ open: false, type: null, mode: 'direct' })}
-                title={
-                    actionModal.type === 'cancel'
-                        ? actionModal.mode === 'direct' ? 'Cancel Event' : 'Request Event Cancellation'
-                        : actionModal.mode === 'direct' ? 'Delete Event' : 'Request Event Deletion'
-                }
-            >
-                <div className="space-y-4">
-                    {actionSuccess ? (
-                        <div className="p-4 rounded-xl bg-success-500/10 border border-success-500/20 text-success-400 text-sm text-center animate-fade-in">
-                            ✅ {actionSuccess}
-                        </div>
-                    ) : (
-                        <>
-                            {/* Mode context banner */}
-                            {actionModal.mode === 'request' ? (
-                                <div className="p-3 rounded-xl bg-warning-500/10 border border-warning-500/20 text-warning-400 text-sm flex items-start gap-2">
-                                    <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
-                                    <span>
-                                        This event is <strong>not open</strong> — a direct {actionModal.type} is not allowed.
-                                        Your request will be sent to an admin for review. You&apos;ll see the result reflected once they decide.
-                                    </span>
-                                </div>
-                            ) : (
-                                <div className="p-3 rounded-xl bg-danger-500/10 border border-danger-500/20 text-danger-400 text-sm flex items-start gap-2">
-                                    <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
-                                    <span>
-                                        {actionModal.type === 'cancel'
-                                            ? 'This will immediately cancel the event and notify all accepted talents.'
-                                            : 'This will permanently delete the event and all associated applications. This cannot be undone.'}
-                                    </span>
-                                </div>
-                            )}
-
-                            <div className="space-y-1.5">
-                                <label className="block text-sm font-medium text-dark-300">
-                                    {actionModal.mode === 'request' ? 'Reason for request' : 'Reason (optional)'}
-                                </label>
-                                <textarea
-                                    value={actionReason}
-                                    onChange={(e) => setActionReason(e.target.value)}
-                                    rows={3}
-                                    placeholder={actionModal.mode === 'request'
-                                        ? 'Explain why you need to ' + actionModal.type + ' this event...'
-                                        : 'Optional: provide a reason...'}
-                                    className="w-full bg-dark-950 border-2 border-dark-50 rounded-xl px-4 py-2.5 text-sm text-dark-100 placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all resize-none"
-                                />
-                            </div>
-
-                            <div className="flex gap-3 pt-2">
-                                <Button
-                                    variant="secondary"
-                                    className="flex-1"
-                                    onClick={() => setActionModal({ open: false, type: null, mode: 'direct' })}
-                                >
-                                    Go Back
-                                </Button>
-                                <Button
-                                    variant="danger"
-                                    className="flex-1"
-                                    isLoading={actionSubmitting}
-                                    disabled={actionModal.mode === 'request' && !actionReason.trim()}
-                                    onClick={handleConfirmAction}
-                                >
-                                    {actionModal.mode === 'direct'
-                                        ? actionModal.type === 'cancel' ? 'Cancel Event' : 'Delete Event'
-                                        : 'Submit Request'}
-                                </Button>
-                            </div>
-                        </>
-                    )}
-                </div>
-            </Modal>
+            {editOpen && (
+                <EditEventModal
+                    event={event}
+                    onClose={() => setEditOpen(false)}
+                    onSaved={() => void fetchData()}
+                />
+            )}
         </div>
     );
 }

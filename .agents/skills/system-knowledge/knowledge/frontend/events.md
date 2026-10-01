@@ -3,7 +3,7 @@
 ## Current behavior
 Provider event list/new/detail implement event creation and management, per-usher budget, dates/times/deadline, locations/gathering point, photo, staffing/gender counts, dress code, and notes.
 
-States are open/confirmed/completed/cancelled. Detail UI offers eligible edits/close, direct open-event cancel/delete, and action requests for restricted states. From the event date onward the owner sees "Mark completed" (`completeEvent`) on open/confirmed events; the backend only completes events that have ended, and completion unlocks payments. Backend decides allowed transitions.
+States are open/confirmed/completed/cancelled. The owner can open Edit event (`components/events/EditEventModal.tsx`) on open or confirmed events. It mirrors the backend stages: everything is editable while open (pay cannot be lowered after hiring), only title/date/times/location/meeting point/dress code/notes once confirmed, and only notes after the event starts; locked fields are disabled and only changed fields are sent. Organizations cannot cancel or delete events, so the page has no cancel, delete, or admin-request controls. From the event date onward the owner sees "Mark completed" (`completeEvent`) on open/confirmed events; the backend only completes events that have ended, and completion unlocks payments. Backend decides allowed transitions.
 
 Talent events browses eligible open work; jobs/[id] presents event details from API. WhatsApp link visibility comes from server serialization; accepted participants may see it. Group workflow uses a supplied link or backend-generated wa.me message-sharing URL; it does not provision a WhatsApp group.
 
@@ -22,6 +22,7 @@ Provider event detail links to a dedicated large map page. The owner uploads/rep
 - `app/(provider)/provider/events/[id]/map/page.tsx`
 - `app/(talent)/talent/events/[id]/map/page.tsx`
 - `components/events/EventMapCanvas.tsx`
+- `components/events/EditEventModal.tsx`
 
 ## Change coupling
 Lifecycle changes can affect applications, attendance, payments, and admin views. Backend determines completion and ownership.

@@ -2,7 +2,7 @@ import { withFeedback } from '@/lib/toast';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
     AppNotification, Application, ApplicationStatus, Attendance, AttendanceCheckInResult, AttendanceQr, AttendanceStatus,
-    AuthResponse, Event, EventMap, EventActionRequest, EventActionRequestType, EventFilters,
+    AuthResponse, Event, EventMap, EventActionRequest, EventFilters,
     EventSettlement, EventSettlementPreview, EventStatus, OrganizerCard,
     PaginatedResponse, PaymentMethod, ProviderProfile, Referral,
     RegistrationResponse, Review, TalentProfile, TalentSearchFilters, User,
@@ -405,7 +405,6 @@ async function uploadEventPhotoAction(eventId: string, file: File): Promise<Even
     const payload = await apiRequest(`/provider/events/${eventId}/photo`, { method: 'PATCH', body: form });
     return normalizeEvent(payload.data);
 }
-async function deleteEventAction(id: string): Promise<void> { await apiRequest(`/provider/events/${id}`, { method: 'DELETE' }); }
 async function generateEventAttendanceQrAction(eventId: string): Promise<AttendanceQr> {
     const payload = await apiRequest(`/provider/events/${eventId}/attendance-qr`, { method: 'POST' });
     return payload.data;
@@ -600,9 +599,6 @@ function normalizeEventActionRequest(value: any): EventActionRequest {
         reason: value?.reason || undefined, status: value?.status, createdAt: value?.createdAt || '',
     };
 }
-async function requestEventActionAction(eventId: string, requestType: EventActionRequestType, reason?: string): Promise<EventActionRequest> {
-    const payload = await apiRequest(`/provider/events/${eventId}/action-requests`, { method: 'POST', body: { requestType, reason } }); return normalizeEventActionRequest(payload.data);
-}
 export async function getPendingEventActionRequests(): Promise<(EventActionRequest & { event: Event; provider: ProviderProfile })[]> {
     const payload = await apiRequest('/admin/event-action-requests');
     return (payload.data || []).map((value: any) => ({
@@ -705,7 +701,6 @@ export const setDefaultOrganizerCard = withFeedback(setDefaultOrganizerCardActio
 export const createEvent = withFeedback(createEventAction, { en: 'Event created.', ar: 'تم إنشاء الفعالية.', 'ar-eg': 'تم إنشاء الفعالية.' });
 export const updateEvent = withFeedback(updateEventAction, { en: 'Event updated.', ar: 'تم تحديث الفعالية.', 'ar-eg': 'تم تحديث الفعالية.' });
 export const adminUpdateEventStatus = withFeedback(adminUpdateEventStatusAction, { en: 'Event updated.', ar: 'تم تحديث الفعالية.', 'ar-eg': 'تم تحديث الفعالية.' });
-export const deleteEvent = withFeedback(deleteEventAction, { en: 'Event deleted.', ar: 'تم حذف الفعالية.', 'ar-eg': 'تم حذف الفعالية.' });
 export const adminDeleteEvent = withFeedback(adminDeleteEventAction, { en: 'Event deleted.', ar: 'تم حذف الفعالية.', 'ar-eg': 'تم حذف الفعالية.' });
 export const applyToEvent = withFeedback(applyToEventAction, { en: 'Application submitted.', ar: 'تم إرسال طلب التقديم.', 'ar-eg': 'تم إرسال طلب التقديم.' });
 export const directBookTalent = withFeedback(directBookTalentAction, { en: 'Booking request sent.', ar: 'تم إرسال طلب الحجز.', 'ar-eg': 'تم إرسال طلب الحجز.' });
@@ -726,7 +721,6 @@ export const adminInviteUser = withFeedback(adminInviteUserAction, { en: 'Staff 
 export const providerUpdateStaff = withFeedback(providerUpdateStaffAction, { en: 'Staff details saved.', ar: 'تم حفظ بيانات الموظف.', 'ar-eg': 'تم حفظ بيانات الموظف.' });
 export const removeStaffMember = withFeedback(removeStaffMemberAction, { en: 'Staff member removed.', ar: 'تم حذف الموظف.', 'ar-eg': 'تم حذف الموظف.' });
 export const assignSupervisorToEvent = withFeedback(assignSupervisorToEventAction, { en: 'Supervisor assignment updated.', ar: 'تم تحديث تعيين المشرف.', 'ar-eg': 'تم تحديث تعيين المشرف.' });
-export const requestEventAction = withFeedback(requestEventActionAction, { en: 'Request submitted for admin review.', ar: 'تم إرسال الطلب لمراجعة الإدارة.', 'ar-eg': 'تم إرسال الطلب لمراجعة الإدارة.' });
 export const resolveEventActionRequest = withFeedback(resolveEventActionRequestAction, { en: 'Request resolved.', ar: 'تمت مراجعة الطلب.', 'ar-eg': 'تمت مراجعة الطلب.' });
 export const adminBlockUser = withFeedback(adminBlockUserAction, { en: 'Account blocked.', ar: 'تم حظر الحساب.', 'ar-eg': 'تم حظر الحساب.' });
 export const providerBlockStaff = withFeedback(providerBlockStaffAction, { en: 'Account blocked.', ar: 'تم حظر الحساب.', 'ar-eg': 'تم حظر الحساب.' });

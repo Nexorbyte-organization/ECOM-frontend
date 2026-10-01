@@ -5,6 +5,8 @@ Provider event detail offers attendance recording, reviews, and an attendance QR
 
 QR encodes the server's checkInUrl. /talent/check-in/[token] submits the token and shows confirmation/errors, including whether the backend recorded the arrival as present or late. The backend only accepts scans from 2 hours before the event starts until 2 hours after it ends. Talent layout preserves the destination through login.
 
+The review comment is optional. The page loads the event's reviews; an usher who has already been rated shows a filled star and a disabled Rated button.
+
 Attendance enum is present/absent/late; excused is an application state. Reviews/rating/reliability/warnings are server data. Repeated QR scans are handled by the backend; no GPS/location validation is implemented.
 
 Present/late attendance determines payable lines on the backend; frontend must use settlement preview rather than derive eligibility independently.
