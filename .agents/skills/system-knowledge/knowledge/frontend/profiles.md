@@ -9,7 +9,7 @@ Sidebar account avatars load the talent's saved profile photo or the organizatio
 
 The frontend gate skips organization staff; backend independently checks the owner's completion for gated mutations. UI completion is not authorization and does not exactly mirror backend rejection of N/A/default avatars.
 
-Provider talent directory/detail and talent directory actions use normalized profiles. Performance badge helper uses completedEventsCount >= 10 and ratingAverage >= 4; it is not proof of identity/background checks.
+The provider talent directory shows the organization-shared favorite usher list, lets owner/staff add or remove favorites, and can filter to favorites. The API adapter uses `/provider/favorite-talents`; favorites do not book or reserve ushers. Provider talent directory/detail and talent directory actions use normalized profiles. Performance badge helper uses completedEventsCount >= 10 and ratingAverage >= 4; it is not proof of identity/background checks.
 
 ## Source entry points
 - `lib/profile-completion.ts`

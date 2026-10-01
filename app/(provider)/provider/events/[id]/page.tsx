@@ -10,7 +10,7 @@ import {
     getEvent, getEventApplicants, getEventAttendance, updateApplicationStatus,
     markAttendance, submitReview, isVerifiedTalent,
     getStaffMembers, assignSupervisorToEvent, getAllTalents,
-    getProviderProfileByUserId, getProviderEvents, directBookTalent,
+    getProviderProfileByUserId, getProviderEvents, directBookTalent, getLastTeam, rebookLastTeam,
     updateEvent, completeEvent, getEventReviews,
     createEventSettlement, getEventSettlement, getEventSettlementPreview,
     createIndividualSettlement, getIndividualSettlements, retrySettlementLinePayout,
@@ -18,7 +18,7 @@ import {
     markCashSettlementLinePaid,
     generateEventAttendanceQr, getEventAttendanceQr,
 } from '@/lib/api';
-import { Event, Application, TalentProfile, Attendance, AttendanceQr, ApplicationStatus, AttendanceStatus, User, UserRole, EventStatus, EventSettlement, EventSettlementPreview, EventFundingSummary } from '@/types';
+import { Event, Application, TalentProfile, Attendance, AttendanceQr, ApplicationStatus, AttendanceStatus, User, UserRole, EventStatus, EventSettlement, EventSettlementPreview, EventFundingSummary, LastTeam } from '@/types';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -83,6 +83,8 @@ export default function EventDetailPage() {
     const [assigning, setAssigning] = useState(false);
 
     const [bookModalOpen, setBookModalOpen] = useState(false);
+    const [lastTeam, setLastTeam] = useState<LastTeam | null>(null);
+    const [rebookingLastTeam, setRebookingLastTeam] = useState(false);
     const [providerEvents, setProviderEvents] = useState<Event[]>([]);
     const [selectedTargetEventId, setSelectedTargetEventId] = useState('');
     const [selectedTalents, setSelectedTalents] = useState<TalentProfile[]>([]);
@@ -109,6 +111,11 @@ export default function EventDetailPage() {
             }),
         ]);
         setEvent(e);
+        if (e?.status === EventStatus.OPEN) {
+            getLastTeam(id).then(setLastTeam).catch(() => setLastTeam(null));
+        } else {
+            setLastTeam(null);
+        }
         setApplicants(apps);
         setAttendanceRecords(att);
         setSupervisors(staff.filter((s) => s.role === UserRole.PROVIDER_SUPERVISOR));
@@ -205,6 +212,22 @@ export default function EventDetailPage() {
             toast.error(err instanceof Error ? err.message : 'Failed to initialize booking list');
         } finally {
             setBookOptionsLoading(false);
+        }
+    };
+
+    const handleRebookLastTeam = async () => {
+        if (!event) return;
+        setRebookingLastTeam(true);
+        try {
+            const result = await rebookLastTeam(event._id);
+            toast.success(result.invited.length
+                ? 'Invitations sent to ' + result.invited.length + ' usher' + (result.invited.length === 1 ? '' : 's') + '.'
+                : 'The previous team already has invitations or no slots are available.');
+            await fetchData();
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Could not rebook the previous team.');
+        } finally {
+            setRebookingLastTeam(false);
         }
     };
 
@@ -496,6 +519,13 @@ export default function EventDetailPage() {
                                 </span>
                             </div>
                         </div>
+                        {event.status === EventStatus.OPEN && lastTeam && lastTeam.talents.length > 0 && (
+                            <Button variant="primary" onClick={handleRebookLastTeam}
+                                isLoading={rebookingLastTeam} icon={<Send size={15} />}
+                                title={'Invite ushers from ' + lastTeam.eventTitle}>
+                                Rebook last team ({lastTeam.talents.length})
+                            </Button>
+                        )}
                         {event.status === 'completed' && user?.role === UserRole.PROVIDER && (
                             <Button
                                 variant="primary"

@@ -11,7 +11,7 @@
 - Funding actions (fund, confirm team, switch payment mode, release, retry payout), the /provider/payments credit page, and withdrawals are owner-only; staff see the event funding card read-only. Ushers see pay protection and their own held pay/disputes; admins use /admin/payments.
 - Event map editing is owner-only; provider staff can view the full company map. Hired talent can open their event map only when assigned and sees only their own pin. Backend enforces both checks.
 
-AuthProvider.isProvider includes owner/member/supervisor; isOrganizer means owner only. Layouts check workspace role; owner-only staff/financial controls must not treat isProvider as ownership. Current backend workspace event queries are company-wide even for supervisors.
+Organization owners and staff can manage the shared favorite usher list and use rebook-last-team on owned open events; the backend enforces the organization scope and profile gate. AuthProvider.isProvider includes owner/member/supervisor; isOrganizer means owner only. Layouts check workspace role; owner-only staff/financial controls must not treat isProvider as ownership. Current backend workspace event queries are company-wide even for supervisors.
 
 Profile gate checks talent/owner completeness; it skips staff. Backend checks company owner's completion on protected staff mutations. UI checks are not authoritative authorization.
 
