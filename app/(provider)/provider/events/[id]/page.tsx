@@ -11,7 +11,7 @@ import {
     markAttendance, submitReview, isVerifiedTalent,
     getStaffMembers, assignSupervisorToEvent, getAllTalents,
     getProviderProfileByUserId, getProviderEvents, directBookTalent,
-    requestEventAction, updateEvent, deleteEvent,
+    requestEventAction, updateEvent, deleteEvent, completeEvent,
     createEventSettlement, getEventSettlement, getEventSettlementPreview,
     createIndividualSettlement, getIndividualSettlements, retrySettlementLinePayout,
     getOrganizerCards,
@@ -137,6 +137,20 @@ export default function EventDetailPage() {
             toast.error(err instanceof Error ? err.message : 'Failed to update supervisor assignment');
         } finally {
             setAssigning(false);
+        }
+    };
+
+    const [completing, setCompleting] = useState(false);
+    const handleCompleteEvent = async () => {
+        if (!event) return;
+        setCompleting(true);
+        try {
+            await completeEvent(event._id);
+            await fetchData();
+        } catch {
+            // The toast already explains why the event cannot be completed yet.
+        } finally {
+            setCompleting(false);
         }
     };
 
@@ -532,6 +546,15 @@ export default function EventDetailPage() {
                             </Button>
                         )}
 
+
+                        {/* Completion unlocks usher payments; the backend checks that the event has ended. */}
+                        {user?.role === UserRole.PROVIDER
+                            && (event.status === EventStatus.OPEN || event.status === EventStatus.CONFIRMED)
+                            && new Date(event.eventDate).toISOString().slice(0, 10) <= new Date().toISOString().slice(0, 10) && (
+                            <Button variant="success" size="sm" icon={<Check size={15} />} isLoading={completing} onClick={handleCompleteEvent}>
+                                Mark completed
+                            </Button>
+                        )}
 
                         {/* Cancel & Delete — available to organizers only */}
                         {user?.role === UserRole.PROVIDER && event.status !== EventStatus.CANCELLED && (
