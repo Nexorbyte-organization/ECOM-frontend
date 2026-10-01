@@ -7,6 +7,7 @@
 - While an admin acts as an organization owner, /auth/me reports the provider role plus `actingAs` metadata. The provider workspace shows a persistent warning and Stop action; the backend owns the permission switch.
 - Public registration offers talent/provider only; staff is invited.
 
+- Event editing is owner-only. Provider users cannot cancel or delete events; the event page offers no cancel, delete, or admin-request controls.
 - Event map editing is owner-only; provider staff can view the full company map. Hired talent can open their event map only when assigned and sees only their own pin. Backend enforces both checks.
 
 AuthProvider.isProvider includes owner/member/supervisor; isOrganizer means owner only. Layouts check workspace role; owner-only staff/financial controls must not treat isProvider as ownership. Current backend workspace event queries are company-wide even for supervisors.
