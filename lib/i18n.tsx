@@ -257,7 +257,8 @@ const translations: Record<Language, Record<string, string>> = {
         nav_manage_staff: "Manage Staff",
         nav_search_talent: "Search Talent",
         nav_users: "Users",
-        nav_events: "Events"
+        nav_events: "Events",
+        nav_payments: "Payments"
     },
     ar: {
         // Navigation & General
@@ -501,7 +502,8 @@ const translations: Record<Language, Record<string, string>> = {
         nav_manage_staff: "إدارة الموظفين",
         nav_search_talent: "البحث عن منظمين",
         nav_users: "المستخدمون",
-        nav_events: "الفعاليات"
+        nav_events: "الفعاليات",
+        nav_payments: "المدفوعات"
     },
         'ar-eg': {
         // Navigation & General
@@ -745,7 +747,8 @@ const translations: Record<Language, Record<string, string>> = {
     nav_manage_staff: "إدارة الستاف",
     nav_search_talent: "دور على تالنت",
     nav_users: "اليوزرز",
-    nav_events: "الإيفينتس"
+    nav_events: "الإيفينتس",
+    nav_payments: "الفلوس"
     }
 };
 

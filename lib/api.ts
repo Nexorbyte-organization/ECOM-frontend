@@ -4,6 +4,8 @@ import {
     AppNotification, Application, ApplicationStatus, Attendance, AttendanceCheckInResult, AttendanceQr, AttendanceStatus,
     AuthResponse, Event, EventMap, EventActionRequest, EventFilters,
     EventSettlement, EventSettlementPreview, EventStatus, OrganizerCard,
+    AbsenceHold, AdminPaymentsOverview, EventFundingCheckout, EventFundingSummary, FundingMode,
+    OrganizerCreditOverview, PaymentTierStatus,
     PaginatedResponse, PaymentMethod, ProviderProfile, Referral,
     RegistrationResponse, Review, TalentProfile, TalentSearchFilters, User,
     UserRole,
@@ -168,6 +170,7 @@ function normalizeAttendance(value: any): Attendance {
         _id: String(value?._id || value?.id || ''), eventId: String(value?.eventId || ''),
         talentId: String(value?.talentId || ''), status: value?.status,
         checkInTime: value?.checkInTime || null, checkOutTime: value?.checkOutTime || null,
+        checkInMethod: value?.checkInMethod || undefined,
     };
 }
 
@@ -684,6 +687,70 @@ async function setDefaultOrganizerCardAction(cardId: string): Promise<void> {
 }
 async function removeOrganizerCardAction(cardId: string): Promise<void> { await apiRequest(`/provider/payment-cards/${cardId}`, { method: 'DELETE' }); }
 
+// Advance event funding, organization credit, and absence disputes
+function normalizeFundingSummary(value: any): EventFundingSummary {
+    return {
+        ...value,
+        settlements: (value?.settlements || []).map(normalizeSettlement),
+        savedCards: value?.savedCards,
+    } as EventFundingSummary;
+}
+export async function getEventFunding(eventId: string): Promise<EventFundingSummary> {
+    const payload = await apiRequest(`/provider/events/${eventId}/funding`); return normalizeFundingSummary(payload.data);
+}
+async function startEventFundingAction(eventId: string, options: { cardId?: string; useCredit: boolean }): Promise<{ checkoutUrl: string | null; fullyFunded: boolean; funding: EventFundingSummary }> {
+    const payload = await apiRequest(`/provider/events/${eventId}/funding`, {
+        method: 'POST', body: { ...(options.cardId ? { cardId: options.cardId } : {}), useCredit: options.useCredit },
+    });
+    return { checkoutUrl: payload.data?.checkoutUrl || null, fullyFunded: Boolean(payload.data?.fullyFunded), funding: normalizeFundingSummary(payload.data?.funding) };
+}
+async function setEventFundingModeAction(eventId: string, mode: FundingMode): Promise<Event> {
+    const payload = await apiRequest(`/provider/events/${eventId}/funding-mode`, { method: 'PATCH', body: { mode } }); return normalizeEvent(payload.data);
+}
+async function releaseEventPaymentsAction(eventId: string): Promise<EventFundingSummary> {
+    const payload = await apiRequest(`/provider/events/${eventId}/release-payments`, { method: 'POST' }); return normalizeFundingSummary(payload.data);
+}
+async function closeEventApplicationsAction(eventId: string): Promise<Event> {
+    const payload = await apiRequest(`/provider/events/${eventId}/close`, { method: 'PATCH' }); return normalizeEvent(payload.data);
+}
+export async function getFundingCheckout(fundingId: string): Promise<EventFundingCheckout & { event: { _id: string; title: string } | null; eventFunding: EventFundingSummary | null }> {
+    const payload = await apiRequest(`/payments/fundings/${fundingId}`);
+    return { ...payload.data, eventFunding: payload.data?.eventFunding ? normalizeFundingSummary(payload.data.eventFunding) : null };
+}
+export async function getOrganizerCredit(): Promise<OrganizerCreditOverview> {
+    const payload = await apiRequest('/provider/credit'); return payload.data;
+}
+async function requestCreditWithdrawalAction(amount: number): Promise<OrganizerCreditOverview> {
+    const payload = await apiRequest('/provider/credit/withdrawals', { method: 'POST', body: { amount } }); return payload.data;
+}
+async function cancelCreditWithdrawalAction(withdrawalId: string): Promise<OrganizerCreditOverview> {
+    const payload = await apiRequest(`/provider/credit/withdrawals/${withdrawalId}`, { method: 'DELETE' }); return payload.data;
+}
+export async function getMyAbsenceHolds(): Promise<AbsenceHold[]> {
+    const payload = await apiRequest('/talent/payments/holds'); return payload.data || [];
+}
+async function disputeAbsenceHoldAction(holdId: string, reason: string): Promise<AbsenceHold> {
+    const payload = await apiRequest(`/talent/payments/holds/${holdId}/dispute`, { method: 'POST', body: { reason } }); return payload.data;
+}
+export async function getAdminPaymentsOverview(): Promise<AdminPaymentsOverview> {
+    const payload = await apiRequest('/admin/payments/overview'); return payload.data;
+}
+async function resolveAbsenceHoldAction(holdId: string, decision: 'usher' | 'organizer', note: string): Promise<AbsenceHold> {
+    const payload = await apiRequest(`/admin/payments/holds/${holdId}/resolve`, { method: 'PATCH', body: { decision, note } }); return payload.data;
+}
+async function resolveCreditWithdrawalAction(withdrawalId: string, decision: 'paid' | 'rejected', details: { payoutReference?: string; note?: string }): Promise<void> {
+    await apiRequest(`/admin/payments/withdrawals/${withdrawalId}`, { method: 'PATCH', body: { decision, ...details } });
+}
+export async function getAdminOrganizerPayments(organizerId: string): Promise<OrganizerCreditOverview> {
+    const payload = await apiRequest(`/admin/organizers/${organizerId}/payments`); return payload.data;
+}
+async function setOrganizerPaymentTierAction(organizerId: string, override: 'standard' | 'trusted' | null): Promise<PaymentTierStatus> {
+    const payload = await apiRequest(`/admin/organizers/${organizerId}/payment-tier`, { method: 'PATCH', body: { override } }); return payload.data;
+}
+async function adjustOrganizerCreditAction(organizerId: string, amount: number, note: string): Promise<OrganizerCreditOverview> {
+    const payload = await apiRequest(`/admin/organizers/${organizerId}/credit-adjustments`, { method: 'POST', body: { amount, note } }); return payload.data;
+}
+
 export { API_URL };
 export function canCreateOrBook(profile: ProviderProfile | null): boolean { return isProviderProfileComplete(profile); }
 export function canApply(profile: TalentProfile | null): boolean { return isTalentProfileComplete(profile); }
@@ -746,5 +813,17 @@ export const createEventSettlement = withFeedback(createEventSettlementAction, {
 export const createIndividualSettlement = withFeedback(createIndividualSettlementAction, { en: 'Usher checkout prepared.', ar: 'تم تجهيز دفع العامل.', 'ar-eg': 'تم تجهيز دفع العامل.' });
 export const retrySettlementLinePayout = withFeedback(retrySettlementLinePayoutAction, { en: 'Usher payout attempted.', ar: 'تمت محاولة دفع مستحقات العامل.', 'ar-eg': 'تمت محاولة دفع مستحقات العامل.' });
 export const startOrganizerCardEnrollment = withFeedback(startOrganizerCardEnrollmentAction, { en: 'Card setup started.', ar: 'بدأ إعداد البطاقة.', 'ar-eg': 'بدأ إعداد البطاقة.' });
+
+export const startEventFunding = withFeedback(startEventFundingAction, { en: 'Funding prepared.', ar: 'تم تجهيز التمويل.', 'ar-eg': 'التمويل جاهز.' });
+export const setEventFundingMode = withFeedback(setEventFundingModeAction, { en: 'Payment method updated.', ar: 'تم تحديث طريقة الدفع.', 'ar-eg': 'طريقة الدفع اتغيرت.' });
+export const releaseEventPayments = withFeedback(releaseEventPaymentsAction, { en: 'Usher payments released.', ar: 'تم صرف مستحقات المنظمين.', 'ar-eg': 'فلوس الأشرز اتصرفت.' });
+export const closeEventApplications = withFeedback(closeEventApplicationsAction, { en: 'Team confirmed and applications closed.', ar: 'تم تأكيد الفريق وإغلاق التقديم.', 'ar-eg': 'الفريق اتأكد والتقديم اتقفل.' });
+export const requestCreditWithdrawal = withFeedback(requestCreditWithdrawalAction, { en: 'Withdrawal requested.', ar: 'تم طلب السحب.', 'ar-eg': 'طلب السحب اتبعت.' });
+export const cancelCreditWithdrawal = withFeedback(cancelCreditWithdrawalAction, { en: 'Withdrawal cancelled.', ar: 'تم إلغاء طلب السحب.', 'ar-eg': 'طلب السحب اتلغى.' });
+export const disputeAbsenceHold = withFeedback(disputeAbsenceHoldAction, { en: 'Dispute sent for review.', ar: 'تم إرسال الاعتراض للمراجعة.', 'ar-eg': 'الاعتراض اتبعت للمراجعة.' });
+export const resolveAbsenceHold = withFeedback(resolveAbsenceHoldAction, { en: 'Dispute resolved.', ar: 'تم حسم الاعتراض.', 'ar-eg': 'الاعتراض اتحسم.' });
+export const resolveCreditWithdrawal = withFeedback(resolveCreditWithdrawalAction, { en: 'Withdrawal updated.', ar: 'تم تحديث طلب السحب.', 'ar-eg': 'طلب السحب اتحدث.' });
+export const setOrganizerPaymentTier = withFeedback(setOrganizerPaymentTierAction, { en: 'Payment tier updated.', ar: 'تم تحديث فئة الدفع.', 'ar-eg': 'فئة الدفع اتحدثت.' });
+export const adjustOrganizerCredit = withFeedback(adjustOrganizerCreditAction, { en: 'Credit adjusted.', ar: 'تم تعديل الرصيد.', 'ar-eg': 'الرصيد اتعدل.' });
 
 export const createEventWhatsAppGroup = withFeedback(createEventWhatsAppGroupAction, { en: 'WhatsApp sharing link prepared.', ar: 'تم تجهيز رابط المشاركة عبر واتساب.' });
