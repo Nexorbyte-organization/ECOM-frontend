@@ -15,7 +15,7 @@ type RequestOptions = Omit<RequestInit, 'body'> & { body?: unknown };
 let refreshRequest: Promise<boolean> | null = null;
 const noRefreshPaths = new Set([
     '/auth/login', '/auth/signup', '/auth/refresh', '/auth/logout',
-    '/auth/forget-password', '/auth/verify-otp', '/auth/reset-password',
+    '/auth/forget-password', '/auth/verify-otp', '/auth/reset-password', '/auth/resend-verification',
 ]);
 
 function loggedInUser(): Omit<User, 'password'> | null {
@@ -264,6 +264,10 @@ export async function getCurrentUser(): Promise<Omit<User, 'password'>> {
 export async function logoutSession(): Promise<void> {
     await apiRequest('/auth/logout', { method: 'POST' }, false);
 }
+async function resendVerificationAction(email: string): Promise<string> {
+    const payload = await apiRequest('/auth/resend-verification', { method: 'POST', body: { email } }, false);
+    return payload.message;
+}
 async function forgotPasswordAction(email: string): Promise<string> {
     const payload = await apiRequest('/auth/forget-password', { method: 'POST', body: { email } }, false);
     return payload.message;
@@ -425,6 +429,13 @@ export async function getEventApplicants(eventId: string): Promise<(Application 
 export async function getTalentApplications(_talentId: string): Promise<(Application & { event: Event })[]> {
     const payload = await apiRequest('/talent/applications/my?limit=100');
     return (payload.data || []).map((value: any) => ({ ...normalizeApplication(value), event: normalizeEvent(value.event) }));
+}
+async function completeEventAction(eventId: string): Promise<Event> {
+    const payload = await apiRequest(`/provider/events/${eventId}/complete`, { method: 'PATCH' }); return normalizeEvent(payload.data);
+}
+async function respondToBookingInvitationAction(applicationId: string, decision: 'accept' | 'decline'): Promise<Application> {
+    const payload = await apiRequest(`/talent/applications/${applicationId}/respond`, { method: 'PATCH', body: { decision } });
+    return normalizeApplication(payload.data);
 }
 async function updateApplicationStatusAction(appId: string, status: ApplicationStatus): Promise<Application> {
     const payload = await apiRequest(`/provider/applications/${appId}/status`, { method: 'PATCH', body: { status } }); return normalizeApplication(payload.data);
@@ -698,6 +709,8 @@ export const deleteEvent = withFeedback(deleteEventAction, { en: 'Event deleted.
 export const adminDeleteEvent = withFeedback(adminDeleteEventAction, { en: 'Event deleted.', ar: 'تم حذف الفعالية.', 'ar-eg': 'تم حذف الفعالية.' });
 export const applyToEvent = withFeedback(applyToEventAction, { en: 'Application submitted.', ar: 'تم إرسال طلب التقديم.', 'ar-eg': 'تم إرسال طلب التقديم.' });
 export const directBookTalent = withFeedback(directBookTalentAction, { en: 'Booking request sent.', ar: 'تم إرسال طلب الحجز.', 'ar-eg': 'تم إرسال طلب الحجز.' });
+export const acceptBookingInvitation = withFeedback((applicationId: string) => respondToBookingInvitationAction(applicationId, 'accept'), { en: 'Booking accepted.', ar: 'تم قبول الحجز.', 'ar-eg': 'تم قبول الحجز.' });
+export const declineBookingInvitation = withFeedback((applicationId: string) => respondToBookingInvitationAction(applicationId, 'decline'), { en: 'Booking declined.', ar: 'تم رفض الحجز.', 'ar-eg': 'تم رفض الحجز.' });
 export const updateApplicationStatus = withFeedback(updateApplicationStatusAction, { en: 'Application status updated.', ar: 'تم تحديث حالة الطلب.', 'ar-eg': 'تم تحديث حالة الطلب.' });
 export const markAttendance = withFeedback(markAttendanceAction, { en: 'Attendance updated.', ar: 'تم تحديث الحضور.', 'ar-eg': 'تم تحديث الحضور.' });
 export const checkInWithAttendanceQr = withFeedback(checkInWithAttendanceQrAction, { en: 'Attendance confirmed.', ar: 'تم تأكيد الحضور.', 'ar-eg': 'تم تأكيد الحضور.' });
@@ -727,6 +740,8 @@ export const markAllNotificationsAsRead = withFeedback(markAllNotificationsAsRea
 export const clearAllNotifications = withFeedback(clearAllNotificationsAction, { en: 'Notifications cleared.', ar: 'تم مسح التنبيهات.', 'ar-eg': 'تم مسح التنبيهات.' });
 export const markCashSettlementLinePaid = withFeedback(markCashSettlementLinePaidAction, { en: 'Cash payment recorded.', ar: 'تم تسجيل الدفع النقدي.', 'ar-eg': 'تم تسجيل الدفع النقدي.' });
 export const removeOrganizerCard = withFeedback(removeOrganizerCardAction, { en: 'Saved card removed.', ar: 'تم حذف البطاقة المحفوظة.', 'ar-eg': 'تم حذف البطاقة المحفوظة.' });
+export const resendVerification = withFeedback(resendVerificationAction, { en: 'If the account needs it, a new verification link was sent.', ar: 'إذا كان الحساب بحاجة لذلك، تم إرسال رابط تفعيل جديد.', 'ar-eg': 'لو الحساب محتاج تفعيل، بعتنالك لينك جديد.' });
+export const completeEvent = withFeedback(completeEventAction, { en: 'Event marked as completed.', ar: 'تم تحديد الفعالية كمكتملة.', 'ar-eg': 'الإيفنت اتعلّم إنه خلص.' });
 export const forgotPassword = withFeedback(forgotPasswordAction, { en: 'Recovery code sent. Check your email.', ar: 'تم إرسال رمز الاستعادة. تحقق من بريدك الإلكتروني.', 'ar-eg': 'تم إرسال رمز الاستعادة. تحقق من بريدك الإلكتروني.' });
 export const verifyResetOtp = withFeedback(verifyResetOtpAction, { en: 'Code verified.', ar: 'تم التحقق من الرمز.', 'ar-eg': 'تم التحقق من الرمز.' });
 export const resetPassword = withFeedback(resetPasswordAction, { en: 'Password updated. You can now sign in.', ar: 'تم تحديث كلمة المرور. يمكنك تسجيل الدخول الآن.', 'ar-eg': 'تم تحديث كلمة المرور. يمكنك تسجيل الدخول الآن.' });

@@ -11,7 +11,7 @@ import {
     markAttendance, submitReview, isVerifiedTalent,
     getStaffMembers, assignSupervisorToEvent, getAllTalents,
     getProviderProfileByUserId, getProviderEvents, directBookTalent,
-    requestEventAction, updateEvent, deleteEvent,
+    requestEventAction, updateEvent, deleteEvent, completeEvent,
     createEventSettlement, getEventSettlement, getEventSettlementPreview,
     createIndividualSettlement, getIndividualSettlements, retrySettlementLinePayout,
     getOrganizerCards,
@@ -137,6 +137,20 @@ export default function EventDetailPage() {
             toast.error(err instanceof Error ? err.message : 'Failed to update supervisor assignment');
         } finally {
             setAssigning(false);
+        }
+    };
+
+    const [completing, setCompleting] = useState(false);
+    const handleCompleteEvent = async () => {
+        if (!event) return;
+        setCompleting(true);
+        try {
+            await completeEvent(event._id);
+            await fetchData();
+        } catch {
+            // The toast already explains why the event cannot be completed yet.
+        } finally {
+            setCompleting(false);
         }
     };
 
@@ -533,6 +547,15 @@ export default function EventDetailPage() {
                         )}
 
 
+                        {/* Completion unlocks usher payments; the backend checks that the event has ended. */}
+                        {user?.role === UserRole.PROVIDER
+                            && (event.status === EventStatus.OPEN || event.status === EventStatus.CONFIRMED)
+                            && new Date(event.eventDate).toISOString().slice(0, 10) <= new Date().toISOString().slice(0, 10) && (
+                            <Button variant="success" size="sm" icon={<Check size={15} />} isLoading={completing} onClick={handleCompleteEvent}>
+                                Mark completed
+                            </Button>
+                        )}
+
                         {/* Cancel & Delete — available to organizers only */}
                         {user?.role === UserRole.PROVIDER && event.status !== EventStatus.CANCELLED && (
                             <div className="flex items-center gap-2 flex-shrink-0">
@@ -819,7 +842,14 @@ export default function EventDetailPage() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    {app.status === 'pending' ? (
+                                    {app.status === 'pending' && app.isDirect ? (
+                                        <>
+                                            <Badge variant="warning">Awaiting usher</Badge>
+                                            <Button size="sm" variant="danger" icon={<X size={14} />} disabled={Boolean(applicationBusy)} isLoading={applicationBusy === app._id} onClick={() => handleApplicationAction(app._id, ApplicationStatus.REJECTED)}>
+                                                Withdraw
+                                            </Button>
+                                        </>
+                                    ) : app.status === 'pending' ? (
                                         <>
                                             <Button size="sm" variant="success" icon={<Check size={14} />} disabled={Boolean(applicationBusy)} isLoading={applicationBusy === app._id} onClick={() => handleApplicationAction(app._id, ApplicationStatus.ACCEPTED)}>
                                                 Accept
