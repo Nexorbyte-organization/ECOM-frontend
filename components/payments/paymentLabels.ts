@@ -1,4 +1,4 @@
-import { AbsenceHold, CreditEntryType, SettlementLine, TierReason } from '@/types';
+import { CreditEntryType, FundingRefund, SettlementLine, TierReason } from '@/types';
 
 type Tone = 'success' | 'danger' | 'warning' | 'default' | 'info' | 'primary';
 
@@ -10,12 +10,11 @@ export const formatDateTime = (value: string | null | undefined) => (value
 
 export const CREDIT_ENTRY_LABELS: Record<CreditEntryType, string> = {
     event_surplus: 'Unused event funding',
-    absence_release: 'Absent usher pay returned',
+    no_show_refund: 'No-show wages returned',
     cancellation_refund: 'Cancellation refund',
     late_funding_refund: 'Payment after the event no longer needed it',
+    card_refund_failed: 'Card refund kept as credit',
     funding_applied: 'Used to fund an event',
-    withdrawal: 'Withdrawal requested',
-    withdrawal_reversal: 'Withdrawal returned',
     chargeback: 'Card refund of used funding',
     admin_adjustment: 'Adjustment by OO-Ushers',
 };
@@ -23,7 +22,6 @@ export const CREDIT_ENTRY_LABELS: Record<CreditEntryType, string> = {
 export const TIER_REASON_LABELS: Record<TierReason, string> = {
     not_enough_paid_events: 'Fewer than the required fully paid events',
     overdue_payment: 'A pay-after event is unpaid 7+ days after it ended',
-    lost_attendance_dispute: 'An absent mark was overturned for an usher in the last 90 days',
     negative_credit_balance: 'The credit balance is negative',
 };
 
@@ -37,11 +35,17 @@ export const lineStatus = (line: SettlementLine): { label: string; tone: Tone } 
     }
 };
 
-export const holdStatus = (hold: AbsenceHold): { label: string; tone: Tone } => {
-    switch (hold.status) {
-        case 'held': return { label: `Absent · pay held until ${formatDateTime(hold.releaseAfter)}`, tone: 'warning' };
-        case 'disputed': return { label: 'Absent · disputed, waiting for review', tone: 'danger' };
-        case 'returned_to_organizer': return { label: 'Absent · returned to credit', tone: 'default' };
-        default: return { label: 'Paid after review', tone: 'success' };
+const REFUND_REASONS: Record<FundingRefund['reason'], string> = {
+    no_show: 'No-show wages',
+    surplus: 'Unused funding',
+    cancellation: 'Cancellation refund',
+};
+
+export const refundStatus = (refund: FundingRefund): { label: string; tone: Tone; reason: string } => {
+    const reason = refund.eventTitle ? `${REFUND_REASONS[refund.reason]} · ${refund.eventTitle}` : REFUND_REASONS[refund.reason];
+    switch (refund.status) {
+        case 'succeeded': return { label: 'Refunded to card', tone: 'success', reason };
+        case 'failed': return { label: 'Added to credit instead', tone: 'default', reason };
+        default: return { label: 'Refund in progress', tone: 'warning', reason };
     }
 };

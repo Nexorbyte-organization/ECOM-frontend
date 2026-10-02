@@ -1,10 +1,11 @@
 import { withFeedback } from '@/lib/toast';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
-    AppNotification, Application, ApplicationStatus, Attendance, AttendanceCheckInResult, AttendanceQr, AttendanceStatus,
+    AppNotification, Application, ApplicationStatus, Attendance, AttendanceCheckInResult,
+    CheckInPoint, CheckInPointView, GeoLocation,
     AuthResponse, Event, EventMap, EventActionRequest, EventFilters,
     EventSettlement, EventSettlementPreview, EventStatus, OrganizerCard,
-    AbsenceHold, AdminPaymentsOverview, EventFundingCheckout, EventFundingSummary, FundingMode,
+    AdminPaymentsOverview, EventFundingCheckout, EventFundingSummary, FundingMode,
     OrganizerCreditOverview, PaymentTierStatus,
     PaginatedResponse, PaymentMethod, ProviderProfile, Referral,
     RegistrationResponse, Review, TalentProfile, TalentSearchFilters, LastTeam, RebookLastTeamResult, User,
@@ -129,6 +130,7 @@ function normalizeTalent(value: any): TalentProfile {
         availabilityDates: source.availabilityDates || [], reliabilityScore: Number(source.reliabilityScore ?? 100),
         ratingAverage: Number(source.ratingAverage ?? source.rate ?? 0), totalRatings: Number(source.totalRatings ?? 0),
         completedEventsCount: Number(source.completedEventsCount ?? 0), lateExcuseCount: Number(source.lateExcuseCount ?? 0),
+        suspendedUntil: source.suspendedUntil || null,
         consecutiveGoodEvents: Number(source.consecutiveGoodEvents ?? 0),
         paymentMethods: Array.isArray(source.paymentMethods) ? source.paymentMethods.map(normalizePaymentMethod) : [],
         phoneNumber: source.phoneNumber || source.mobileNumber || undefined, whatsappNumber: source.whatsappNumber || undefined,
@@ -426,13 +428,18 @@ async function uploadEventPhotoAction(eventId: string, file: File): Promise<Even
     const payload = await apiRequest(`/provider/events/${eventId}/photo`, { method: 'PATCH', body: form });
     return normalizeEvent(payload.data);
 }
-async function generateEventAttendanceQrAction(eventId: string): Promise<AttendanceQr> {
-    const payload = await apiRequest(`/provider/events/${eventId}/attendance-qr`, { method: 'POST' });
+// Check-in points: the staff screen refreshes its point every few seconds with the phone's location.
+export async function refreshCheckInPoint(eventId: string, location: GeoLocation, label?: string): Promise<CheckInPointView> {
+    const payload = await apiRequest(`/provider/events/${eventId}/check-in-points/me`, {
+        method: 'PUT', body: { location, ...(label ? { label } : {}) },
+    });
     return payload.data;
 }
-export async function getEventAttendanceQr(eventId: string): Promise<AttendanceQr> {
-    const payload = await apiRequest(`/provider/events/${eventId}/attendance-qr`);
-    return payload.data;
+export async function closeCheckInPoint(eventId: string): Promise<void> {
+    await apiRequest(`/provider/events/${eventId}/check-in-points/me`, { method: 'DELETE' });
+}
+export async function getCheckInPoints(eventId: string): Promise<CheckInPoint[]> {
+    const payload = await apiRequest(`/provider/events/${eventId}/check-in-points`); return payload.data || [];
 }
 
 // Applications
@@ -466,11 +473,19 @@ export async function getEventAttendance(eventId: string): Promise<(Attendance &
     const payload = await apiRequest(`/provider/events/${eventId}/attendance`);
     return (payload.data || []).map((value: any) => ({ ...normalizeAttendance(value), talent: normalizeTalent(value.talent) }));
 }
-async function markAttendanceAction(eventId: string, talentId: string, status: AttendanceStatus): Promise<Attendance> {
-    const payload = await apiRequest(`/provider/events/${eventId}/attendance`, { method: 'POST', body: { talentId, status } }); return normalizeAttendance(payload.data);
+// Staff can only check an usher in (present or late); missed check-ins become absent automatically.
+async function staffCheckInAction(eventId: string, talentId: string, status: 'present' | 'late', location?: GeoLocation | null): Promise<Attendance> {
+    const payload = await apiRequest(`/provider/events/${eventId}/attendance`, {
+        method: 'POST', body: { talentId, status, ...(location ? { location } : {}) },
+    });
+    return normalizeAttendance(payload.data);
 }
-async function checkInWithAttendanceQrAction(token: string): Promise<AttendanceCheckInResult> {
-    const payload = await apiRequest('/talent/attendance/check-in', { method: 'POST', body: { token } });
+export type CheckInRequest =
+    | { method: 'qr'; token: string; location: GeoLocation }
+    | { method: 'code'; eventId: string; code: string; location: GeoLocation }
+    | { method: 'location'; eventId: string; location: GeoLocation };
+async function checkInAction(request: CheckInRequest): Promise<AttendanceCheckInResult> {
+    const payload = await apiRequest('/talent/attendance/check-in', { method: 'POST', body: request });
     return {
         attendance: normalizeAttendance(payload.data.attendance),
         event: normalizeEvent(payload.data.event),
@@ -705,7 +720,7 @@ async function setDefaultOrganizerCardAction(cardId: string): Promise<void> {
 }
 async function removeOrganizerCardAction(cardId: string): Promise<void> { await apiRequest(`/provider/payment-cards/${cardId}`, { method: 'DELETE' }); }
 
-// Advance event funding, organization credit, and absence disputes
+// Advance event funding and organization credit
 function normalizeFundingSummary(value: any): EventFundingSummary {
     return {
         ...value,
@@ -716,9 +731,13 @@ function normalizeFundingSummary(value: any): EventFundingSummary {
 export async function getEventFunding(eventId: string): Promise<EventFundingSummary> {
     const payload = await apiRequest(`/provider/events/${eventId}/funding`); return normalizeFundingSummary(payload.data);
 }
-async function startEventFundingAction(eventId: string, options: { cardId?: string; useCredit: boolean }): Promise<{ checkoutUrl: string | null; fullyFunded: boolean; funding: EventFundingSummary }> {
+async function startEventFundingAction(eventId: string, options: { cardId?: string; useCredit: boolean; extraSeats?: number }): Promise<{ checkoutUrl: string | null; fullyFunded: boolean; funding: EventFundingSummary }> {
     const payload = await apiRequest(`/provider/events/${eventId}/funding`, {
-        method: 'POST', body: { ...(options.cardId ? { cardId: options.cardId } : {}), useCredit: options.useCredit },
+        method: 'POST',
+        body: {
+            ...(options.cardId ? { cardId: options.cardId } : {}), useCredit: options.useCredit,
+            ...(options.extraSeats ? { extraSeats: options.extraSeats } : {}),
+        },
     });
     return { checkoutUrl: payload.data?.checkoutUrl || null, fullyFunded: Boolean(payload.data?.fullyFunded), funding: normalizeFundingSummary(payload.data?.funding) };
 }
@@ -738,26 +757,8 @@ export async function getFundingCheckout(fundingId: string): Promise<EventFundin
 export async function getOrganizerCredit(): Promise<OrganizerCreditOverview> {
     const payload = await apiRequest('/provider/credit'); return payload.data;
 }
-async function requestCreditWithdrawalAction(amount: number): Promise<OrganizerCreditOverview> {
-    const payload = await apiRequest('/provider/credit/withdrawals', { method: 'POST', body: { amount } }); return payload.data;
-}
-async function cancelCreditWithdrawalAction(withdrawalId: string): Promise<OrganizerCreditOverview> {
-    const payload = await apiRequest(`/provider/credit/withdrawals/${withdrawalId}`, { method: 'DELETE' }); return payload.data;
-}
-export async function getMyAbsenceHolds(): Promise<AbsenceHold[]> {
-    const payload = await apiRequest('/talent/payments/holds'); return payload.data || [];
-}
-async function disputeAbsenceHoldAction(holdId: string, reason: string): Promise<AbsenceHold> {
-    const payload = await apiRequest(`/talent/payments/holds/${holdId}/dispute`, { method: 'POST', body: { reason } }); return payload.data;
-}
 export async function getAdminPaymentsOverview(): Promise<AdminPaymentsOverview> {
     const payload = await apiRequest('/admin/payments/overview'); return payload.data;
-}
-async function resolveAbsenceHoldAction(holdId: string, decision: 'usher' | 'organizer', note: string): Promise<AbsenceHold> {
-    const payload = await apiRequest(`/admin/payments/holds/${holdId}/resolve`, { method: 'PATCH', body: { decision, note } }); return payload.data;
-}
-async function resolveCreditWithdrawalAction(withdrawalId: string, decision: 'paid' | 'rejected', details: { payoutReference?: string; note?: string }): Promise<void> {
-    await apiRequest(`/admin/payments/withdrawals/${withdrawalId}`, { method: 'PATCH', body: { decision, ...details } });
 }
 export async function getAdminOrganizerPayments(organizerId: string): Promise<OrganizerCreditOverview> {
     const payload = await apiRequest(`/admin/organizers/${organizerId}/payments`); return payload.data;
@@ -792,8 +793,8 @@ export const directBookTalent = withFeedback(directBookTalentAction, { en: 'Book
 export const acceptBookingInvitation = withFeedback((applicationId: string) => respondToBookingInvitationAction(applicationId, 'accept'), { en: 'Booking accepted.', ar: 'تم قبول الحجز.', 'ar-eg': 'تم قبول الحجز.' });
 export const declineBookingInvitation = withFeedback((applicationId: string) => respondToBookingInvitationAction(applicationId, 'decline'), { en: 'Booking declined.', ar: 'تم رفض الحجز.', 'ar-eg': 'تم رفض الحجز.' });
 export const updateApplicationStatus = withFeedback(updateApplicationStatusAction, { en: 'Application status updated.', ar: 'تم تحديث حالة الطلب.', 'ar-eg': 'تم تحديث حالة الطلب.' });
-export const markAttendance = withFeedback(markAttendanceAction, { en: 'Attendance updated.', ar: 'تم تحديث الحضور.', 'ar-eg': 'تم تحديث الحضور.' });
-export const checkInWithAttendanceQr = withFeedback(checkInWithAttendanceQrAction, { en: 'Attendance confirmed.', ar: 'تم تأكيد الحضور.', 'ar-eg': 'تم تأكيد الحضور.' });
+export const staffCheckIn = withFeedback(staffCheckInAction, { en: 'Usher checked in.', ar: 'تم تسجيل حضور المنظم.', 'ar-eg': 'الأشر اتسجل حضوره.' });
+export const checkIn = withFeedback(checkInAction, { en: 'Attendance confirmed.', ar: 'تم تأكيد الحضور.', 'ar-eg': 'تم تأكيد الحضور.' });
 export const excuseFromEvent = withFeedback(excuseFromEventAction, { en: 'Excuse submitted.', ar: 'تم إرسال الاعتذار.', 'ar-eg': 'تم إرسال الاعتذار.' });
 export const submitReview = withFeedback(submitReviewAction, { en: 'Review submitted.', ar: 'تم إرسال التقييم.', 'ar-eg': 'تم إرسال التقييم.' });
 export const referTalentToEvent = withFeedback(referTalentToEventAction, { en: 'Referral sent.', ar: 'تم إرسال الترشيح.', 'ar-eg': 'تم إرسال الترشيح.' });
@@ -826,7 +827,6 @@ export const verifyResetOtp = withFeedback(verifyResetOtpAction, { en: 'Code ver
 export const resetPassword = withFeedback(resetPasswordAction, { en: 'Password updated. You can now sign in.', ar: 'تم تحديث كلمة المرور. يمكنك تسجيل الدخول الآن.', 'ar-eg': 'تم تحديث كلمة المرور. يمكنك تسجيل الدخول الآن.' });
 export const register = withFeedback(registerAction, { en: 'Account created. Check your verification email.', ar: 'تم إنشاء الحساب. تحقق من رسالة تفعيل البريد الإلكتروني.', 'ar-eg': 'تم إنشاء الحساب. تحقق من رسالة تفعيل البريد الإلكتروني.' });
 export const login = withFeedback(loginAction, { en: 'Signed in successfully.', ar: 'تم تسجيل الدخول بنجاح.', 'ar-eg': 'تم تسجيل الدخول بنجاح.' });
-export const generateEventAttendanceQr = withFeedback(generateEventAttendanceQrAction, { en: 'Attendance QR created.', ar: 'تم إنشاء رمز الحضور.', 'ar-eg': 'تم إنشاء رمز الحضور.' });
 export const createEventSettlement = withFeedback(createEventSettlementAction, { en: 'Settlement prepared.', ar: 'تم تجهيز التسوية.', 'ar-eg': 'تم تجهيز التسوية.' });
 export const createIndividualSettlement = withFeedback(createIndividualSettlementAction, { en: 'Usher checkout prepared.', ar: 'تم تجهيز دفع العامل.', 'ar-eg': 'تم تجهيز دفع العامل.' });
 export const retrySettlementLinePayout = withFeedback(retrySettlementLinePayoutAction, { en: 'Usher payout attempted.', ar: 'تمت محاولة دفع مستحقات العامل.', 'ar-eg': 'تمت محاولة دفع مستحقات العامل.' });
@@ -836,11 +836,6 @@ export const startEventFunding = withFeedback(startEventFundingAction, { en: 'Fu
 export const setEventFundingMode = withFeedback(setEventFundingModeAction, { en: 'Payment method updated.', ar: 'تم تحديث طريقة الدفع.', 'ar-eg': 'طريقة الدفع اتغيرت.' });
 export const releaseEventPayments = withFeedback(releaseEventPaymentsAction, { en: 'Usher payments released.', ar: 'تم صرف مستحقات المنظمين.', 'ar-eg': 'فلوس الأشرز اتصرفت.' });
 export const closeEventApplications = withFeedback(closeEventApplicationsAction, { en: 'Team confirmed and applications closed.', ar: 'تم تأكيد الفريق وإغلاق التقديم.', 'ar-eg': 'الفريق اتأكد والتقديم اتقفل.' });
-export const requestCreditWithdrawal = withFeedback(requestCreditWithdrawalAction, { en: 'Withdrawal requested.', ar: 'تم طلب السحب.', 'ar-eg': 'طلب السحب اتبعت.' });
-export const cancelCreditWithdrawal = withFeedback(cancelCreditWithdrawalAction, { en: 'Withdrawal cancelled.', ar: 'تم إلغاء طلب السحب.', 'ar-eg': 'طلب السحب اتلغى.' });
-export const disputeAbsenceHold = withFeedback(disputeAbsenceHoldAction, { en: 'Dispute sent for review.', ar: 'تم إرسال الاعتراض للمراجعة.', 'ar-eg': 'الاعتراض اتبعت للمراجعة.' });
-export const resolveAbsenceHold = withFeedback(resolveAbsenceHoldAction, { en: 'Dispute resolved.', ar: 'تم حسم الاعتراض.', 'ar-eg': 'الاعتراض اتحسم.' });
-export const resolveCreditWithdrawal = withFeedback(resolveCreditWithdrawalAction, { en: 'Withdrawal updated.', ar: 'تم تحديث طلب السحب.', 'ar-eg': 'طلب السحب اتحدث.' });
 export const setOrganizerPaymentTier = withFeedback(setOrganizerPaymentTierAction, { en: 'Payment tier updated.', ar: 'تم تحديث فئة الدفع.', 'ar-eg': 'فئة الدفع اتحدثت.' });
 export const adjustOrganizerCredit = withFeedback(adjustOrganizerCreditAction, { en: 'Credit adjusted.', ar: 'تم تعديل الرصيد.', 'ar-eg': 'الرصيد اتعدل.' });
 

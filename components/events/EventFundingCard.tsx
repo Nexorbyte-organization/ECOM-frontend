@@ -13,7 +13,7 @@ import {
     setEventFundingMode, startEventFunding,
 } from '@/lib/api';
 import { Event, EventFundingSummary, EventStatus, OrganizerCard } from '@/types';
-import { egp, formatDateTime, holdStatus, lineStatus } from '@/components/payments/paymentLabels';
+import { egp, formatDateTime, lineStatus, refundStatus } from '@/components/payments/paymentLabels';
 
 interface EventFundingCardProps {
     event: Event;
@@ -33,7 +33,7 @@ const Stat = ({ label, value, tone }: { label: string; value: string; tone?: 'su
 
 const policyText = (summary: EventFundingSummary) => {
     const [full, half] = summary.cancellationPolicy.tiers;
-    return `If OO-Ushers cancels this event: ${full?.minHoursBeforeStart ?? 72}h+ before the start, 100% returns to your credit; ${half?.minHoursBeforeStart ?? 24}–${full?.minHoursBeforeStart ?? 72}h before, 50% returns and 50% compensates the hired ushers; under ${half?.minHoursBeforeStart ?? 24}h, the hired ushers are compensated in full.`;
+    return `If OO-Ushers cancels this event: ${full?.minHoursBeforeStart ?? 72}h+ before the start, 100% is refunded to your card; ${half?.minHoursBeforeStart ?? 24}–${full?.minHoursBeforeStart ?? 72}h before, 50% returns and 50% compensates the hired ushers; under ${half?.minHoursBeforeStart ?? 24}h, the hired ushers are compensated in full.`;
 };
 
 export default function EventFundingCard({ event, isOwner, refreshKey = 0, onEventChange, onSummary }: EventFundingCardProps) {
@@ -44,6 +44,7 @@ export default function EventFundingCard({ event, isOwner, refreshKey = 0, onEve
     const [error, setError] = useState('');
     const [useCredit, setUseCredit] = useState(true);
     const [selectedCardId, setSelectedCardId] = useState('');
+    const [extraSeats, setExtraSeats] = useState(0);
 
     const load = useCallback(async () => {
         setError('');
@@ -156,7 +157,7 @@ export default function EventFundingCard({ event, isOwner, refreshKey = 0, onEve
                         <Badge variant="warning">TEST MODE</Badge>
                     </div>
                     <p className="mt-1 max-w-2xl text-sm text-dark-400">
-                        You fund the hired team in advance. OO-Ushers holds the money and releases it after the event: present ushers receive 95%, 5% is the platform fee, and anything unused returns to your credit.
+                        You fund the hired team in advance. OO-Ushers holds the money and pays it automatically {summary.releaseDueAt ? formatDateTime(summary.releaseDueAt) : 'a day after the event'}: ushers who checked in receive 95% and 5% is the booking fee. For booked ushers who did not check in, the booking fee is kept and their wage is refunded to your card.
                     </p>
                 </div>
                 <Button variant="ghost" size="sm" icon={<RefreshCw size={14} />} onClick={() => run('refresh', load)} isLoading={busy === 'refresh'} disabled={Boolean(busy)} className="shrink-0">
@@ -175,12 +176,12 @@ export default function EventFundingCard({ event, isOwner, refreshKey = 0, onEve
                 <p className={`mt-3 text-xs ${summary.overdue ? 'font-semibold text-danger-400' : 'text-dark-400'}`}>
                     {summary.overdue ? <AlertTriangle size={12} className="mr-1 inline" /> : null}
                     {summary.shortfallAmount > 0
-                        ? `${summary.overdue ? 'Overdue — ' : ''}due by ${formatDateTime(summary.deadline)} (${summary.deadlineHours}h before the start). Hired ushers see that their pay is not secured yet.`
-                        : `Hiring more ushers or raising the pay later must be funded by ${formatDateTime(summary.deadline)}.`}
+                        ? `${summary.overdue ? 'Overdue — ' : ''}due by ${formatDateTime(summary.deadline)} (${summary.deadlineHours}h before the start). Bookings still unfunded then are cancelled automatically.`
+                        : `After ${formatDateTime(summary.deadline)} you can only book more ushers whose pay you have already funded.`}
                 </p>
             )}
             {summary.surplusAmount > 0 && !summary.released && !cancelled && (
-                <p className="mt-2 text-xs text-dark-400">{egp(summary.surplusAmount)} more than the current team needs is held; it returns to your credit when payments are released.</p>
+                <p className="mt-2 text-xs text-dark-400">{egp(summary.surplusAmount)} more than the current team needs is held for extra bookings; anything unused is refunded to your card when payments are released.</p>
             )}
 
             {pending && !cancelled && (
@@ -232,6 +233,32 @@ export default function EventFundingCard({ event, isOwner, refreshKey = 0, onEve
                 </div>
             )}
 
+            {isOwner && !pending && summary.shortfallAmount <= 0 && !cancelled && !summary.released && !completed
+                && summary.hiredCount < summary.requiredCount && (
+                <div className="mt-4 flex flex-wrap items-end gap-3 rounded-xl border border-dark-700 p-4">
+                    <label className="text-sm text-dark-200">
+                        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-dark-400">Fund spots for more ushers</span>
+                        <input
+                            type="number" min={1} max={summary.requiredCount - summary.hiredCount} value={extraSeats || ''}
+                            onChange={(e) => setExtraSeats(Math.max(0, Math.min(summary.requiredCount - summary.hiredCount, Number(e.target.value) || 0)))}
+                            className="w-24 rounded-lg border border-dark-600 bg-dark-900 px-3 py-1.5 text-dark-50"
+                        />
+                    </label>
+                    <Button
+                        size="sm" variant="secondary" icon={<Wallet size={14} />} isLoading={busy === 'extra'} disabled={Boolean(busy) || extraSeats < 1}
+                        onClick={() => run('extra', async () => {
+                            const result = await startEventFunding(event._id, { cardId: selectedCardId || undefined, useCredit, extraSeats });
+                            if (result.checkoutUrl) { window.location.assign(result.checkoutUrl); return; }
+                            setExtraSeats(0);
+                            await load();
+                        })}
+                    >
+                        {extraSeats > 0 ? `Fund ${egp(extraSeats * summary.perUsherAmount)}` : 'Fund spots'}
+                    </Button>
+                    <p className="w-full text-xs text-dark-500">Close to the event you can only book ushers whose pay is already funded. Unused spots are refunded to your card after the event.</p>
+                </div>
+            )}
+
             {(closeButton || (canSwitchMode && trusted && !hasFunding)) && (
                 <div className="mt-4 flex flex-wrap gap-2">
                     {summary.fullyFunded && closeButton}
@@ -244,51 +271,54 @@ export default function EventFundingCard({ event, isOwner, refreshKey = 0, onEve
                 </div>
             )}
 
-            {preview && completed && (
+            {preview && (completed || preview.attendanceFinal) && !cancelled && (
                 <div className="mt-5 border-t border-dark-700/60 pt-4">
-                    <h3 className="font-semibold text-dark-50">Release payments</h3>
+                    <h3 className="font-semibold text-dark-50">Payments after the event</h3>
                     <p className="mt-1 text-xs text-dark-400">
-                        Present and late ushers are paid now. Pay for absent ushers is held for {preview.disputeWindowHours} hours so they can dispute the mark; ushers who scanned the QR code cannot be marked absent.
+                        Check-in decides who is paid. Payments are sent automatically {preview.releaseDueAt ? formatDateTime(preview.releaseDueAt) : `${preview.releaseAfterEndHours}h after the event ends`}; until then staff can still check in an usher whose phone failed.
                     </p>
                     <ul className="mt-3 space-y-2">
                         {preview.payable.map((usher) => (
                             <li key={usher.talentId} className="flex items-center justify-between gap-3 text-sm">
                                 <span className="flex items-center gap-2 text-dark-200"><Avatar src={usher.photo} name={usher.fullName} size="sm" />{usher.fullName}</span>
                                 <span className="text-right text-xs text-dark-300">
-                                    {egp(usher.usherAmount || 0)} {usher.hasPayoutAccount ? '' : <span className="text-warning-500">· held until they add a payout account</span>}
+                                    {egp(usher.usherAmount || 0)} {usher.hasPayoutAccount ? '' : <span className="text-warning-500">· sent once they add a payout account</span>}
                                 </span>
                             </li>
                         ))}
-                        {preview.absent.map((usher) => (
+                        {preview.notCheckedIn.map((usher) => (
                             <li key={usher.talentId} className="flex items-center justify-between gap-3 text-sm">
                                 <span className="flex items-center gap-2 text-dark-200"><Avatar src={usher.photo} name={usher.fullName} size="sm" />{usher.fullName}</span>
-                                <Badge variant="warning">Absent · {egp(usher.amount || 0)} held</Badge>
-                            </li>
-                        ))}
-                        {preview.unmarked.map((usher) => (
-                            <li key={usher.talentId} className="flex items-center justify-between gap-3 text-sm">
-                                <span className="flex items-center gap-2 text-dark-200"><Avatar src={usher.photo} name={usher.fullName} size="sm" />{usher.fullName}</span>
-                                <Badge variant="danger">Mark attendance first</Badge>
+                                <Badge variant={usher.status === 'absent' ? 'danger' : 'default'}>
+                                    {usher.status === 'absent' ? `No-show · ${egp(usher.returnedWage || 0)} refunded` : 'Not checked in yet'}
+                                </Badge>
                             </li>
                         ))}
                     </ul>
-                    {preview.surplus > 0 && <p className="mt-3 text-xs text-dark-400">{egp(preview.surplus)} unused funding returns to your credit.</p>}
-                    {preview.blockers.some((blocker) => blocker.code === 'underfunded') && (
-                        <p className="mt-2 text-xs font-semibold text-danger-400">Fund the remaining {egp(summary.shortfallAmount)} before releasing.</p>
+                    {preview.returnAmount > 0 && preview.attendanceFinal && (
+                        <p className="mt-3 text-xs text-dark-400">
+                            {egp(preview.returnAmount)} will be refunded to the card that paid{preview.noShowFee > 0 ? `; the ${egp(preview.noShowFee)} booking fee for no-shows is kept` : ''}.
+                        </p>
                     )}
-                    {isOwner && (
-                        <Button className="mt-3" variant="success" icon={<Send size={15} />} isLoading={busy === 'release'} disabled={!preview.canRelease || Boolean(busy)}
+                    {preview.blockers.some((blocker) => blocker.code === 'underfunded') && (
+                        <p className="mt-2 text-xs font-semibold text-danger-400">Fund the remaining {egp(summary.shortfallAmount)}. Payments are released as soon as the team is fully funded.</p>
+                    )}
+                    {isOwner && completed && (
+                        <Button className="mt-3" variant="secondary" size="sm" icon={<Send size={15} />} isLoading={busy === 'release'} disabled={!preview.canRelease || Boolean(busy)}
+                            title={preview.attendanceFinal ? undefined : 'Available once check-in closes'}
                             onClick={() => run('release', async () => { const next = await releaseEventPayments(event._id); setSummary(next); onSummary?.(next); onEventChange?.({ ...event, fundsReleasedAt: next.fundsReleasedAt }); })}>
-                            Release usher payments
+                            Release now instead of waiting
                         </Button>
                     )}
                 </div>
             )}
-            {preview && !completed && !cancelled && (
-                <p className="mt-4 text-xs text-dark-400">After the event ends, mark it completed and record attendance to release the payments.</p>
+            {preview && !completed && !preview.attendanceFinal && !cancelled && (
+                <p className="mt-4 text-xs text-dark-400">
+                    Ushers check in on the event day with the check-in screen. Anyone who has not checked in when check-in closes ({formatDateTime(preview.checkInClosesAt)}) is a no-show and is not paid.
+                </p>
             )}
 
-            {(lines.length > 0 || summary.holds.length > 0) && (
+            {lines.length > 0 && (
                 <div className="mt-5 border-t border-dark-700/60 pt-4">
                     <h3 className="font-semibold text-dark-50">{cancelled ? 'Cancellation compensation' : 'Usher payments'}</h3>
                     <ul className="mt-3 space-y-2">
@@ -310,25 +340,27 @@ export default function EventFundingCard({ event, isOwner, refreshKey = 0, onEve
                                 </li>
                             );
                         })}
-                        {summary.holds.filter((hold) => hold.status !== 'paid_to_usher').map((hold) => {
-                            const status = holdStatus(hold);
+                    </ul>
+                    {lines.some(({ line }) => line.payoutStatus === 'awaiting_method') && (
+                        <p className="mt-2 text-xs text-dark-400">Ushers without a payout account were notified; their pay is sent automatically once they add one.</p>
+                    )}
+                </div>
+            )}
+
+            {summary.refunds.length > 0 && (
+                <div className="mt-5 border-t border-dark-700/60 pt-4">
+                    <h3 className="font-semibold text-dark-50">Refunds to your card</h3>
+                    <ul className="mt-2 space-y-1.5">
+                        {summary.refunds.map((refund) => {
+                            const status = refundStatus(refund);
                             return (
-                                <li key={hold._id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                                    <span className="flex items-center gap-2 text-dark-200"><Avatar src={hold.talent?.photo} name={hold.talent?.fullName || 'Usher'} size="sm" />{hold.talent?.fullName || 'Usher'}</span>
-                                    <span className="flex items-center gap-2">
-                                        <span className="text-xs text-dark-300">{egp(hold.amount)}</span>
-                                        <Badge variant={status.tone}>{status.label}</Badge>
-                                    </span>
+                                <li key={refund._id} className="flex items-center justify-between gap-2 text-sm">
+                                    <span className="text-dark-300">{status.reason}</span>
+                                    <span className="flex items-center gap-2"><span className="text-xs text-dark-300">{egp(refund.amount)}</span><Badge variant={status.tone}>{status.label}</Badge></span>
                                 </li>
                             );
                         })}
                     </ul>
-                    {summary.holds.some((hold) => ['held', 'disputed'].includes(hold.status)) && (
-                        <p className="mt-2 text-xs text-dark-400">If an absent mark was a mistake, change that usher to present or late in the Attendance tab and their held pay is sent.</p>
-                    )}
-                    {lines.some(({ line }) => line.payoutStatus === 'awaiting_method') && (
-                        <p className="mt-2 text-xs text-dark-400">Ushers without a payout account were notified; their pay is sent automatically once they add one.</p>
-                    )}
                 </div>
             )}
 
@@ -338,7 +370,7 @@ export default function EventFundingCard({ event, isOwner, refreshKey = 0, onEve
             {summary.released && (
                 <p className="mt-4 flex items-center gap-1 text-xs text-success-500"><CheckCircle2 size={13} /> Released {formatDateTime(summary.fundsReleasedAt)}.</p>
             )}
-            {isOwner && <Link href="/provider/payments" className="mt-3 inline-block text-xs font-semibold text-primary-500 hover:underline">Credit balance and payment history →</Link>}
+            {isOwner && <Link href="/provider/payments" className="mt-3 inline-block text-xs font-semibold text-primary-500 hover:underline">Refunds, credit, and payment history →</Link>}
             {error && <p role="alert" className="mt-3 text-sm text-danger-400">{error}</p>}
         </Card>
     );
