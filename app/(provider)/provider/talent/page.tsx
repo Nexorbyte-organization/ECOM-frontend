@@ -34,6 +34,7 @@ export default function TalentSearchPage() {
     const [bookingOptionsLoading, setBookingOptionsLoading] = useState(false);
     const [bookingLoading, setBookingLoading] = useState(false);
     const [bookingSuccess, setBookingSuccess] = useState(false);
+    const [inviteAsStandby, setInviteAsStandby] = useState(false);
     const [error, setError] = useState('');
 
     const fetchTalents = async () => {
@@ -77,6 +78,10 @@ export default function TalentSearchPage() {
     };
 
     const shownTalents = favoritesOnly ? favorites : talents;
+    const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
+    const bookableEvents = providerEvents.filter((event) => (inviteAsStandby
+        ? Boolean(event.standbyCount) && new Date(event.eventDate) >= todayStart
+        : event.status === 'open'));
 
     // Search results follow the two server-side filters.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -89,12 +94,14 @@ export default function TalentSearchPage() {
         setBookingSuccess(false);
         setProviderEvents([]);
         setSelectedEventId('');
+        setInviteAsStandby(false);
         setBookingModal({ open: true, talent });
         try {
             const profile = await getProviderProfileByUserId(user._id);
             if (!profile) return;
             const events = await getProviderEvents(profile._id);
-            setProviderEvents(events.data.filter((e) => e.status === 'open'));
+            // Standby invitations also work after hiring closes, until the event starts.
+            setProviderEvents(events.data.filter((e) => e.status === 'open' || e.status === 'confirmed'));
             setBookingModal({ open: true, talent });
             setSelectedEventId('');
             setBookingSuccess(false);
@@ -110,7 +117,7 @@ export default function TalentSearchPage() {
         setBookingLoading(true);
         setError('');
         try {
-            await directBookTalent(selectedEventId, bookingModal.talent._id);
+            await directBookTalent(selectedEventId, bookingModal.talent._id, inviteAsStandby);
             setBookingSuccess(true);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Could not send booking request.');
@@ -227,7 +234,7 @@ export default function TalentSearchPage() {
                         <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-success-500/15 flex items-center justify-center">
                             <Briefcase size={20} className="text-success-400" />
                         </div>
-                        <p className="text-sm font-semibold text-dark-100">Booking request sent!</p>
+                        <p className="text-sm font-semibold text-dark-100">{inviteAsStandby ? 'Standby invitation sent!' : 'Booking request sent!'}</p>
                         <p className="text-xs text-dark-400 mt-1">Waiting for talent to accept</p>
                         <Button className="mt-4" variant="secondary" onClick={() => setBookingModal({ open: false, talent: null })}>
                             Close
@@ -235,12 +242,20 @@ export default function TalentSearchPage() {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        <p className="text-sm text-dark-300">Select an event to book this talent for:</p>
-                        {providerEvents.length === 0 ? (
-                            <p className="text-sm text-dark-500">No open events available. Create an event first.</p>
+                        <label className="flex items-start gap-2 text-sm text-dark-200 cursor-pointer">
+                            <input type="checkbox" checked={inviteAsStandby} className="mt-1 h-4 w-4 accent-primary-500"
+                                onChange={(e) => { setInviteAsStandby(e.target.checked); setSelectedEventId(''); }} />
+                            <span>
+                                Invite to the standby list
+                                <span className="block text-xs text-dark-400">Unpaid and on call. They&apos;re moved in automatically if a hired usher drops out before the start.</span>
+                            </span>
+                        </label>
+                        <p className="text-sm text-dark-300">Select an event to {inviteAsStandby ? 'invite this talent to as standby' : 'book this talent for'}:</p>
+                        {bookableEvents.length === 0 ? (
+                            <p className="text-sm text-dark-500">{inviteAsStandby ? 'No upcoming events have standby spots. Set a standby count on an event first.' : 'No open events available. Create an event first.'}</p>
                         ) : (
                             <div className="space-y-2">
-                                {providerEvents.map((event) => (
+                                {bookableEvents.map((event) => (
                                     <button
                                         key={event._id}
                                         onClick={() => setSelectedEventId(event._id)}
@@ -256,7 +271,7 @@ export default function TalentSearchPage() {
                             </div>
                         )}
                         <Button onClick={handleDirectBook} isLoading={bookingLoading} disabled={!selectedEventId || !isProfileComplete} className="w-full">
-                            Send Booking Request
+                            {inviteAsStandby ? 'Send Standby Invitation' : 'Send Booking Request'}
                         </Button>
                     </div>
                 )}

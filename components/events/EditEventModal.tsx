@@ -6,7 +6,7 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import { updateEvent } from '@/lib/api';
-import { EVENT_CATEGORIES } from '@/lib/utils';
+import { EVENT_CATEGORIES, maxStandbyCount } from '@/lib/utils';
 import { Event, EventStatus, GenderPreference } from '@/types';
 import { Lock } from 'lucide-react';
 import VenuePinField, { MIN_PAY_PER_DAY_EGP, VenuePin } from '@/components/events/VenuePinField';
@@ -14,16 +14,17 @@ import VenuePinField, { MIN_PAY_PER_DAY_EGP, VenuePin } from '@/components/event
 type EventForm = {
     title: string; category: string; eventDate: string; applicationDeadline: string;
     startTime: string; endTime: string; location: string; gatheringLocation: string;
-    requiredCount: string; budget: string; specifyGenders: boolean; malesCount: string;
+    requiredCount: string; standbyCount: string; budget: string; specifyGenders: boolean; malesCount: string;
     femalesCount: string; genderPreference: GenderPreference; dressCode: string; notes: string;
 };
 type Field = keyof EventForm;
 
 // Mirrors the backend rules: staffing and pay are fixed once applications close, and only
-// on-site information can change after the event starts.
-const CONFIRMED_FIELDS: Field[] = ['title', 'eventDate', 'startTime', 'endTime', 'location', 'gatheringLocation', 'dressCode', 'notes'];
+// on-site information can change after the event starts. Standby is unpaid, so its size stays
+// editable until the start.
+const CONFIRMED_FIELDS: Field[] = ['title', 'eventDate', 'startTime', 'endTime', 'location', 'gatheringLocation', 'dressCode', 'notes', 'standbyCount'];
 const STARTED_FIELDS: Field[] = ['notes'];
-const NUMBER_FIELDS: Field[] = ['requiredCount', 'budget', 'malesCount', 'femalesCount'];
+const NUMBER_FIELDS: Field[] = ['requiredCount', 'standbyCount', 'budget', 'malesCount', 'femalesCount'];
 
 const categoryKey = (value: string) => {
     const key = value.trim().toLowerCase().replace(/[\s-]+/g, '_');
@@ -52,6 +53,7 @@ const toForm = (event: Event): EventForm => ({
     location: event.location,
     gatheringLocation: event.gatheringLocation || '',
     requiredCount: String(event.requiredCount),
+    standbyCount: String(event.standbyCount ?? 0),
     budget: String(event.budget),
     specifyGenders: Boolean(event.specifyGenders),
     malesCount: event.malesCount == null ? '' : String(event.malesCount),
@@ -95,6 +97,11 @@ export default function EditEventModal({ event, onClose, onSaved }: EditEventMod
             setError(`Staff count cannot be lower than the ${hired} ushers already hired.`);
             return;
         }
+        const standbyLimit = maxStandbyCount(Number(form.requiredCount));
+        if (!Number.isInteger(Number(form.standbyCount || 0)) || Number(form.standbyCount || 0) < 0 || Number(form.standbyCount || 0) > standbyLimit) {
+            setError(`Standby must be a whole number from 0 to ${standbyLimit} (half the staff count, rounded up).`);
+            return;
+        }
         if (changed.includes('budget') && Number(form.budget) < MIN_PAY_PER_DAY_EGP) {
             setError(`Pay must be at least ${MIN_PAY_PER_DAY_EGP} EGP per usher for each event day.`);
             return;
@@ -136,7 +143,7 @@ export default function EditEventModal({ event, onClose, onSaved }: EditEventMod
         ? hired > 0 ? 'Pay can be raised but not lowered now that ushers are hired.' : null
         : editable === STARTED_FIELDS
             ? 'The event has started, so only the notes can change.'
-            : 'Applications are closed, so staffing, pay, category, and deadline are locked.';
+            : 'Applications are closed, so staffing, pay, category, and deadline are locked. Standby can still change until the start.';
 
     return (
         <Modal isOpen onClose={onClose} title="Edit event">
@@ -161,6 +168,8 @@ export default function EditEventModal({ event, onClose, onSaved }: EditEventMod
                 <div className="grid gap-4 sm:grid-cols-2">
                     <Input label="Required staff" type="number" min={Math.max(1, hired)} value={form.requiredCount} onChange={(e) => set('requiredCount', e.target.value)} disabled={!can('requiredCount')} />
                     <Input label="Pay per usher (EGP)" type="number" min={hired > 0 ? event.budget : 1} value={form.budget} onChange={(e) => set('budget', e.target.value)} disabled={!can('budget')} />
+                    <Input label={`Standby ushers (up to ${maxStandbyCount(Number(form.requiredCount))})`} type="number" min={0} max={maxStandbyCount(Number(form.requiredCount))}
+                        value={form.standbyCount} onChange={(e) => set('standbyCount', e.target.value)} disabled={!can('standbyCount')} />
                 </div>
                 <label className={`flex items-center gap-2 text-sm text-dark-200 ${can('specifyGenders') ? '' : 'opacity-60'}`}>
                     <input type="checkbox" checked={form.specifyGenders} onChange={(e) => set('specifyGenders', e.target.checked)} disabled={!can('specifyGenders')} />

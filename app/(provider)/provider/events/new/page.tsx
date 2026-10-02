@@ -8,7 +8,7 @@ import { GenderPreference } from '@/types';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
-import { EVENT_CATEGORIES, cn } from '@/lib/utils';
+import { EVENT_CATEGORIES, cn, maxStandbyCount } from '@/lib/utils';
 import { CalendarPlus, ArrowLeft, Camera, Trash2, Upload, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useProfileCompletion } from '@/components/shared/ProfileCompletionGate';
@@ -35,6 +35,7 @@ export default function CreateEventPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [requiredCount, setRequiredCount] = useState('');
+    const [standbyCount, setStandbyCount] = useState('');
     const [budget, setBudget] = useState('');
     const [specifyGenders, setSpecifyGenders] = useState(false);
     const [malesCount, setMalesCount] = useState('');
@@ -80,6 +81,12 @@ export default function CreateEventPage() {
 
         if (!Number.isInteger(reqCount) || reqCount < 1) {
             setError('Required staff count must be a whole number of at least 1');
+            return;
+        }
+
+        const standby = Number(standbyCount || 0);
+        if (!Number.isInteger(standby) || standby < 0 || standby > maxStandbyCount(reqCount)) {
+            setError(`Standby must be a whole number from 0 to ${maxStandbyCount(reqCount)} (half the staff count, rounded up)`);
             return;
         }
 
@@ -136,6 +143,7 @@ export default function CreateEventPage() {
                 ...(venuePin ? { venueLatitude: venuePin.latitude, venueLongitude: venuePin.longitude } : {}),
                 photo: photo || undefined,
                 requiredCount: reqCount,
+                standbyCount: standby,
                 specifyGenders,
                 malesCount: specifyGenders ? Number(malesCount) : undefined,
                 femalesCount: specifyGenders ? Number(femalesCount) : undefined,
@@ -276,6 +284,20 @@ export default function CreateEventPage() {
                                 placeholder="e.g., 10" 
                                 required 
                             />
+                            <div className="space-y-1">
+                                <Input
+                                    label="Standby ushers (optional)"
+                                    type="number"
+                                    min={0}
+                                    max={maxStandbyCount(Number(requiredCount))}
+                                    value={standbyCount}
+                                    onChange={(e) => setStandbyCount(e.target.value)}
+                                    placeholder={`Up to ${maxStandbyCount(Number(requiredCount))}`}
+                                />
+                                <p className="text-[11px] text-dark-400 leading-normal">
+                                    Unpaid and on call. If a hired usher drops out before the start, the next one on standby is moved in automatically. Only ushers who agree to standby can be added.
+                                </p>
+                            </div>
                             <div className="space-y-1">
                                 <Input 
                                     label="Pay per usher (EGP)" 

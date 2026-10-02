@@ -30,7 +30,7 @@ import { formatDate } from '@/lib/utils';
 import {
     MapPin, Clock, Users, Shirt, FileText, ArrowLeft, Check, X,
     UserCheck, Star, CalendarX, Search, Plus, Minus, Send, Phone, MessageCircle, CreditCard,
-    AlertTriangle, QrCode, LoaderCircle, Pencil,
+    AlertTriangle, QrCode, LoaderCircle, Pencil, Hourglass,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
@@ -456,6 +456,10 @@ export default function EventDetailPage() {
     }) || [];
     const paymobCharge = lockedSettlement?.collectionAmount ?? Math.round(paymentLines.reduce((total, line) => total + line.collectionAmount * 100, 0)) / 100;
     const cashDue = lockedSettlement?.cashDueAmount ?? Math.round(paymentLines.reduce((total, line) => total + (line.payoutMethodType === 'cash' ? line.usherAmount * 100 : 0), 0)) / 100;
+    // The backend moves standby ushers in earliest first.
+    const standbyQueue = applicants
+        .filter((app) => app.status === 'standby')
+        .sort((a, b) => Date.parse(a.standbySince || a.appliedAt) - Date.parse(b.standbySince || b.appliedAt));
     // Absent and unmarked ushers are never part of an event payment.
     const notPayable = applicants
         .filter((app) => app.status === ApplicationStatus.ACCEPTED)
@@ -499,6 +503,11 @@ export default function EventDetailPage() {
                                 )}
                                 <span className="flex items-center gap-1"><Clock size={12} /> {formatDate(event.eventDate)} · {event.startTime}-{event.endTime}</span>
                                 <span className="flex items-center gap-1"><Users size={12} /> {event.hiredTalents.length}/{event.requiredCount}</span>
+                                {Boolean(event.standbyCount) && (
+                                    <span className="flex items-center gap-1" title="Unpaid on-call ushers who fill spots that open before the start">
+                                        <Hourglass size={12} /> Standby {standbyQueue.length}/{event.standbyCount}
+                                    </span>
+                                )}
                                 <span className={`flex items-center gap-1 ${new Date() > new Date(event.applicationDeadline) ? 'text-danger-400' : ''}`}>
                                     <CalendarX size={12} /> Deadline: {formatDate(event.applicationDeadline)} {new Date() > new Date(event.applicationDeadline) && '(Expired)'}
                                 </span>
@@ -766,7 +775,8 @@ export default function EventDetailPage() {
                                             <Badge variant="primary">{app.talent.reliabilityScore}% reliable</Badge>
                                             <Badge variant="warning">{app.talent.ratingAverage} ★</Badge>
                                             {isVerifiedTalent(app.talent) && <Badge variant="success">✅ Verified</Badge>}
-                                            {app.isDirect && <Badge variant="info">Direct</Badge>}
+                                            {app.isDirect && <Badge variant="info">{app.standbyInvite ? 'Standby invite' : 'Direct'}</Badge>}
+                                            {app.status === 'pending' && !app.isDirect && app.standbyOk && <Badge variant="default">OK with standby</Badge>}
                                             {app.referredBy && (() => {
                                                 const referrerName = applicants.find(a => a.talentId === app.referredBy)?.talent.fullName;
                                                 return <Badge variant="info">👥 Referred{referrerName ? ` by ${referrerName}` : ''}</Badge>;
@@ -786,7 +796,19 @@ export default function EventDetailPage() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    {app.status === 'pending' && app.isDirect ? (
+                                    {app.status === 'standby' ? (
+                                        <>
+                                            <Badge variant="info">Standby #{standbyQueue.findIndex((item) => item._id === app._id) + 1}</Badge>
+                                            {event.hiredTalents.length < event.requiredCount && (
+                                                <Button size="sm" variant="success" icon={<Check size={14} />} disabled={Boolean(applicationBusy)} isLoading={applicationBusy === app._id} onClick={() => handleApplicationAction(app._id, ApplicationStatus.ACCEPTED)}>
+                                                    Move in
+                                                </Button>
+                                            )}
+                                            <Button size="sm" variant="danger" icon={<X size={14} />} disabled={Boolean(applicationBusy)} isLoading={applicationBusy === app._id} onClick={() => handleApplicationAction(app._id, ApplicationStatus.REJECTED)}>
+                                                Remove
+                                            </Button>
+                                        </>
+                                    ) : app.status === 'pending' && app.isDirect ? (
                                         <>
                                             <Badge variant="warning">Awaiting usher</Badge>
                                             <Button size="sm" variant="danger" icon={<X size={14} />} disabled={Boolean(applicationBusy)} isLoading={applicationBusy === app._id} onClick={() => handleApplicationAction(app._id, ApplicationStatus.REJECTED)}>
@@ -798,10 +820,19 @@ export default function EventDetailPage() {
                                             <Button size="sm" variant="success" icon={<Check size={14} />} disabled={Boolean(applicationBusy)} isLoading={applicationBusy === app._id} onClick={() => handleApplicationAction(app._id, ApplicationStatus.ACCEPTED)}>
                                                 Accept
                                             </Button>
+                                            {app.standbyOk && standbyQueue.length < (event.standbyCount || 0) && (
+                                                <Button size="sm" variant="secondary" icon={<Hourglass size={14} />} disabled={Boolean(applicationBusy)} isLoading={applicationBusy === app._id} onClick={() => handleApplicationAction(app._id, ApplicationStatus.STANDBY)}>
+                                                    Standby
+                                                </Button>
+                                            )}
                                             <Button size="sm" variant="danger" icon={<X size={14} />} disabled={Boolean(applicationBusy)} isLoading={applicationBusy === app._id} onClick={() => handleApplicationAction(app._id, ApplicationStatus.REJECTED)}>
                                                 Reject
                                             </Button>
                                         </>
+                                    ) : app.status === 'withdrawn' ? (
+                                        <Badge variant="default">Left standby</Badge>
+                                    ) : app.status === 'rejected' && app.standbySince ? (
+                                        <Badge variant="default">Released from standby</Badge>
                                     ) : (
                                         <Badge variant={app.status === 'accepted' ? 'success' : 'danger'}>{app.status}</Badge>
                                     )}
