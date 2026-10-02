@@ -8,7 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
     getEvent, getEventApplicants, getEventAttendance, updateApplicationStatus,
-    markAttendance, submitReview, isVerifiedTalent,
+    staffCheckIn, submitReview, isVerifiedTalent,
     getStaffMembers, assignSupervisorToEvent, getAllTalents,
     getProviderProfileByUserId, getProviderEvents, directBookTalent, getLastTeam, rebookLastTeam,
     updateEvent, completeEvent, getEventReviews,
@@ -16,9 +16,9 @@ import {
     createIndividualSettlement, getIndividualSettlements, retrySettlementLinePayout,
     getOrganizerCards,
     markCashSettlementLinePaid,
-    generateEventAttendanceQr, getEventAttendanceQr,
 } from '@/lib/api';
-import { Event, Application, TalentProfile, Attendance, AttendanceQr, ApplicationStatus, AttendanceStatus, User, UserRole, EventStatus, EventSettlement, EventSettlementPreview, EventFundingSummary, LastTeam } from '@/types';
+import { tryGetCurrentLocation } from '@/lib/geolocation';
+import { Event, Application, TalentProfile, Attendance, ApplicationStatus, AttendanceStatus, User, UserRole, EventStatus, EventSettlement, EventSettlementPreview, EventFundingSummary, LastTeam } from '@/types';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -30,14 +30,13 @@ import { formatDate } from '@/lib/utils';
 import {
     MapPin, Clock, Users, Shirt, FileText, ArrowLeft, Check, X,
     UserCheck, Star, CalendarX, Search, Plus, Minus, Send, Phone, MessageCircle, CreditCard,
-    XCircle, AlertTriangle, QrCode, ShieldCheck, LoaderCircle, Pencil,
+    AlertTriangle, QrCode, LoaderCircle, Pencil,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
-import { QRCodeSVG } from 'qrcode.react';
 import EditEventModal, { canEditEvent } from '@/components/events/EditEventModal';
 import EventFundingCard from '@/components/events/EventFundingCard';
-import { holdStatus, lineStatus } from '@/components/payments/paymentLabels';
+import { lineStatus } from '@/components/payments/paymentLabels';
 
 const hasActiveCheckout = (settlement: EventSettlement | null) => Boolean(
     settlement?.collectionStatus === 'pending'
@@ -45,6 +44,12 @@ const hasActiveCheckout = (settlement: EventSettlement | null) => Boolean(
     && settlement.expiresAt
     && Date.parse(settlement.expiresAt) > Date.now()
 );
+
+const selfCheckIn = (record?: Attendance) => ['qr', 'code', 'location'].includes(record?.checkInMethod || '');
+const checkInMethodLabel = (method?: Attendance['checkInMethod']) => ({
+    qr: 'Scanned QR', code: 'Typed code', location: 'Checked in by location',
+    staff: 'Checked in by staff', auto: 'Did not check in', manual: 'Marked by staff', admin: 'Set by admin',
+} as Record<string, string>)[method || ''] || 'Recorded';
 
 export default function EventDetailPage() {
     const params = useParams();
@@ -67,10 +72,6 @@ export default function EventDetailPage() {
     const [individualSettlements, setIndividualSettlements] = useState<EventSettlement[]>([]);
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [paymentError, setPaymentError] = useState('');
-    const [attendanceQr, setAttendanceQr] = useState<AttendanceQr | null>(null);
-    const [qrModalOpen, setQrModalOpen] = useState(false);
-    const [qrLoading, setQrLoading] = useState(false);
-    const [qrError, setQrError] = useState('');
     const [selectedCardId, setSelectedCardId] = useState('');
     const [cashTalentIds, setCashTalentIds] = useState<string[]>([]);
     const [fundingSummary, setFundingSummary] = useState<EventFundingSummary | null>(null);
@@ -286,35 +287,19 @@ export default function EventDetailPage() {
         } finally { setApplicationBusy(null); }
     };
 
-    const handleMarkAttendance = async (talentId: string, status: AttendanceStatus) => {
+    // Staff check an usher in when the usher's phone cannot; the staff phone's location is sent
+    // when available. Nobody marks absent: a missed check-in becomes a no-show automatically.
+    const handleStaffCheckIn = async (talentId: string, status: 'present' | 'late') => {
         if (!event || attendanceBusy) return;
         setAttendanceBusy(talentId);
         setError('');
         try {
-            await markAttendance(event._id, talentId, status);
+            await staffCheckIn(event._id, talentId, status, await tryGetCurrentLocation());
             await fetchData();
             setFundingRefreshKey((key) => key + 1);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Could not mark attendance.');
+            setError(err instanceof Error ? err.message : 'Could not check in this usher.');
         } finally { setAttendanceBusy(null); }
-    };
-
-    const handleOpenAttendanceQr = async () => {
-        if (!event) return;
-        setQrModalOpen(true);
-        setQrLoading(true);
-        setQrError('');
-        try {
-            const qr = event.attendanceQrGenerated
-                ? await getEventAttendanceQr(event._id)
-                : await generateEventAttendanceQr(event._id);
-            setAttendanceQr(qr);
-            setEvent((current) => current ? { ...current, attendanceQrGenerated: true } : current);
-        } catch (err) {
-            setQrError(err instanceof Error ? err.message : 'Could not load the attendance QR.');
-        } finally {
-            setQrLoading(false);
-        }
     };
 
     const handleOpenPayAll = async () => {
@@ -565,7 +550,8 @@ export default function EventDetailPage() {
                 onSummary={setFundingSummary}
             />
 
-            {user?.role === UserRole.PROVIDER && (
+            {/* Any organization staff member can open a check-in point on their phone. */}
+            {event.status !== EventStatus.CANCELLED && !event.fundsReleasedAt && (
                 <Card className="border-primary-500/25">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-start gap-3">
@@ -573,29 +559,16 @@ export default function EventDetailPage() {
                                 <QrCode size={20} />
                             </div>
                             <div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <h2 className="font-bold text-dark-50">Attendance QR</h2>
-                                    {event.attendanceQrGenerated && <Badge variant="success">Generated</Badge>}
-                                </div>
+                                <h2 className="font-bold text-dark-50">Check-in</h2>
                                 <p className="mt-1 max-w-xl text-sm text-dark-400">
-                                    Display this code at the venue. Hired ushers who scan it are marked present automatically.
+                                    Open the check-in screen on a supervisor’s phone where ushers meet: the gathering point, the bus, or the venue.
+                                    Ushers scan its live QR or type its code, and must be near that phone. Anyone who does not check in counts as a no-show.
                                 </p>
-                                {!event.attendanceQrGenerated && event.status !== EventStatus.OPEN && (
-                                    <p className="mt-2 text-xs font-medium text-warning-400">
-                                        A QR cannot be generated after the event is closed.
-                                    </p>
-                                )}
                             </div>
                         </div>
-                        <Button
-                            variant={event.attendanceQrGenerated ? 'secondary' : 'primary'}
-                            icon={<QrCode size={16} />}
-                            onClick={handleOpenAttendanceQr}
-                            disabled={!event.attendanceQrGenerated && event.status !== EventStatus.OPEN}
-                            className="shrink-0"
-                        >
-                            {event.attendanceQrGenerated ? 'View QR' : 'Generate QR'}
-                        </Button>
+                        <Link href={`/provider/events/${event._id}/check-in`} className="shrink-0">
+                            <Button icon={<QrCode size={16} />}>Open check-in screen</Button>
+                        </Link>
                     </div>
                 </Card>
             )}
@@ -887,18 +860,16 @@ export default function EventDetailPage() {
                             // Only present/late ushers are paid; absent or unmarked ushers are left out.
                             const prefunded = event.fundingMode !== 'pay_after';
                             const prefundLine = fundingSummary?.settlements.flatMap((item) => item.lines).find((line) => line.talentId === app.talentId);
-                            const prefundHold = fundingSummary?.holds.find((hold) => hold.talentId === app.talentId);
+                            const releaseDue = fundingSummary?.releasePreview?.releaseDueAt || fundingSummary?.releaseDueAt;
                             const prefundStatus = (): { label: string; variant: 'success' | 'danger' | 'warning' | 'default' | 'info' | 'primary' } => {
                                 if (prefundLine) { const status = lineStatus(prefundLine); return { label: status.label, variant: status.tone }; }
-                                if (prefundHold) { const status = holdStatus(prefundHold); return { label: status.label, variant: status.tone }; }
-                                if (event.fundsReleasedAt) return { label: 'Not paid', variant: 'default' };
-                                return !record ? { label: 'Mark attendance to release pay', variant: 'default' }
-                                    : attended ? { label: 'Paid when you release payments', variant: 'default' }
-                                        : { label: `Absent · pay held ${fundingSummary?.releasePreview?.disputeWindowHours ?? 72}h after release`, variant: 'warning' };
+                                if (event.fundsReleasedAt) return { label: 'No-show · wage returned to you', variant: 'default' };
+                                if (attended) return { label: releaseDue ? `Paid automatically ${formatDate(releaseDue)}` : 'Paid automatically after the event', variant: 'default' };
+                                return record?.status === 'absent' ? { label: 'No-show · not paid', variant: 'danger' } : { label: 'Not checked in yet', variant: 'default' };
                             };
-                            const paymentStatus: { label: string; variant: 'success' | 'danger' | 'warning' | 'default' | 'info' | 'primary' } | null = !showPaymentStatus ? null
+                            const paymentStatus: { label: string; variant: 'success' | 'danger' | 'warning' | 'default' | 'info' | 'primary' } | null = !showPaymentStatus && !(prefunded && user?.role === UserRole.PROVIDER) ? null
                                 : prefunded ? prefundStatus()
-                                : !attended ? { label: record?.status === 'absent' ? 'Absent · not paid' : 'Mark attendance to pay', variant: 'default' }
+                                : !attended ? { label: record?.status === 'absent' ? 'No-show · not paid' : 'Not checked in', variant: 'default' }
                                     : !paymentLine || !payment || payment.collectionStatus === 'not_started' ? { label: 'Not paid yet', variant: 'default' }
                                         : payment.collectionStatus === 'failed' ? { label: 'Payment error', variant: 'danger' }
                                             : payment.collectionStatus === 'pending' ? { label: 'Payment pending', variant: 'warning' }
@@ -916,7 +887,7 @@ export default function EventDetailPage() {
                                             <p className="text-sm font-semibold text-dark-100">{app.talent.fullName}</p>
                                             <div className="flex items-center gap-2.5 mt-1 flex-wrap">
                                                  {record && <Badge variant={attVariant}>{record.status}</Badge>}
-                                                 {record?.checkInMethod === 'qr' && (record.status === 'present' || record.status === 'late') && <Badge variant="info">QR check-in</Badge>}
+                                                 {record && <Badge variant="info">{checkInMethodLabel(record.checkInMethod)}</Badge>}
                                                  {paymentStatus && <Badge variant={paymentStatus.variant}>{paymentStatus.label}</Badge>}
                                                  {app.talent.phoneNumber && (
                                                      <span className="text-xs text-dark-300 font-medium flex items-center gap-1">
@@ -944,15 +915,19 @@ export default function EventDetailPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Button size="sm" variant={record?.status === 'present' ? 'success' : 'secondary'} disabled={Boolean(attendanceBusy)} isLoading={attendanceBusy === app.talentId} onClick={() => handleMarkAttendance(app.talentId, AttendanceStatus.PRESENT)}>
-                                            Present
-                                        </Button>
-                                        <Button size="sm" variant={record?.status === 'late' ? 'success' : 'secondary'} disabled={Boolean(attendanceBusy)} isLoading={attendanceBusy === app.talentId} onClick={() => handleMarkAttendance(app.talentId, AttendanceStatus.LATE)}>
-                                            Late
-                                        </Button>
-                                        <Button size="sm" variant={record?.status === 'absent' ? 'danger' : 'secondary'} disabled={Boolean(attendanceBusy) || (record?.checkInMethod === 'qr' && record.status !== 'absent')} title={record?.checkInMethod === 'qr' && record.status !== 'absent' ? 'This usher checked in with the QR code' : undefined} isLoading={attendanceBusy === app.talentId} onClick={() => handleMarkAttendance(app.talentId, AttendanceStatus.ABSENT)}>
-                                            Absent
-                                        </Button>
+                                        {/* Staff can only check someone in, never mark absent or override the usher's own check-in. */}
+                                        {!event.fundsReleasedAt && event.status !== EventStatus.CANCELLED && !(attended && selfCheckIn(record)) && record?.status !== 'present' && (
+                                            <>
+                                                <Button size="sm" variant="secondary" disabled={Boolean(attendanceBusy)} isLoading={attendanceBusy === app.talentId} title="Use when the usher’s phone cannot check in" onClick={() => handleStaffCheckIn(app.talentId, 'present')}>
+                                                    Check in
+                                                </Button>
+                                                {record?.status !== 'late' && (
+                                                    <Button size="sm" variant="ghost" disabled={Boolean(attendanceBusy)} onClick={() => handleStaffCheckIn(app.talentId, 'late')}>
+                                                        Late
+                                                    </Button>
+                                                )}
+                                            </>
+                                        )}
                                         <Button
                                             size="sm"
                                             variant="ghost"
@@ -970,44 +945,6 @@ export default function EventDetailPage() {
                     )}
                 </div>
             )}
-
-            {/* Attendance QR Modal */}
-            <Modal
-                isOpen={qrModalOpen}
-                onClose={() => setQrModalOpen(false)}
-                title="Attendance QR"
-            >
-                <div className="text-center">
-                    {qrLoading && (
-                        <ContentSkeleton variant="qr" />
-                    )}
-                    {qrError && (
-                        <div className="space-y-4 py-8" role="alert">
-                            <XCircle size={44} className="mx-auto text-danger-500" />
-                            <p className="text-sm text-danger-400">{qrError}</p>
-                        </div>
-                    )}
-                    {attendanceQr && !qrLoading && !qrError && (
-                        <div className="space-y-5">
-                            <div className="mx-auto w-fit rounded-lg bg-white p-4">
-                                <QRCodeSVG
-                                    value={attendanceQr.checkInUrl}
-                                    size={248}
-                                    level="H"
-                                    marginSize={1}
-                                    title={`Attendance check-in for ${event.title}`}
-                                />
-                            </div>
-                            <div className="flex items-start justify-center gap-2 text-sm text-dark-300">
-                                <ShieldCheck size={17} className="mt-0.5 shrink-0 text-success-500" />
-                                <p className="max-w-sm text-left">
-                                    This is the only attendance QR for this event. Keep it visible to hired ushers at check-in.
-                                </p>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </Modal>
 
             <Modal isOpen={reviewModal.open} onClose={() => setReviewModal({ open: false, talentUserId: '', talentName: '' })} title={`Rate ${reviewModal.talentName}`}>
                 <div className="space-y-4">

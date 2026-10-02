@@ -19,6 +19,7 @@ import { MapPin, Clock, Users, Shirt, FileText, ArrowLeft, Send, CheckCircle, Us
 import Link from 'next/link';
 import { useProfileCompletion } from '@/components/shared/ProfileCompletionGate';
 import PayProtectionNotice from '@/components/payments/PayProtectionNotice';
+import UsherCheckInCard, { isCheckInDay } from '@/components/events/UsherCheckInCard';
 
 export default function JobDetailPage() {
     const params = useParams();
@@ -327,6 +328,7 @@ export default function JobDetailPage() {
                         )}
 
                         {existingApp.status === 'accepted' && <PayProtectionNotice protection={event.paymentProtection} />}
+                        {existingApp.status === 'accepted' && isCheckInDay(event) && <UsherCheckInCard event={event} />}
 
                         {/* WhatsApp Group Link — visible only to accepted ushers */}
                         {existingApp.status === 'accepted' && event.whatsappGroupLink && (

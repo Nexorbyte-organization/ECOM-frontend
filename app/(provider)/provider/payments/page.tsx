@@ -2,24 +2,20 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowDownLeft, ArrowUpRight, Ban, Landmark, ShieldCheck, Wallet } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, CreditCard, ShieldCheck, Wallet } from 'lucide-react';
 import ContentSkeleton from '@/components/ui/Skeleton';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
-import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
 import { useAuth } from '@/lib/auth';
-import { cancelCreditWithdrawal, getOrganizerCredit, requestCreditWithdrawal } from '@/lib/api';
+import { getOrganizerCredit } from '@/lib/api';
 import { OrganizerCreditOverview } from '@/types';
-import { CREDIT_ENTRY_LABELS, TIER_REASON_LABELS, egp, formatDateTime } from '@/components/payments/paymentLabels';
+import { CREDIT_ENTRY_LABELS, TIER_REASON_LABELS, egp, formatDateTime, refundStatus } from '@/components/payments/paymentLabels';
 
 export default function ProviderPaymentsPage() {
     const { isOrganizer } = useAuth();
     const [overview, setOverview] = useState<OrganizerCreditOverview | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [amount, setAmount] = useState('');
-    const [busy, setBusy] = useState<string | null>(null);
 
     const load = useCallback(async () => {
         try {
@@ -41,41 +37,11 @@ export default function ProviderPaymentsPage() {
     if (!overview) return <Card className="mx-auto max-w-2xl"><p role="alert" className="text-sm text-danger-400">{error}</p></Card>;
 
     const { tier } = overview;
-    const parsedAmount = Number(amount);
-    const amountValid = Number.isFinite(parsedAmount) && parsedAmount >= 1 && parsedAmount <= overview.balance
-        && Math.abs(parsedAmount * 100 - Math.round(parsedAmount * 100)) < 1e-6;
-
-    const submitWithdrawal = async () => {
-        if (!amountValid) return;
-        setBusy('withdraw');
-        setError('');
-        try {
-            setOverview(await requestCreditWithdrawal(parsedAmount));
-            setAmount('');
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Could not request the withdrawal.');
-        } finally {
-            setBusy(null);
-        }
-    };
-
-    const cancelWithdrawal = async (withdrawalId: string) => {
-        setBusy(withdrawalId);
-        setError('');
-        try {
-            setOverview(await cancelCreditWithdrawal(withdrawalId));
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Could not cancel the withdrawal.');
-        } finally {
-            setBusy(null);
-        }
-    };
-
     return (
         <div className="mx-auto max-w-4xl space-y-6 animate-fade-in">
             <div>
                 <h1 className="text-2xl font-black text-dark-50">Payments</h1>
-                <p className="mt-1 text-sm text-dark-400">Your credit from unused event funding, refunds, and how you pay for ushers.</p>
+                <p className="mt-1 text-sm text-dark-400">Refunds to your card, your credit, and how you pay for ushers.</p>
             </div>
             {error && <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}
 
@@ -83,26 +49,9 @@ export default function ProviderPaymentsPage() {
                 <Card>
                     <div className="flex items-center gap-2 text-dark-300"><Wallet size={18} className="text-primary-500" /><h2 className="font-bold text-dark-50">Credit balance</h2></div>
                     <p className={`mt-3 text-3xl font-black ${overview.balance < 0 ? 'text-danger-400' : 'text-dark-50'}`}>{egp(overview.balance)}</p>
-                    <p className="mt-2 text-xs text-dark-400">Credit is used first the next time you fund an event. {overview.activeHolds > 0 && `${overview.activeHolds} absent usher payment(s) are still in their dispute window.`}</p>
-
-                    {overview.pendingWithdrawal ? (
-                        <div className="mt-4 rounded-xl border border-warning-500/30 bg-warning-500/10 p-3 text-sm">
-                            <p className="text-dark-200">Withdrawal of {egp(overview.pendingWithdrawal.amount)} requested {formatDateTime(overview.pendingWithdrawal.createdAt)} and waiting for review.</p>
-                            <Button className="mt-2" size="sm" variant="secondary" icon={<Ban size={14} />} isLoading={busy === overview.pendingWithdrawal._id} disabled={Boolean(busy)}
-                                onClick={() => cancelWithdrawal(overview.pendingWithdrawal!._id)}>
-                                Cancel request
-                            </Button>
-                        </div>
-                    ) : overview.balance >= 1 && (
-                        <div className="mt-4 space-y-2">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-dark-400">Withdraw to your bank</p>
-                            <div className="flex gap-2">
-                                <Input type="number" inputMode="decimal" min={1} max={overview.balance} step="0.01" placeholder={`Up to ${overview.balance}`} value={amount} onChange={(e) => setAmount(e.target.value)} aria-label="Withdrawal amount in EGP" />
-                                <Button icon={<Landmark size={15} />} isLoading={busy === 'withdraw'} disabled={!amountValid || Boolean(busy)} onClick={submitWithdrawal} className="shrink-0">Request</Button>
-                            </div>
-                            <p className="text-xs text-dark-500">OO-Ushers reviews the request and transfers the money to your company account. The amount is reserved until then.</p>
-                        </div>
-                    )}
+                    <p className="mt-2 text-xs text-dark-400">
+                        Credit is used first the next time you fund an event. Money returned after an event (no-show wages, unused funding, cancellations) is refunded to the card that paid; only the part you paid from credit comes back as credit.
+                    </p>
                 </Card>
 
                 <Card>
@@ -160,22 +109,30 @@ export default function ProviderPaymentsPage() {
                 )}
             </Card>
 
-            {overview.withdrawals.length > 0 && (
-                <Card>
-                    <h2 className="font-bold text-dark-50">Withdrawals</h2>
+            <Card>
+                <div className="flex items-center gap-2"><CreditCard size={18} className="text-primary-500" /><h2 className="font-bold text-dark-50">Refunds to your card</h2></div>
+                {overview.refunds.length === 0 ? (
+                    <p className="mt-3 text-sm text-dark-500">No refunds yet.</p>
+                ) : (
                     <ul className="mt-3 divide-y divide-dark-700/60">
-                        {overview.withdrawals.map((withdrawal) => (
-                            <li key={withdrawal._id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                                <div>
-                                    <p className="text-dark-200">{egp(withdrawal.amount)}</p>
-                                    <p className="text-xs text-dark-500">{formatDateTime(withdrawal.createdAt)}{withdrawal.payoutReference && ` · Ref ${withdrawal.payoutReference}`}{withdrawal.adminNote && ` · ${withdrawal.adminNote}`}</p>
-                                </div>
-                                <Badge variant={withdrawal.status === 'paid' ? 'success' : withdrawal.status === 'pending' ? 'warning' : 'default'}>{withdrawal.status}</Badge>
-                            </li>
-                        ))}
+                        {overview.refunds.map((refund) => {
+                            const status = refundStatus(refund);
+                            return (
+                                <li key={refund._id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                                    <div>
+                                        <p className="text-dark-200">{status.reason}</p>
+                                        <p className="text-xs text-dark-500">{formatDateTime(refund.createdAt)}</p>
+                                    </div>
+                                    <span className="flex shrink-0 items-center gap-2">
+                                        <span className="font-semibold text-dark-300">{egp(refund.amount)}</span>
+                                        <Badge variant={status.tone}>{status.label}</Badge>
+                                    </span>
+                                </li>
+                            );
+                        })}
                     </ul>
-                </Card>
-            )}
+                )}
+            </Card>
         </div>
     );
 }

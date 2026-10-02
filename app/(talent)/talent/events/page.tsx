@@ -14,7 +14,6 @@ import Modal from '@/components/ui/Modal';
 import { formatDate } from '@/lib/utils';
 import { CalendarDays, MapPin, Clock, LogOut, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
-import HeldPayList from '@/components/payments/HeldPayList';
 
 export default function TalentEventsPage() {
     const { user } = useAuth();
@@ -110,7 +109,19 @@ export default function TalentEventsPage() {
                 <p className="text-dark-400 mt-1 font-semibold">{isArabic ? 'تتبع طلبات التقديم وحالة الفعاليات الخاصة بك' : 'Track your applications and events'}</p>
             </div>
 
-            <HeldPayList />
+            {/* Set automatically after repeated missed check-ins; lifts on its own. */}
+            {profile?.suspendedUntil && new Date(profile.suspendedUntil) > new Date() && (
+                <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">
+                    {isArabic
+                        ? `لا يمكنك قبول فعاليات جديدة حتى ${formatDate(profile.suspendedUntil)} بسبب عدم تسجيل الحضور ٣ مرات خلال ٩٠ يومًا.`
+                        : `You cannot take new events until ${formatDate(profile.suspendedUntil)} because you missed check-in 3 times within 90 days.`}
+                </p>
+            )}
+            <p className="text-xs text-dark-400">
+                {isArabic
+                    ? 'يوم الفعالية سجّل حضورك من هاتفك: امسح رمز المشرف أو اكتب الكود أو اضغط "أنا هنا". من لا يسجل حضوره يُعتبر غائبًا ولا يحصل على أجر.'
+                    : 'On the event day, check in with your phone: scan the staff QR, type its code, or tap “I’m here”. Anyone who does not check in counts as a no-show and is not paid.'}
+            </p>
 
             {/* Tabs */}
             <div className="flex gap-2">

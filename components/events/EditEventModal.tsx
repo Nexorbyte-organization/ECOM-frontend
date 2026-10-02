@@ -9,6 +9,7 @@ import { updateEvent } from '@/lib/api';
 import { EVENT_CATEGORIES } from '@/lib/utils';
 import { Event, EventStatus, GenderPreference } from '@/types';
 import { Lock } from 'lucide-react';
+import VenuePinField, { MIN_PAY_PER_DAY_EGP, VenuePin } from '@/components/events/VenuePinField';
 
 type EventForm = {
     title: string; category: string; eventDate: string; applicationDeadline: string;
@@ -70,6 +71,10 @@ interface EditEventModalProps {
 export default function EditEventModal({ event, onClose, onSaved }: EditEventModalProps) {
     const [initial] = useState(() => toForm(event));
     const [form, setForm] = useState(initial);
+    const initialPin: VenuePin | null = event.venueLatitude != null && event.venueLongitude != null
+        ? { latitude: event.venueLatitude, longitude: event.venueLongitude } : null;
+    const [venuePin, setVenuePin] = useState<VenuePin | null>(initialPin);
+    const pinChanged = venuePin?.latitude !== initialPin?.latitude || venuePin?.longitude !== initialPin?.longitude;
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
 
@@ -81,13 +86,17 @@ export default function EditEventModal({ event, onClose, onSaved }: EditEventMod
 
     const handleSave = async () => {
         setError('');
-        if (changed.length === 0) { onClose(); return; }
+        if (changed.length === 0 && !pinChanged) { onClose(); return; }
         if (form.eventDate && form.applicationDeadline && form.applicationDeadline >= form.eventDate) {
             setError('Application deadline must be before the event date.');
             return;
         }
         if (Number(form.requiredCount) < hired) {
             setError(`Staff count cannot be lower than the ${hired} ushers already hired.`);
+            return;
+        }
+        if (changed.includes('budget') && Number(form.budget) < MIN_PAY_PER_DAY_EGP) {
+            setError(`Pay must be at least ${MIN_PAY_PER_DAY_EGP} EGP per usher for each event day.`);
             return;
         }
         if (hired > 0 && Number(form.budget) < event.budget) {
@@ -108,6 +117,9 @@ export default function EditEventModal({ event, onClose, onSaved }: EditEventMod
                 specifyGenders: true, malesCount: Number(form.malesCount || 0),
                 femalesCount: Number(form.femalesCount || 0), requiredCount: Number(form.requiredCount),
             });
+        }
+        if (pinChanged) {
+            Object.assign(payload, { venueLatitude: venuePin?.latitude ?? null, venueLongitude: venuePin?.longitude ?? null });
         }
         setSaving(true);
         try {
@@ -145,6 +157,7 @@ export default function EditEventModal({ event, onClose, onSaved }: EditEventMod
                 </div>
                 <Input label="Location" value={form.location} onChange={(e) => set('location', e.target.value)} disabled={!can('location')} />
                 <Input label="Gathering location" value={form.gatheringLocation} onChange={(e) => set('gatheringLocation', e.target.value)} disabled={!can('gatheringLocation')} />
+                <VenuePinField value={venuePin} onChange={setVenuePin} disabled={!can('location')} />
                 <div className="grid gap-4 sm:grid-cols-2">
                     <Input label="Required staff" type="number" min={Math.max(1, hired)} value={form.requiredCount} onChange={(e) => set('requiredCount', e.target.value)} disabled={!can('requiredCount')} />
                     <Input label="Pay per usher (EGP)" type="number" min={hired > 0 ? event.budget : 1} value={form.budget} onChange={(e) => set('budget', e.target.value)} disabled={!can('budget')} />
@@ -181,7 +194,7 @@ export default function EditEventModal({ event, onClose, onSaved }: EditEventMod
                 {error && <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}
                 <div className="flex justify-end gap-3 border-t border-dark-700 pt-4">
                     <Button variant="secondary" onClick={onClose}>Cancel</Button>
-                    <Button onClick={handleSave} isLoading={saving} disabled={changed.length === 0}>Save changes</Button>
+                    <Button onClick={handleSave} isLoading={saving} disabled={changed.length === 0 && !pinChanged}>Save changes</Button>
                 </div>
             </div>
         </Modal>
