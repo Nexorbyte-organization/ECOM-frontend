@@ -163,6 +163,7 @@ function normalizeApplication(value: any): Application {
     return {
         _id: String(value?._id || value?.id || ''), eventId: String(value?.eventId || value?.event?.id || value?.event?._id || ''),
         talentId: String(value?.talentId || value?.usherId || ''), status: value?.status, isDirect: Boolean(value?.isDirect),
+        standbyOk: Boolean(value?.standbyOk), standbyInvite: Boolean(value?.standbyInvite), standbySince: value?.standbySince || null,
         referredBy: value?.referredBy || undefined, appliedAt: value?.appliedAt || value?.createdAt || '',
     };
 }
@@ -443,11 +444,16 @@ export async function getCheckInPoints(eventId: string): Promise<CheckInPoint[]>
 }
 
 // Applications
-async function applyToEventAction(eventId: string, _talentId: string): Promise<Application> {
-    const payload = await apiRequest('/talent/events/apply', { method: 'POST', body: { eventId } }); return normalizeApplication(payload.data);
+// `standbyOk`: the usher agrees to unpaid standby if the event is full.
+async function applyToEventAction(eventId: string, _talentId: string, standbyOk = false): Promise<Application> {
+    const payload = await apiRequest('/talent/events/apply', { method: 'POST', body: { eventId, standbyOk } }); return normalizeApplication(payload.data);
 }
-async function directBookTalentAction(eventId: string, talentId: string): Promise<Application> {
-    const payload = await apiRequest('/provider/direct-book', { method: 'POST', body: { eventId, talentId } }); return normalizeApplication(payload.data);
+async function directBookTalentAction(eventId: string, talentId: string, asStandby = false): Promise<Application> {
+    const payload = await apiRequest('/provider/direct-book', { method: 'POST', body: { eventId, talentId, ...(asStandby ? { asStandby } : {}) } });
+    return normalizeApplication(payload.data);
+}
+async function leaveStandbyAction(applicationId: string): Promise<Application> {
+    const payload = await apiRequest(`/talent/applications/${applicationId}/leave-standby`, { method: 'PATCH' }); return normalizeApplication(payload.data);
 }
 export async function getEventApplicants(eventId: string): Promise<(Application & { talent: TalentProfile })[]> {
     const payload = await apiRequest(`/provider/events/${eventId}/applicants`);
@@ -790,6 +796,7 @@ export const adminUpdateEventStatus = withFeedback(adminUpdateEventStatusAction,
 export const adminDeleteEvent = withFeedback(adminDeleteEventAction, { en: 'Event deleted.', ar: 'تم حذف الفعالية.', 'ar-eg': 'تم حذف الفعالية.' });
 export const applyToEvent = withFeedback(applyToEventAction, { en: 'Application submitted.', ar: 'تم إرسال طلب التقديم.', 'ar-eg': 'تم إرسال طلب التقديم.' });
 export const directBookTalent = withFeedback(directBookTalentAction, { en: 'Booking request sent.', ar: 'تم إرسال طلب الحجز.', 'ar-eg': 'تم إرسال طلب الحجز.' });
+export const leaveStandby = withFeedback(leaveStandbyAction, { en: 'You left the standby list.', ar: 'تم خروجك من قائمة الاحتياط.', 'ar-eg': 'خرجت من قائمة الاحتياط.' });
 export const acceptBookingInvitation = withFeedback((applicationId: string) => respondToBookingInvitationAction(applicationId, 'accept'), { en: 'Booking accepted.', ar: 'تم قبول الحجز.', 'ar-eg': 'تم قبول الحجز.' });
 export const declineBookingInvitation = withFeedback((applicationId: string) => respondToBookingInvitationAction(applicationId, 'decline'), { en: 'Booking declined.', ar: 'تم رفض الحجز.', 'ar-eg': 'تم رفض الحجز.' });
 export const updateApplicationStatus = withFeedback(updateApplicationStatusAction, { en: 'Application status updated.', ar: 'تم تحديث حالة الطلب.', 'ar-eg': 'تم تحديث حالة الطلب.' });

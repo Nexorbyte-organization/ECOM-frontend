@@ -85,8 +85,9 @@ export default function TalentEventsPage() {
     const statusVariant = (s: string) =>
         s === 'accepted' ? 'success' as const :
             s === 'rejected' ? 'danger' as const :
-                s === 'excused' ? 'default' as const :
-                    'warning' as const;
+                s === 'standby' ? 'info' as const :
+                    s === 'excused' || s === 'withdrawn' ? 'default' as const :
+                        'warning' as const;
 
     const getTabLabel = (type: 'all' | 'upcoming' | 'past') => {
         const labels: Record<string, string> = {
@@ -160,7 +161,10 @@ export default function TalentEventsPage() {
                                 <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                                     <Badge variant="primary">{app.event.category}</Badge>
                                     <Badge variant={statusVariant(app.status)}>{app.status}</Badge>
-                                    {app.isDirect && <Badge variant="info">{isArabic ? 'حجز مباشر' : 'Direct Booking'}</Badge>}
+                                    {app.isDirect && <Badge variant="info">{app.standbyInvite ? (isArabic ? 'دعوة احتياط' : 'Standby invitation') : (isArabic ? 'حجز مباشر' : 'Direct Booking')}</Badge>}
+                                    {app.status === 'rejected' && app.standbySince && (
+                                        <Badge variant="default">{isArabic ? 'انتهى الاحتياط' : 'Standby ended'}</Badge>
+                                    )}
                                     {app.isDirect && app.status === 'pending' && (
                                         <Badge variant="warning">{isArabic ? 'بانتظار ردك' : 'Awaiting your answer'}</Badge>
                                     )}

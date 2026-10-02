@@ -20,6 +20,10 @@ export enum ApplicationStatus {
     ACCEPTED = 'accepted',
     REJECTED = 'rejected',
     EXCUSED = 'excused',
+    /** On call and unpaid; moved into the team automatically if a spot opens before the start. */
+    STANDBY = 'standby',
+    /** The usher left standby, or took another booking that day. */
+    WITHDRAWN = 'withdrawn',
 }
 
 export enum AttendanceStatus {
@@ -130,6 +134,10 @@ export interface Event {
     gatheringLocation?: string;
     photo?: string;
     requiredCount: number;
+    /** Unpaid on-call ushers kept in reserve; at most half the staff count, rounded up. */
+    standbyCount?: number;
+    /** Usher view only: 1-based place in this event's standby queue. */
+    standbyPosition?: number | null;
     specifyGenders?: boolean;
     malesCount?: number;
     femalesCount?: number;
@@ -241,6 +249,12 @@ export interface Application {
     talentId: string;
     status: ApplicationStatus;
     isDirect: boolean;
+    /** The usher agreed to be on standby if the event is full. */
+    standbyOk?: boolean;
+    /** A direct invitation to the standby list. */
+    standbyInvite?: boolean;
+    /** Place in the standby queue; earliest is moved in first. */
+    standbySince?: string | null;
     referredBy?: string; // talent ID of the referrer
     appliedAt: string;
 }
