@@ -6,23 +6,25 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import { updateEvent } from '@/lib/api';
-import { EVENT_CATEGORIES } from '@/lib/utils';
+import { EVENT_CATEGORIES, maxStandbyCount } from '@/lib/utils';
 import { Event, EventStatus, GenderPreference } from '@/types';
 import { Lock } from 'lucide-react';
+import VenuePinField, { MIN_PAY_PER_DAY_EGP, VenuePin } from '@/components/events/VenuePinField';
 
 type EventForm = {
     title: string; category: string; eventDate: string; applicationDeadline: string;
     startTime: string; endTime: string; location: string; gatheringLocation: string;
-    requiredCount: string; budget: string; specifyGenders: boolean; malesCount: string;
+    requiredCount: string; standbyCount: string; budget: string; specifyGenders: boolean; malesCount: string;
     femalesCount: string; genderPreference: GenderPreference; dressCode: string; notes: string;
 };
 type Field = keyof EventForm;
 
 // Mirrors the backend rules: staffing and pay are fixed once applications close, and only
-// on-site information can change after the event starts.
-const CONFIRMED_FIELDS: Field[] = ['title', 'eventDate', 'startTime', 'endTime', 'location', 'gatheringLocation', 'dressCode', 'notes'];
+// on-site information can change after the event starts. Standby is unpaid, so its size stays
+// editable until the start.
+const CONFIRMED_FIELDS: Field[] = ['title', 'eventDate', 'startTime', 'endTime', 'location', 'gatheringLocation', 'dressCode', 'notes', 'standbyCount'];
 const STARTED_FIELDS: Field[] = ['notes'];
-const NUMBER_FIELDS: Field[] = ['requiredCount', 'budget', 'malesCount', 'femalesCount'];
+const NUMBER_FIELDS: Field[] = ['requiredCount', 'standbyCount', 'budget', 'malesCount', 'femalesCount'];
 
 const categoryKey = (value: string) => {
     const key = value.trim().toLowerCase().replace(/[\s-]+/g, '_');
@@ -51,6 +53,7 @@ const toForm = (event: Event): EventForm => ({
     location: event.location,
     gatheringLocation: event.gatheringLocation || '',
     requiredCount: String(event.requiredCount),
+    standbyCount: String(event.standbyCount ?? 0),
     budget: String(event.budget),
     specifyGenders: Boolean(event.specifyGenders),
     malesCount: event.malesCount == null ? '' : String(event.malesCount),
@@ -70,6 +73,10 @@ interface EditEventModalProps {
 export default function EditEventModal({ event, onClose, onSaved }: EditEventModalProps) {
     const [initial] = useState(() => toForm(event));
     const [form, setForm] = useState(initial);
+    const initialPin: VenuePin | null = event.venueLatitude != null && event.venueLongitude != null
+        ? { latitude: event.venueLatitude, longitude: event.venueLongitude } : null;
+    const [venuePin, setVenuePin] = useState<VenuePin | null>(initialPin);
+    const pinChanged = venuePin?.latitude !== initialPin?.latitude || venuePin?.longitude !== initialPin?.longitude;
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
 
@@ -81,13 +88,22 @@ export default function EditEventModal({ event, onClose, onSaved }: EditEventMod
 
     const handleSave = async () => {
         setError('');
-        if (changed.length === 0) { onClose(); return; }
+        if (changed.length === 0 && !pinChanged) { onClose(); return; }
         if (form.eventDate && form.applicationDeadline && form.applicationDeadline >= form.eventDate) {
             setError('Application deadline must be before the event date.');
             return;
         }
         if (Number(form.requiredCount) < hired) {
             setError(`Staff count cannot be lower than the ${hired} ushers already hired.`);
+            return;
+        }
+        const standbyLimit = maxStandbyCount(Number(form.requiredCount));
+        if (!Number.isInteger(Number(form.standbyCount || 0)) || Number(form.standbyCount || 0) < 0 || Number(form.standbyCount || 0) > standbyLimit) {
+            setError(`Standby must be a whole number from 0 to ${standbyLimit} (half the staff count, rounded up).`);
+            return;
+        }
+        if (changed.includes('budget') && Number(form.budget) < MIN_PAY_PER_DAY_EGP) {
+            setError(`Pay must be at least ${MIN_PAY_PER_DAY_EGP} EGP per usher for each event day.`);
             return;
         }
         if (hired > 0 && Number(form.budget) < event.budget) {
@@ -109,6 +125,9 @@ export default function EditEventModal({ event, onClose, onSaved }: EditEventMod
                 femalesCount: Number(form.femalesCount || 0), requiredCount: Number(form.requiredCount),
             });
         }
+        if (pinChanged) {
+            Object.assign(payload, { venueLatitude: venuePin?.latitude ?? null, venueLongitude: venuePin?.longitude ?? null });
+        }
         setSaving(true);
         try {
             onSaved(await updateEvent(event._id, payload as Partial<Event>));
@@ -124,7 +143,7 @@ export default function EditEventModal({ event, onClose, onSaved }: EditEventMod
         ? hired > 0 ? 'Pay can be raised but not lowered now that ushers are hired.' : null
         : editable === STARTED_FIELDS
             ? 'The event has started, so only the notes can change.'
-            : 'Applications are closed, so staffing, pay, category, and deadline are locked.';
+            : 'Applications are closed, so staffing, pay, category, and deadline are locked. Standby can still change until the start.';
 
     return (
         <Modal isOpen onClose={onClose} title="Edit event">
@@ -145,9 +164,12 @@ export default function EditEventModal({ event, onClose, onSaved }: EditEventMod
                 </div>
                 <Input label="Location" value={form.location} onChange={(e) => set('location', e.target.value)} disabled={!can('location')} />
                 <Input label="Gathering location" value={form.gatheringLocation} onChange={(e) => set('gatheringLocation', e.target.value)} disabled={!can('gatheringLocation')} />
+                <VenuePinField value={venuePin} onChange={setVenuePin} disabled={!can('location')} />
                 <div className="grid gap-4 sm:grid-cols-2">
                     <Input label="Required staff" type="number" min={Math.max(1, hired)} value={form.requiredCount} onChange={(e) => set('requiredCount', e.target.value)} disabled={!can('requiredCount')} />
                     <Input label="Pay per usher (EGP)" type="number" min={hired > 0 ? event.budget : 1} value={form.budget} onChange={(e) => set('budget', e.target.value)} disabled={!can('budget')} />
+                    <Input label={`Standby ushers (up to ${maxStandbyCount(Number(form.requiredCount))})`} type="number" min={0} max={maxStandbyCount(Number(form.requiredCount))}
+                        value={form.standbyCount} onChange={(e) => set('standbyCount', e.target.value)} disabled={!can('standbyCount')} />
                 </div>
                 <label className={`flex items-center gap-2 text-sm text-dark-200 ${can('specifyGenders') ? '' : 'opacity-60'}`}>
                     <input type="checkbox" checked={form.specifyGenders} onChange={(e) => set('specifyGenders', e.target.checked)} disabled={!can('specifyGenders')} />
@@ -181,7 +203,7 @@ export default function EditEventModal({ event, onClose, onSaved }: EditEventMod
                 {error && <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}
                 <div className="flex justify-end gap-3 border-t border-dark-700 pt-4">
                     <Button variant="secondary" onClick={onClose}>Cancel</Button>
-                    <Button onClick={handleSave} isLoading={saving} disabled={changed.length === 0}>Save changes</Button>
+                    <Button onClick={handleSave} isLoading={saving} disabled={changed.length === 0 && !pinChanged}>Save changes</Button>
                 </div>
             </div>
         </Modal>

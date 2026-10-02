@@ -7,14 +7,14 @@ import { PaymentProtection } from '@/types';
 
 const COPY: Record<PaymentProtection, { en: string; ar: string; tone: string; Icon: typeof ShieldCheck }> = {
     secured: {
-        en: 'Your pay is secured. The organization funded it in advance and OO-Ushers releases it to you after the event.',
-        ar: 'أجرك مضمون. قامت الجهة المنظمة بتمويله مقدمًا وسيتم تحويله لك بعد الفعالية.',
+        en: 'Your pay is secured. The organization funded it in advance and OO-Ushers sends it to you automatically a day after the event, as long as you check in.',
+        ar: 'أجرك مضمون. قامت الجهة المنظمة بتمويله مقدمًا وسيتم تحويله لك تلقائيًا بعد الفعالية بيوم، بشرط تسجيل حضورك.',
         tone: 'border-success-500/30 bg-success-500/10 text-success-500',
         Icon: ShieldCheck,
     },
     awaiting_funding: {
-        en: 'The organization has not funded your pay yet. It is due 48 hours before the event starts.',
-        ar: 'لم تقم الجهة المنظمة بتمويل أجرك بعد. يجب التمويل قبل بدء الفعالية بـ48 ساعة.',
+        en: 'The organization has not funded your pay yet. If it is not funded 48 hours before the start, your booking is cancelled and you do not need to attend.',
+        ar: 'لم تقم الجهة المنظمة بتمويل أجرك بعد. إذا لم يتم التمويل قبل البداية بـ48 ساعة يُلغى حجزك ولا داعي للحضور.',
         tone: 'border-warning-500/30 bg-warning-500/10 text-warning-500',
         Icon: AlertTriangle,
     },
