@@ -1,7 +1,7 @@
 # Public pages, localization, theme, and runtime
 
 ## Current behavior
-Next.js App Router uses public/auth/talent/provider/admin route groups. app/layout.tsx composes providers; Sidebar/Navbar supply workspace navigation. Public landing/legal routes cover /, /terms, /privacy, /cookies. Product marketing should reflect implemented usher-booking behavior.
+Next.js App Router uses public/auth/talent/provider/admin route groups. app/layout.tsx composes providers; Sidebar/Navbar supply workspace navigation. Public landing/legal routes cover /, /terms, /privacy, /cookies, /policies/ushers, /policies/organizations, and /policies/payments. Legal pages share `components/shared/LegalPage.tsx`, which holds the policy navigation (`LEGAL_PAGES`) and effective date (`LEGAL_EFFECTIVE_DATE`). Policy text describes implemented backend rules (excuse limits, check-in window, event lifecycle, fees, payouts, data sharing); update it and the effective date when those rules change. Product marketing should reflect implemented usher-booking behavior.
 
 lib/i18n.tsx supports en/ar/ar-eg, stored language preference, and RTL for Arabic. New visible copy should support all languages; some current pages still contain hardcoded English strings. Avoid documenting full translation coverage as complete.
 
@@ -21,6 +21,10 @@ npm run dev serves port 3001; npm run lint, npm run typecheck, and npm run build
 - `app/terms/page.tsx`
 - `app/privacy/page.tsx`
 - `app/cookies/page.tsx`
+- `app/policies/ushers/page.tsx`
+- `app/policies/organizations/page.tsx`
+- `app/policies/payments/page.tsx`
+- `components/shared/LegalPage.tsx`
 - `app/globals.css`
 - `lib/i18n.tsx`
 - `lib/theme.tsx`
