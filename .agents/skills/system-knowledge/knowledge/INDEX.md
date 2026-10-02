@@ -11,6 +11,7 @@ Load only relevant domains, then their source entry points.
 - Event funding, settlements, credit, card refunds, and saved-card UI → [payments](frontend/payments.md)
 - Notifications and navigation → [notifications](frontend/notifications.md)
 - Administration UI → [admin](frontend/admin.md)
+- Organization and platform analytics UI → [analytics](frontend/analytics.md)
 - Public pages, localization, theme, and runtime → [shell-localization](frontend/shell-localization.md)
 - Permissions and role mapping → [roles](ROLES.md)
 
