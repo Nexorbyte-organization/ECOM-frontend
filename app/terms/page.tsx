@@ -21,13 +21,14 @@ export default function TermsPage() {
             { title: 'Platform role', body: 'OO-Ushers connects organizations with ushers and provides tools for applications, booking, attendance, ratings, and payments. Unless agreed in writing, OO-Ushers is not the employer, staffing agency, or agent of either party. Organizations are responsible for lawful working conditions at their events, and each party is responsible for its own legal and tax obligations.' },
             { title: 'Acceptable use', points: [
                 'Do not create false profiles, events, ratings, or attendance records.',
-                'Do not share an attendance QR code with anyone who is not physically at the event, or check in for someone else.',
+                'Do not check in for someone else, share check-in codes with anyone who is not at the event, or fake your location.',
                 'Do not misuse other users’ contact details, evade access controls, upload unlawful content, or use the platform for discrimination, harassment, fraud, or unsafe work.',
             ] },
             { title: 'Suspension and deletion', points: [
                 'Administrators may block accounts that break these terms. Blocked accounts cannot sign in, and a blocked organization’s staff lose access too.',
                 'When an account is deleted, it is removed from the service, but records may be kept as described in the Privacy Policy.',
-                'Ushers who reach 5 late excuses cannot take new events until their account is reviewed (see the Usher Policy).',
+                'Ushers who reach 5 late excuses cannot take new events until their account is reviewed, and ushers with 3 no-shows within 90 days are suspended for 30 days (see the Usher Policy).',
+                'Organizations cannot cancel or delete events themselves; OO-Ushers support handles cancellations (see the Organization Policy and Payments & Fees).',
             ] },
             { title: 'Changes and liability', body: 'The service may change as the product develops, and we will update these terms and their effective date when it does. Nothing in these terms excludes rights or liability that cannot legally be excluded.' },
         ]} />;
