@@ -14,6 +14,8 @@
 
 Organization owners and staff can manage the shared favorite usher list and use rebook-last-team on owned open events; the backend enforces the organization scope and profile gate. AuthProvider.isProvider includes owner/member/supervisor; isOrganizer means owner only. Layouts check workspace role; owner-only staff/financial controls must not treat isProvider as ownership. Current backend workspace event queries are company-wide even for supervisors.
 
+Organization owners and staff see company-wide analytics in the provider dashboard. Admins see platform-wide analytics in the admin dashboard. An acting admin sees the selected organization's analytics until stopping the acting session. Backend routes enforce these scopes.
+
 Profile gate checks talent/owner completeness; it skips staff. Backend checks company owner's completion on protected staff mutations. UI checks are not authoritative authorization.
 
 Sources: `types/index.ts`, `lib/api.ts` (roleMap, normalizeUser), `lib/auth.tsx`, `app/(talent)/layout.tsx`, `app/(provider)/layout.tsx`, `app/(admin)/layout.tsx`, `components/shared/ProfileCompletionGate.tsx`, `components/shared/Sidebar.tsx`.

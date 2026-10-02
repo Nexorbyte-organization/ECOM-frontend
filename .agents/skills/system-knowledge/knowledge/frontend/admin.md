@@ -2,6 +2,8 @@
 
 ## Current behavior
 Admin layout checks isAdmin. Dashboard/users/events consume platform totals, user lists/invitations, verify/unverify, block/unblock/update/delete, late-excuse reset, event status/deletion, and event-action request resolution.
+
+The dashboard now uses the platform-wide database analytics endpoint rather than computing totals from list responses; see [analytics](analytics.md).
 Active organization owner rows in the user list offer “Switch to {organization name}”. Switching enters the provider workspace; a translucent warning banner identifies the organization and offers Stop to restore the admin dashboard. The banner sits outside the provider profile gate so it remains available if the organization profile is incomplete.
 Organization rows also offer Payments, which opens /admin/payments?org=<id> (tier override, credit adjustments, history). /admin/payments without a query lists failed card refunds and underfunded prefunded events (nothing to approve); see [payments](payments.md).
 The user invitation password is masked by default and can be revealed with the shared input control.
