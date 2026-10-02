@@ -115,3 +115,8 @@ export const LANGUAGES = [
     'Turkish',
     'Chinese (Mandarin)',
 ];
+
+// Mirrors the backend limit: standby can be at most half the staff count, rounded up.
+export function maxStandbyCount(requiredCount: number): number {
+    return Math.ceil(Math.max(Number(requiredCount) || 0, 0) / 2);
+}

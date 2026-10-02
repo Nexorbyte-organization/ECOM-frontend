@@ -20,6 +20,7 @@ import {
     Search,
     X,
     Users,
+    Wallet,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -76,6 +77,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             { href: '/provider/profile', label: 'Company Profile', icon: User },
             { href: '/provider/events/new', label: 'Create Event', icon: PlusCircle },
             { href: '/provider/staff', label: 'Manage Staff', icon: Users },
+            { href: '/provider/payments', label: 'Payments', icon: Wallet },
         ] : []),
         { href: '/provider/talent', label: 'Search Talent', icon: Search },
     ];
@@ -84,6 +86,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/admin/users', label: 'Users', icon: Users },
         { href: '/admin/events', label: 'Events', icon: CalendarDays },
+        { href: '/admin/payments', label: 'Payments', icon: Wallet },
     ];
 
     const links = isAdmin ? adminLinks : isTalent ? talentLinks : providerLinks;
@@ -99,7 +102,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             'Manage Staff': 'nav_manage_staff',
             'Search Talent': 'nav_search_talent',
             'Users': 'nav_users',
-            'Events': 'nav_events'
+            'Events': 'nav_events',
+            'Payments': 'nav_payments'
         };
         return t(keyMap[label] || label);
     };

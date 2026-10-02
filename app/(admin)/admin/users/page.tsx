@@ -19,7 +19,7 @@ import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { formatDate, CITIES } from '@/lib/utils';
-import { Users, Search, MapPin, Star, Shield, AlertTriangle, Ban, CheckCircle, RotateCcw, ShieldCheck, ShieldOff, UserPlus, Trash2, LogIn } from 'lucide-react';
+import { Users, Search, MapPin, Star, Shield, AlertTriangle, Ban, CheckCircle, RotateCcw, ShieldCheck, ShieldOff, UserPlus, Trash2, LogIn, Wallet } from 'lucide-react';
 
 export default function AdminUsersPage() {
     const { user: currentUser, switchToOrganization } = useAuth();
@@ -306,6 +306,16 @@ export default function AdminUsersPage() {
                                                     isLoading={isActioning}
                                                 >
                                                     Switch to {provider?.companyName || name}
+                                                </Button>
+                                            )}
+                                            {user.role === UserRole.PROVIDER && (
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    icon={<Wallet size={14} />}
+                                                    onClick={() => router.push(`/admin/payments?org=${user._id}`)}
+                                                >
+                                                    Payments
                                                 </Button>
                                             )}
                                             {/* Block / Unblock */}

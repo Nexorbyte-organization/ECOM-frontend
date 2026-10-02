@@ -85,8 +85,9 @@ export default function TalentEventsPage() {
     const statusVariant = (s: string) =>
         s === 'accepted' ? 'success' as const :
             s === 'rejected' ? 'danger' as const :
-                s === 'excused' ? 'default' as const :
-                    'warning' as const;
+                s === 'standby' ? 'info' as const :
+                    s === 'excused' || s === 'withdrawn' ? 'default' as const :
+                        'warning' as const;
 
     const getTabLabel = (type: 'all' | 'upcoming' | 'past') => {
         const labels: Record<string, string> = {
@@ -108,6 +109,20 @@ export default function TalentEventsPage() {
                 <h1 className="text-2xl font-black text-dark-50">{t('nav_my_events')}</h1>
                 <p className="text-dark-400 mt-1 font-semibold">{isArabic ? 'تتبع طلبات التقديم وحالة الفعاليات الخاصة بك' : 'Track your applications and events'}</p>
             </div>
+
+            {/* Set automatically after repeated missed check-ins; lifts on its own. */}
+            {profile?.suspendedUntil && new Date(profile.suspendedUntil) > new Date() && (
+                <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">
+                    {isArabic
+                        ? `لا يمكنك قبول فعاليات جديدة حتى ${formatDate(profile.suspendedUntil)} بسبب عدم تسجيل الحضور ٣ مرات خلال ٩٠ يومًا.`
+                        : `You cannot take new events until ${formatDate(profile.suspendedUntil)} because you missed check-in 3 times within 90 days.`}
+                </p>
+            )}
+            <p className="text-xs text-dark-400">
+                {isArabic
+                    ? 'يوم الفعالية سجّل حضورك من هاتفك: امسح رمز المشرف أو اكتب الكود أو اضغط "أنا هنا". من لا يسجل حضوره يُعتبر غائبًا ولا يحصل على أجر.'
+                    : 'On the event day, check in with your phone: scan the staff QR, type its code, or tap “I’m here”. Anyone who does not check in counts as a no-show and is not paid.'}
+            </p>
 
             {/* Tabs */}
             <div className="flex gap-2">
@@ -146,7 +161,10 @@ export default function TalentEventsPage() {
                                 <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                                     <Badge variant="primary">{app.event.category}</Badge>
                                     <Badge variant={statusVariant(app.status)}>{app.status}</Badge>
-                                    {app.isDirect && <Badge variant="info">{isArabic ? 'حجز مباشر' : 'Direct Booking'}</Badge>}
+                                    {app.isDirect && <Badge variant="info">{app.standbyInvite ? (isArabic ? 'دعوة احتياط' : 'Standby invitation') : (isArabic ? 'حجز مباشر' : 'Direct Booking')}</Badge>}
+                                    {app.status === 'rejected' && app.standbySince && (
+                                        <Badge variant="default">{isArabic ? 'انتهى الاحتياط' : 'Standby ended'}</Badge>
+                                    )}
                                     {app.isDirect && app.status === 'pending' && (
                                         <Badge variant="warning">{isArabic ? 'بانتظار ردك' : 'Awaiting your answer'}</Badge>
                                     )}

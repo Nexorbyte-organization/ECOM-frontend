@@ -3,7 +3,7 @@
 import ContentSkeleton from '@/components/ui/Skeleton';
 
 import React, { useEffect, useState } from 'react';
-import { searchTalents, getProviderProfileByUserId, getProviderEvents, directBookTalent, isVerifiedTalent } from '@/lib/api';
+import { searchTalents, getFavoriteTalents, addFavoriteTalent, removeFavoriteTalent, getProviderProfileByUserId, getProviderEvents, directBookTalent, isVerifiedTalent } from '@/lib/api';
 import { TalentProfile, Event, TalentSearchFilters } from '@/types';
 import { useAuth } from '@/lib/auth';
 import Card from '@/components/ui/Card';
@@ -12,7 +12,7 @@ import Button from '@/components/ui/Button';
 import Avatar from '@/components/ui/Avatar';
 import Modal from '@/components/ui/Modal';
 import { formatDate, EVENT_CATEGORIES, CITIES } from '@/lib/utils';
-import { Search, MapPin, Star, Shield, Clock, UserPlus, Briefcase } from 'lucide-react';
+import { Search, MapPin, Star, Shield, Clock, UserPlus, Briefcase, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { useProfileCompletion } from '@/components/shared/ProfileCompletionGate';
 
@@ -20,6 +20,9 @@ export default function TalentSearchPage() {
     const { user } = useAuth();
     const { isComplete: isProfileComplete, isChecking: isCheckingProfile } = useProfileCompletion();
     const [talents, setTalents] = useState<TalentProfile[]>([]);
+    const [favorites, setFavorites] = useState<TalentProfile[]>([]);
+    const [favoritesOnly, setFavoritesOnly] = useState(false);
+    const [favoriteBusy, setFavoriteBusy] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [searchCity, setSearchCity] = useState('');
     const [searchCategory, setSearchCategory] = useState('');
@@ -31,6 +34,7 @@ export default function TalentSearchPage() {
     const [bookingOptionsLoading, setBookingOptionsLoading] = useState(false);
     const [bookingLoading, setBookingLoading] = useState(false);
     const [bookingSuccess, setBookingSuccess] = useState(false);
+    const [inviteAsStandby, setInviteAsStandby] = useState(false);
     const [error, setError] = useState('');
 
     const fetchTalents = async () => {
@@ -49,6 +53,36 @@ export default function TalentSearchPage() {
         }
     };
 
+    useEffect(() => {
+        getFavoriteTalents().then(setFavorites).catch((err) => {
+            setError(err instanceof Error ? err.message : 'Could not load favorites.');
+        });
+    }, []);
+
+    const toggleFavorite = async (talent: TalentProfile) => {
+        const saved = favorites.some((item) => item._id === talent._id);
+        setFavoriteBusy(talent._id);
+        try {
+            if (saved) {
+                await removeFavoriteTalent(talent._id);
+                setFavorites((items) => items.filter((item) => item._id !== talent._id));
+            } else {
+                await addFavoriteTalent(talent._id);
+                setFavorites((items) => [...items, talent]);
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Could not update favorites.');
+        } finally {
+            setFavoriteBusy(null);
+        }
+    };
+
+    const shownTalents = favoritesOnly ? favorites : talents;
+    const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
+    const bookableEvents = providerEvents.filter((event) => (inviteAsStandby
+        ? Boolean(event.standbyCount) && new Date(event.eventDate) >= todayStart
+        : event.status === 'open'));
+
     // Search results follow the two server-side filters.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { fetchTalents(); }, [searchCity, searchCategory]);
@@ -60,12 +94,14 @@ export default function TalentSearchPage() {
         setBookingSuccess(false);
         setProviderEvents([]);
         setSelectedEventId('');
+        setInviteAsStandby(false);
         setBookingModal({ open: true, talent });
         try {
             const profile = await getProviderProfileByUserId(user._id);
             if (!profile) return;
             const events = await getProviderEvents(profile._id);
-            setProviderEvents(events.data.filter((e) => e.status === 'open'));
+            // Standby invitations also work after hiring closes, until the event starts.
+            setProviderEvents(events.data.filter((e) => e.status === 'open' || e.status === 'confirmed'));
             setBookingModal({ open: true, talent });
             setSelectedEventId('');
             setBookingSuccess(false);
@@ -81,7 +117,7 @@ export default function TalentSearchPage() {
         setBookingLoading(true);
         setError('');
         try {
-            await directBookTalent(selectedEventId, bookingModal.talent._id);
+            await directBookTalent(selectedEventId, bookingModal.talent._id, inviteAsStandby);
             setBookingSuccess(true);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Could not send booking request.');
@@ -96,6 +132,12 @@ export default function TalentSearchPage() {
             <div>
                 <h1 className="text-2xl font-bold text-dark-50">Search Talent</h1>
                 <p className="text-dark-400 mt-1">Find and book the perfect talent for your events</p>
+                <button type="button" onClick={() => setFavoritesOnly((value) => !value)}
+                    aria-pressed={favoritesOnly}
+                    className="mt-3 inline-flex items-center gap-2 rounded-xl border border-dark-700 px-3 py-2 text-sm text-dark-200 hover:border-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-500">
+                    <Heart size={15} fill={favoritesOnly ? 'currentColor' : 'none'} />
+                    {favoritesOnly ? 'Show all talent' : 'Favorites (' + favorites.length + ')'}
+                </button>
             </div>
 
             {/* Filters */}
@@ -127,18 +169,25 @@ export default function TalentSearchPage() {
             </Card>
 
             {/* Results */}
-            {loading ? (
+            {loading && !favoritesOnly ? (
                 <ContentSkeleton variant="cards" />
-            ) : talents.length === 0 ? (
+            ) : shownTalents.length === 0 ? (
                 <Card className="text-center py-12">
                     <Search size={32} className="mx-auto text-dark-600 mb-3" />
-                    <p className="text-dark-400">No talent found matching your criteria</p>
+                    <p className="text-dark-400">{favoritesOnly ? 'No favorite ushers yet' : 'No talent found matching your criteria'}</p>
                 </Card>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
-                    {talents.map((talent) => (
+                    {shownTalents.map((talent) => (
                         <Card key={talent._id} className="flex flex-col">
                             <div className="flex items-center gap-3 mb-4">
+                                <button type="button" onClick={() => toggleFavorite(talent)}
+                                    disabled={favoriteBusy === talent._id}
+                                    aria-label={favorites.some((item) => item._id === talent._id) ? 'Remove ' + talent.fullName + ' from favorites' : 'Add ' + talent.fullName + ' to favorites'}
+                                    aria-pressed={favorites.some((item) => item._id === talent._id)}
+                                    className="rounded-lg p-2 text-primary-400 hover:bg-dark-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-500 disabled:opacity-50">
+                                    <Heart size={18} fill={favorites.some((item) => item._id === talent._id) ? 'currentColor' : 'none'} />
+                                </button>
                                 <Avatar src={talent.photo} name={talent.fullName} size="lg" />
                                 <div>
                                     <div className="flex items-center gap-1.5">
@@ -185,7 +234,7 @@ export default function TalentSearchPage() {
                         <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-success-500/15 flex items-center justify-center">
                             <Briefcase size={20} className="text-success-400" />
                         </div>
-                        <p className="text-sm font-semibold text-dark-100">Booking request sent!</p>
+                        <p className="text-sm font-semibold text-dark-100">{inviteAsStandby ? 'Standby invitation sent!' : 'Booking request sent!'}</p>
                         <p className="text-xs text-dark-400 mt-1">Waiting for talent to accept</p>
                         <Button className="mt-4" variant="secondary" onClick={() => setBookingModal({ open: false, talent: null })}>
                             Close
@@ -193,12 +242,20 @@ export default function TalentSearchPage() {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        <p className="text-sm text-dark-300">Select an event to book this talent for:</p>
-                        {providerEvents.length === 0 ? (
-                            <p className="text-sm text-dark-500">No open events available. Create an event first.</p>
+                        <label className="flex items-start gap-2 text-sm text-dark-200 cursor-pointer">
+                            <input type="checkbox" checked={inviteAsStandby} className="mt-1 h-4 w-4 accent-primary-500"
+                                onChange={(e) => { setInviteAsStandby(e.target.checked); setSelectedEventId(''); }} />
+                            <span>
+                                Invite to the standby list
+                                <span className="block text-xs text-dark-400">Unpaid and on call. They&apos;re moved in automatically if a hired usher drops out before the start.</span>
+                            </span>
+                        </label>
+                        <p className="text-sm text-dark-300">Select an event to {inviteAsStandby ? 'invite this talent to as standby' : 'book this talent for'}:</p>
+                        {bookableEvents.length === 0 ? (
+                            <p className="text-sm text-dark-500">{inviteAsStandby ? 'No upcoming events have standby spots. Set a standby count on an event first.' : 'No open events available. Create an event first.'}</p>
                         ) : (
                             <div className="space-y-2">
-                                {providerEvents.map((event) => (
+                                {bookableEvents.map((event) => (
                                     <button
                                         key={event._id}
                                         onClick={() => setSelectedEventId(event._id)}
@@ -214,7 +271,7 @@ export default function TalentSearchPage() {
                             </div>
                         )}
                         <Button onClick={handleDirectBook} isLoading={bookingLoading} disabled={!selectedEventId || !isProfileComplete} className="w-full">
-                            Send Booking Request
+                            {inviteAsStandby ? 'Send Standby Invitation' : 'Send Booking Request'}
                         </Button>
                     </div>
                 )}

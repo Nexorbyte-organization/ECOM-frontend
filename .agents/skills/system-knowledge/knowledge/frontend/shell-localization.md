@@ -11,6 +11,8 @@ Loading UI uses shared `components/ui/Skeleton.tsx` shapes for workspace/auth in
 
 `components/ui/ToastProvider.tsx` lives above AuthProvider and persists across navigation. `lib/toast.ts` provides success/error/info feedback, a maximum of three visible notices, and brief duplicate suppression. Success copy supports English/Arabic/Egyptian Arabic; backend error strings remain as returned. All notices auto-dismiss after 3 seconds, including while hovered or focused. They remain manually dismissible and announce success politely and errors assertively. Form validation and important persistent inline errors remain visible. Destructive confirmations remain in place.
 
+Deployment updates: `next.config.ts` bakes `NEXT_PUBLIC_APP_VERSION` (Vercel deployment ID, else commit SHA, else build time; `dev` under `next dev`, which disables checks). `app/version/route.ts` serves the running deployment's version uncached at `/version`. `components/shared/UpdateNotice.tsx` mounts `UpdateBanner` in the root layout; it compares versions on focus/visibility, every 5 minutes, and after uncaught chunk-load or missing-server-action errors, then shows a localized "new version available" notice with a Refresh button. `app/error.tsx` and `app/global-error.tsx` replace the default crash screen with the same refresh prompt when the error comes from a stale build or a newer deployment exists, and otherwise a localized generic error with Refresh. Logic lives in `lib/version.ts`.
+
 npm run dev serves port 3001; npm run lint, npm run typecheck, and npm run build are available checks. Backend is a separate repository and API service; no sibling directory or personal configuration is required to use this skill.
 
 ## Source entry points
@@ -32,6 +34,11 @@ npm run dev serves port 3001; npm run lint, npm run typecheck, and npm run build
 - `components/ui/Skeleton.tsx`
 - `components/ui/ToastProvider.tsx`
 - `lib/toast.ts`
+- `lib/version.ts`
+- `components/shared/UpdateNotice.tsx`
+- `app/error.tsx`
+- `app/global-error.tsx`
+- `app/version/route.ts`
 - `package.json`
 - `next.config.ts`
 
