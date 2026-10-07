@@ -598,24 +598,19 @@ export default function EventDetailPage() {
 
             {/* Any organization staff member can open a check-in point on their phone. */}
             {event.status !== EventStatus.CANCELLED && !event.fundsReleasedAt && (
-                <Card className="border-primary-500/25">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-start gap-3">
-                            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary-500/10 text-primary-400">
-                                <QrCode size={20} />
-                            </div>
-                            <div>
-                                <h2 className="font-bold text-dark-50">Check-in</h2>
-                                <p className="mt-1 max-w-xl text-sm text-dark-400">
-                                    Open the check-in screen on a supervisor’s phone where ushers meet: the gathering point, the bus, or the venue.
-                                    Ushers scan its live QR or type its code, and must be near that phone. Anyone who does not check in counts as a no-show.
-                                </p>
-                            </div>
-                        </div>
-                        <Link href={`/provider/events/${event._id}/check-in`} className="shrink-0">
-                            <Button icon={<QrCode size={16} />}>Open check-in screen</Button>
-                        </Link>
+                <Card>
+                    <div className="flex items-center gap-3">
+                        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary-50 text-primary-600 dark:text-primary-400"><QrCode size={20} aria-hidden="true" /></span>
+                        <h2 className="display-sm text-lg">Check-in</h2>
                     </div>
+                    <div className="mt-4 space-y-2.5 text-sm leading-relaxed text-dark-300">
+                        <p>Open it on a supervisor’s phone where ushers meet: the gathering point, the bus or the venue.</p>
+                        <p>Ushers scan the live QR or type its code, and must be near that phone.</p>
+                        <p className="font-medium text-dark-100">Anyone who does not check in counts as a no-show.</p>
+                    </div>
+                    <Link href={`/provider/events/${event._id}/check-in`} className="mt-5 block">
+                        <Button icon={<QrCode size={16} />} className="w-full">Open check-in screen</Button>
+                    </Link>
                 </Card>
             )}
 

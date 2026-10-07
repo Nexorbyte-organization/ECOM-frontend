@@ -9,9 +9,11 @@ import { useAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import Select from '@/components/ui/Select';
 import Modal from '@/components/ui/Modal';
+import PhotoViewer from '@/components/ui/PhotoViewer';
 import { EVENT_CATEGORIES, CITIES, formatEventDates } from '@/lib/utils';
 import { Search, MapPin, Star, Shield, UserPlus, Briefcase, Heart, BadgeCheck } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useProfileCompletion } from '@/components/shared/ProfileCompletionGate';
 
 const INITIAL_TINTS = ['bg-cat-coral/15 text-cat-coral-ink', 'bg-cat-sky/15 text-cat-sky-ink', 'bg-cat-teal/15 text-cat-teal-ink', 'bg-cat-rose/15 text-cat-rose-ink', 'bg-cat-sun/20 text-cat-sun-ink', 'bg-cat-lime/20 text-cat-lime-ink'];
@@ -30,6 +32,8 @@ function TalentPhoto({ talent }: { talent: TalentProfile }) {
 
 export default function TalentSearchPage() {
     const { user } = useAuth();
+    const router = useRouter();
+    const [viewer, setViewer] = useState<{ talent: TalentProfile; index: number } | null>(null);
     const { isComplete: isProfileComplete, isChecking: isCheckingProfile } = useProfileCompletion();
     const [talents, setTalents] = useState<TalentProfile[]>([]);
     const [favorites, setFavorites] = useState<TalentProfile[]>([]);
@@ -90,6 +94,7 @@ export default function TalentSearchPage() {
     };
 
     const shownTalents = favoritesOnly ? favorites : talents;
+    const photosOf = (talent: TalentProfile) => [talent.photo, ...talent.portfolioImages].filter(Boolean).map((src, i) => ({ src, alt: i === 0 ? talent.fullName : `${talent.fullName}, photo ${i + 1}` }));
     const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
     const bookableEvents = providerEvents.filter((event) => (inviteAsStandby
         ? Boolean(event.standbyCount) && new Date(event.eventDate) >= todayStart
@@ -178,9 +183,11 @@ export default function TalentSearchPage() {
                         return (
                             <article key={talent._id} className="group min-w-0">
                                 <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-dark-800">
-                                    <Link href={`/provider/talent/${talent._id}`} className="absolute inset-0" aria-label={`Open ${talent.fullName}'s profile`}>
+                                    <button type="button" className="absolute inset-0 cursor-zoom-in"
+                                        aria-label={`View ${talent.fullName}'s photo larger`}
+                                        onClick={() => photosOf(talent).length ? setViewer({ talent, index: 0 }) : router.push(`/provider/talent/${talent._id}`)}>
                                         <TalentPhoto talent={talent} />
-                                    </Link>
+                                    </button>
                                     <button type="button" onClick={() => toggleFavorite(talent)}
                                         disabled={favoriteBusy === talent._id}
                                         aria-label={saved ? 'Remove ' + talent.fullName + ' from favorites' : 'Add ' + talent.fullName + ' to favorites'}
@@ -210,6 +217,38 @@ export default function TalentSearchPage() {
                     })}
                 </div>
             )}
+
+            {/* Bigger photo, with the facts and the two things you can do next */}
+            <PhotoViewer
+                label={viewer ? `${viewer.talent.fullName}, photos` : 'Photos'}
+                photos={viewer ? photosOf(viewer.talent) : []}
+                index={viewer ? viewer.index : null}
+                onIndexChange={(index) => setViewer((current) => current && { ...current, index })}
+                onClose={() => setViewer(null)}
+            >
+                {viewer && (
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div className="min-w-0">
+                            <p className="display-sm flex items-center gap-1.5 text-xl">
+                                <span className="truncate">{viewer.talent.fullName}</span>
+                                {isVerifiedTalent(viewer.talent) && <BadgeCheck size={18} className="shrink-0 text-primary-500" aria-label="Verified" />}
+                            </p>
+                            <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-dark-300">
+                                <span className="inline-flex items-center gap-1"><MapPin size={14} aria-hidden="true" />{viewer.talent.city}</span>
+                                <span className="inline-flex items-center gap-1"><Star size={14} className="text-cat-sun" fill="currentColor" aria-hidden="true" />{viewer.talent.ratingAverage}</span>
+                                <span className="inline-flex items-center gap-1"><Shield size={14} className="text-primary-500" aria-hidden="true" />{viewer.talent.reliabilityScore}%</span>
+                            </p>
+                        </div>
+                        <div className="flex gap-2">
+                            <Link href={`/provider/talent/${viewer.talent._id}`} className="press inline-flex min-h-10 items-center rounded-lg border border-dark-500 px-4 text-sm font-semibold hover:bg-dark-850">View profile</Link>
+                            <Button icon={<UserPlus size={14} />} disabled={isCheckingProfile || !isProfileComplete}
+                                onClick={() => { const talent = viewer.talent; setViewer(null); void openBookingModal(talent); }}>
+                                {isProfileComplete ? 'Book' : 'Complete profile'}
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </PhotoViewer>
 
             {/* Direct Booking Modal */}
             <Modal

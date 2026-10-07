@@ -13,6 +13,7 @@ import {
     uploadTalentPortfolioImage, deleteTalentPortfolioImage,
 } from '@/lib/api';
 import { TalentProfile, Event, Application, Attendance, Review, PaymentMethod } from '@/types';
+import Collapsible from '@/components/ui/Collapsible';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import ProfileOptionPicker from '@/components/ui/ProfileOptionPicker';
@@ -588,10 +589,10 @@ export default function TalentProfilePage() {
             </Card>
 
             {/* Event History */}
-            <Card>
-                <h3 className="text-xs font-black text-dark-300 mb-4">
-                    {t('event_history_title')} ({history.length})
-                </h3>
+            <Collapsible
+                title={`${t('event_history_title')} (${history.length})`}
+                summary={history.length ? `${history.filter((item) => item.attendance?.status === 'present').length} attended` : undefined}
+            >
                 {historyLoading ? <ContentSkeleton variant="list" count={2} /> : historyError ? <p role="alert" className="text-sm text-danger-500">{historyError}</p> : history.length === 0 ? (
                     <p className="text-sm text-dark-500 text-center py-6 font-semibold">{t('no_history')}</p>
                 ) : (
@@ -626,7 +627,7 @@ export default function TalentProfilePage() {
                         ))}
                     </div>
                 )}
-            </Card>
+            </Collapsible>
 
             {/* Save Button */}
             <div className="flex justify-end">

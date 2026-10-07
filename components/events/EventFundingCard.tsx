@@ -374,7 +374,7 @@ export default function EventFundingCard({ event, isOwner, refreshKey = 0, onEve
             )}
 
             {!summary.released && !cancelled && !completed && (
-                <p className="mt-4 text-xs text-dark-500">{policyText(summary)}{summary.cancellationPolicy.currentRefundPercent !== null ? ` Right now: ${summary.cancellationPolicy.currentRefundPercent}% would return.` : ''}</p>
+                <p className="mt-4 text-xs leading-relaxed text-dark-300">{policyText(summary)}{summary.cancellationPolicy.currentRefundPercent !== null ? ` Right now: ${summary.cancellationPolicy.currentRefundPercent}% would return.` : ''}</p>
             )}
             {summary.released && (
                 <p className="mt-4 flex items-center gap-1 text-xs text-success-500"><CheckCircle2 size={13} /> Released {formatDateTime(summary.fundsReleasedAt)}.</p>
