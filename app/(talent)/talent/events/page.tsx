@@ -7,12 +7,13 @@ import { useAuth } from '@/lib/auth';
 import { useLanguage } from '@/lib/i18n';
 import { getTalentProfileByUserId, getTalentApplications, getTalentProfile, excuseFromEvent } from '@/lib/api';
 import { Application, Event, TalentProfile } from '@/types';
-import Card from '@/components/ui/Card';
+import Tabs from '@/components/ui/Tabs';
+import GigTicket from '@/components/events/GigTicket';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
-import { formatDate, formatEventDates } from '@/lib/utils';
-import { CalendarDays, MapPin, Clock, LogOut, MessageCircle } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
+import { LogOut, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function TalentEventsPage() {
@@ -102,115 +103,72 @@ export default function TalentEventsPage() {
         return <ContentSkeleton variant="list" />;
     }
 
+    const countFor = (type: 'all' | 'upcoming' | 'past') => applications.filter((a) => {
+        if (type === 'upcoming') return new Date(a.event.endDate || a.event.eventDate) >= now;
+        if (type === 'past') return new Date(a.event.endDate || a.event.eventDate) < now;
+        return true;
+    }).length;
+
     return (
-        <div className="space-y-6 animate-fade-in text-start">
+        <div className="space-y-8 text-start">
             {error && <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}
-            <div>
-                <h1 className="text-2xl font-black text-dark-50">{t('nav_my_events')}</h1>
-                <p className="text-dark-400 mt-1 font-semibold">{isArabic ? 'تتبع طلبات التقديم وحالة الفعاليات الخاصة بك' : 'Track your applications and events'}</p>
-            </div>
+            <header>
+                <h1 className="display text-5xl sm:text-6xl">{t('nav_my_events')}</h1>
+                <p className="mt-2 max-w-[52ch] text-dark-300">
+                    {isArabic
+                        ? 'يوم الفعالية سجّل حضورك من هاتفك: امسح رمز المشرف أو اكتب الكود أو اضغط "أنا هنا". من لا يسجل حضوره يُعتبر غائبًا ولا يحصل على أجر.'
+                        : 'On the event day, check in with your phone: scan the staff QR, type its code, or tap “I’m here”. Anyone who does not check in counts as a no-show and is not paid.'}
+                </p>
+            </header>
 
             {/* Set automatically after repeated missed check-ins; lifts on its own. */}
             {profile?.suspendedUntil && new Date(profile.suspendedUntil) > new Date() && (
-                <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">
+                <p role="alert" className="rounded-lg border-2 border-danger-500 bg-danger-500/10 p-3 text-sm font-medium text-danger-500">
                     {isArabic
                         ? `لا يمكنك قبول فعاليات جديدة حتى ${formatDate(profile.suspendedUntil)} بسبب عدم تسجيل الحضور ٣ مرات خلال ٩٠ يومًا.`
                         : `You cannot take new events until ${formatDate(profile.suspendedUntil)} because you missed check-in 3 times within 90 days.`}
                 </p>
             )}
-            <p className="text-xs text-dark-400">
-                {isArabic
-                    ? 'يوم الفعالية سجّل حضورك من هاتفك: امسح رمز المشرف أو اكتب الكود أو اضغط "أنا هنا". من لا يسجل حضوره يُعتبر غائبًا ولا يحصل على أجر.'
-                    : 'On the event day, check in with your phone: scan the staff QR, type its code, or tap “I’m here”. Anyone who does not check in counts as a no-show and is not paid.'}
-            </p>
 
-            {/* Tabs */}
-            <div className="flex gap-2">
-                {(['all', 'upcoming', 'past'] as const).map((tValue) => (
-                    <button
-                        key={tValue}
-                        onClick={() => setTab(tValue)}
-                        className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer capitalize ${
-                          tab === tValue 
-                            ? 'bg-primary-500 text-on-primary border-primary-500' 
-                            : 'bg-dark-900 text-dark-200 border-dark-50 hover:bg-dark-800'
-                        }`}
-                    >
-                        {getTabLabel(tValue)} ({applications.filter((a) => {
-                            if (tValue === 'upcoming') return new Date(a.event.endDate || a.event.eventDate) >= now;
-                            if (tValue === 'past') return new Date(a.event.endDate || a.event.eventDate) < now;
-                            return true;
-                        }).length})
-                    </button>
-                ))}
-            </div>
+            <Tabs label={t('nav_my_events')} value={tab} onChange={setTab}
+                items={(['all', 'upcoming', 'past'] as const).map((value) => ({ value, label: getTabLabel(value), count: countFor(value) }))} />
 
             {filtered.length === 0 ? (
-                <Card className="text-center py-12">
-                    <CalendarDays size={32} className="mx-auto text-dark-600 mb-3" />
-                    <p className="text-dark-450 font-bold">{isArabic ? 'لم يتم العثور على فعاليات' : 'No events found'}</p>
-                    <Link href="/talent/jobs" className="text-xs text-primary-555 hover:text-primary-450 mt-2 inline-block font-bold">
+                <section className="rounded-2xl border-2 border-dashed border-dark-500 p-10 text-center">
+                    <p className="display text-4xl">{isArabic ? 'مفيش حاجة هنا' : 'Nothing here yet'}</p>
+                    <Link href="/talent/jobs" className="press mt-5 inline-flex min-h-11 items-center rounded-xl border-2 border-edge bg-accent-400 px-6 font-bold text-ticket-ink">
                         {isArabic ? 'تصفح الوظائف المتاحة' : 'Browse jobs'}
                     </Link>
-                </Card>
+                </section>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                     {filtered.map((app) => (
-                        <Card key={app._id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-dark-950">
-                            <Link href={`/talent/jobs/${app.event._id}`} className="flex-1">
-                                <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                                    <Badge variant="primary">{app.event.category}</Badge>
-                                    <Badge variant={statusVariant(app.status)}>{app.status}</Badge>
+                        <GigTicket key={app._id} event={app.event} href={`/talent/jobs/${app.event._id}`}
+                            aside={<Badge variant={statusVariant(app.status)}>{app.status}</Badge>}
+                            footer={(
+                                <div className="flex flex-wrap items-center gap-2">
                                     {app.isDirect && <Badge variant="info">{app.standbyInvite ? (isArabic ? 'دعوة احتياط' : 'Standby invitation') : (isArabic ? 'حجز مباشر' : 'Direct Booking')}</Badge>}
-                                    {app.status === 'rejected' && app.standbySince && (
-                                        <Badge variant="default">{isArabic ? 'انتهى الاحتياط' : 'Standby ended'}</Badge>
-                                    )}
-                                    {app.isDirect && app.status === 'pending' && (
-                                        <Badge variant="warning">{isArabic ? 'بانتظار ردك' : 'Awaiting your answer'}</Badge>
-                                    )}
-                                    {app.referredBy && (
-                                        <Badge variant="info">👥 {isArabic ? `ترشيح من ${referrerNames[app.referredBy] || ''}` : `Referred by ${referrerNames[app.referredBy] || ''}`}</Badge>
+                                    {app.status === 'rejected' && app.standbySince && <Badge variant="default">{isArabic ? 'انتهى الاحتياط' : 'Standby ended'}</Badge>}
+                                    {app.isDirect && app.status === 'pending' && <Badge variant="warning">{isArabic ? 'بانتظار ردك' : 'Awaiting your answer'}</Badge>}
+                                    {app.referredBy && <Badge variant="info">{isArabic ? `ترشيح من ${referrerNames[app.referredBy] || ''}` : `Referred by ${referrerNames[app.referredBy] || ''}`}</Badge>}
+                                    {/* Excuse & WhatsApp for accepted events */}
+                                    {app.status === 'accepted' && new Date(app.event.eventDate) >= now && (
+                                        <>
+                                            {app.event.whatsappGroupLink && (
+                                                <a href={app.event.whatsappGroupLink} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                                                    className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border-2 border-edge bg-ticket-mint px-3 text-xs font-bold text-ticket-ink">
+                                                    <MessageCircle size={14} />{isArabic ? 'مجموعة واتساب' : 'WhatsApp'}
+                                                </a>
+                                            )}
+                                            <Button variant="ghost" size="sm" icon={<LogOut size={14} />}
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExcuseModal({ open: true, app }); }}
+                                                className="text-dark-300 hover:text-danger-500">
+                                                {t('excuse_btn')}
+                                            </Button>
+                                        </>
                                     )}
                                 </div>
-                                <h3 className="text-sm font-bold text-dark-100">{app.event.title}</h3>
-                                <div className="flex items-center gap-4 mt-1.5 font-semibold">
-                                    <span className="text-xs text-dark-400 flex items-center gap-1"><MapPin size={12} className="text-primary-500" /> {app.event.location}</span>
-                                    <span className="text-xs text-dark-400 flex items-center gap-1"><Clock size={12} className="text-dark-300" /> {formatEventDates(app.event)}</span>
-                                </div>
-                            </Link>
-                            {/* Excuse & WhatsApp button for accepted events */}
-                            {app.status === 'accepted' && new Date(app.event.eventDate) >= now && (
-                                <div className="flex items-center gap-2 shrink-0">
-                                    {app.event.whatsappGroupLink && (
-                                        <a
-                                            href={app.event.whatsappGroupLink}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-success-500 hover:bg-success-600 text-white transition-all cursor-pointer border border-success-600 flex-shrink-0"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                            }}
-                                        >
-                                            <MessageCircle size={13} />
-                                            {isArabic ? 'مجموعة واتساب' : 'WhatsApp'}
-                                        </a>
-                                    )}
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        icon={<LogOut size={14} />}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setExcuseModal({ open: true, app });
-                                        }}
-                                        className="text-dark-400 hover:text-danger-500 shrink-0 border border-dark-900 hover:bg-dark-950"
-                                    >
-                                        {t('excuse_btn')}
-                                    </Button>
-                                </div>
-                            )}
-                        </Card>
+                            )} />
                     ))}
                 </div>
             )}

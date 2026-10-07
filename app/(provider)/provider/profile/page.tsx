@@ -226,7 +226,7 @@ export default function ProviderProfilePage() {
         <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-dark-50">Company Profile</h1>
+                    <h1 className="display text-5xl sm:text-6xl">Company Profile</h1>
                     <p className="text-dark-400 mt-1">Manage your company information</p>
                 </div>
                 {success && <Badge variant="success">✓ Saved successfully</Badge>}

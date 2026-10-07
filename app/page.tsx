@@ -234,50 +234,61 @@ export default function HomePage() {
         </header>
 
         <main>
-        {/* ─── HERO: the logo, scaled up into two windows ──────── */}
-        <section className="bg-bottle text-bottle-text">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-14 pb-10 md:pt-20 lg:pt-24">
-            <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-16">
+        {/* ─── HERO: yellow field, the logo scaled up into two windows ──────── */}
+        <section className="on-color bg-ticket-amber">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-10 md:pt-16 lg:pt-20">
+            <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-14">
               <div className="text-start">
-                <h1 className={`display text-white ${isArabic ? 'text-[2.75rem] sm:text-6xl lg:text-7xl' : 'text-[3.5rem] sm:text-7xl lg:text-[5.75rem] xl:text-[6.5rem]'}`}>
+                <h1 className={`display ${isArabic ? 'text-[2.75rem] sm:text-6xl lg:text-7xl' : 'text-[3.5rem] sm:text-7xl lg:text-[5.75rem] xl:text-[6.5rem]'}`}>
                   {t('lp_hero_title')}
                 </h1>
-                <p className="mt-6 max-w-[36ch] text-lg leading-relaxed text-bottle-muted sm:text-xl">
+                <p className="mt-6 max-w-[36ch] text-lg font-medium leading-relaxed sm:text-xl">
                   {t('lp_hero_sub')}
                 </p>
                 <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                  <Button id="find-staff-cta" variant="signal" size="lg" onClick={() => router.push('/register?role=provider')}>
+                  <button
+                    id="find-staff-cta"
+                    onClick={() => router.push('/register?role=provider')}
+                    className="press inline-flex min-h-12 items-center justify-center rounded-xl border-2 border-ticket-ink bg-ticket-ink px-7 text-base font-bold text-white shadow-[4px_4px_0_0_#fff] cursor-pointer"
+                  >
                     {isArabic ? arCopy('ابحث عن موظفين', 'دوّر على ستاف') : 'Find Staff'}
-                  </Button>
+                  </button>
                   <button
                     id="become-usher-cta"
                     onClick={() => router.push('/register?role=talent')}
-                    className="inline-flex min-h-10 items-center justify-center rounded-lg border border-bottle-line px-6 py-3 text-base font-semibold text-bottle-text transition-colors hover:bg-bottle-lift cursor-pointer"
+                    className="press inline-flex min-h-12 items-center justify-center rounded-xl border-2 border-ticket-ink bg-white px-7 text-base font-bold text-ticket-ink shadow-[4px_4px_0_0_#0B1F1B] cursor-pointer"
                   >
                     {isArabic ? arCopy('انضم كموظف', 'اشتغل كأشر') : 'Become an Usher'}
                   </button>
                 </div>
               </div>
 
-              <div className="flex justify-center gap-3 sm:gap-4 lg:justify-end" dir="ltr">
+              <div className="relative mx-auto flex w-full max-w-[34rem] justify-center gap-3 sm:gap-4 lg:mx-0 lg:justify-end" dir="ltr">
                 <div
                   role="img"
                   aria-label={t('lp_hero_photo_alt')}
-                  className="punch-window w-[clamp(140px,40vw,200px)] lg:w-[clamp(220px,20vw,310px)]"
+                  className="punch-window h-fit w-[42%] self-start border-[3px] border-ticket-ink lg:w-[clamp(200px,17vw,260px)]"
                   style={{ '--photo': 'url(/oo-ushers-event-hero.png)', '--zoom': '300%', '--px': '59%', '--py': '21%', '--delay': '0.2s' } as React.CSSProperties}
                 />
                 <div
                   aria-hidden="true"
-                  className="punch-window w-[clamp(140px,40vw,200px)] lg:w-[clamp(220px,20vw,310px)]"
+                  className="punch-window mt-10 h-fit w-[42%] self-start border-[3px] border-ticket-ink lg:w-[clamp(200px,17vw,260px)]"
                   style={{ '--photo': 'url(/oo-ushers-event-hero.png)', '--zoom': '300%', '--px': '91%', '--py': '66%', '--delay': '0.55s' } as React.CSSProperties}
                 />
+                {/* A sample gig, stuck on top. */}
+                <div aria-hidden="true" className="sticker-wobble absolute -bottom-6 start-1/2 w-[17rem] -translate-x-1/2 sm:-bottom-4 sm:start-[12%] sm:translate-x-0">
+                  <div className="ticket !flex border-ticket-ink bg-white shadow-[5px_5px_0_0_#0B1F1B]" style={{ '--ticket-bg': 'var(--color-ticket-amber)' } as React.CSSProperties}>
+                    <div className="flex w-16 shrink-0 flex-col items-center justify-center bg-ticket-coral py-3 text-ticket-ink"><span className="display text-3xl leading-none">14</span><span className="text-xs font-semibold">Oct</span></div>
+                    <div className="ticket-body bg-white px-3 py-2.5 text-ticket-ink"><p className="display-sm text-base">Brand launch</p><p className="text-xs">Cairo, 8 ushers, 900 EGP</p></div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <ul className="mt-14 grid border-t border-bottle-line md:grid-cols-3 md:divide-x md:divide-bottle-line rtl:md:divide-x-reverse">
+            <ul className="mt-16 grid border-t-2 border-ticket-ink md:grid-cols-3 md:divide-x-2 md:divide-ticket-ink rtl:md:divide-x-reverse">
               {heroFacts.map((fact) => (
-                <li key={fact} className="flex items-start gap-3 py-5 text-sm text-bottle-text md:px-6 md:first:ps-0">
-                  <span aria-hidden="true" className="mt-1 size-2.5 shrink-0 rounded-full border-[1.5px] border-accent-400" />
+                <li key={fact} className="flex items-start gap-3 py-5 text-sm font-semibold md:px-6 md:first:ps-0">
+                  <span aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 rounded-full border-2 border-ticket-ink bg-white" />
                   {fact}
                 </li>
               ))}
@@ -300,7 +311,7 @@ export default function HomePage() {
                   <ol className="mt-8 space-y-7">
                     {col.steps.map((step, i) => (
                       <li key={step.title} className="flex gap-5">
-                        <span aria-hidden="true" className="display-sm grid size-10 shrink-0 place-items-center rounded-full border-[1.5px] border-primary-500 text-lg text-primary-500">{i + 1}</span>
+                        <span aria-hidden="true" className={`display-sm grid size-11 shrink-0 place-items-center rounded-full border-2 border-edge text-xl text-ticket-ink ${["bg-ticket-coral","bg-ticket-mint","bg-ticket-sky"][i % 3]}`}>{i + 1}</span>
                         <div>
                           <p className="font-semibold text-dark-50">{step.title}</p>
                           <p className="mt-1 max-w-[44ch] text-sm leading-relaxed text-dark-300">{step.desc}</p>
@@ -316,7 +327,7 @@ export default function HomePage() {
         </section>
 
         {/* ─── ESTIMATOR ────────────────────────────────────── */}
-        <section id="estimator" className="border-y border-dark-600 bg-dark-900 py-20 sm:py-24">
+        <section id="estimator" className="on-color border-y-2 border-ticket-ink bg-ticket-sky py-20 sm:py-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <div className="max-w-2xl text-start">
               <h2 className={h2}>{t('estimator_title')}</h2>
@@ -485,14 +496,15 @@ export default function HomePage() {
         </section>
 
         {/* ─── WHAT THE RECORD SHOWS ────────────────────────── */}
-        <section className="border-y border-dark-600 bg-dark-900 py-20 sm:py-24">
+        <section className="on-color border-y-2 border-ticket-ink bg-ticket-coral py-20 sm:py-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 text-start">
             <h2 className={`${h2} max-w-[20ch]`}>{t('lp_why_title')}</h2>
-            <dl className="mt-12 grid gap-10 md:grid-cols-3">
-              {whyFeatures.slice(0, 3).map((feat) => (
-                <div key={feat.title} className="border-t-[3px] border-dark-50 pt-5">
-                  <dt className="display-sm text-2xl text-dark-50">{feat.title}</dt>
-                  <dd className="mt-3 max-w-[34ch] text-base leading-relaxed text-dark-300">{feat.desc}</dd>
+            {/* One slip, three lines: a receipt of what you can verify, not three matching cards. */}
+            <dl className="mt-12 max-w-4xl rounded-2xl border-2 border-ticket-ink bg-white px-6 shadow-[6px_6px_0_0_#0B1F1B] sm:px-10 md:ms-[8%]">
+              {whyFeatures.slice(0, 3).map((feat, i) => (
+                <div key={feat.title} className={`grid gap-2 py-7 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] md:gap-10 ${i > 0 ? 'border-t-2 border-dashed border-ticket-ink/40' : ''}`}>
+                  <dt className="display-sm text-2xl sm:text-3xl">{feat.title}</dt>
+                  <dd className="text-base leading-relaxed text-dark-300">{feat.desc}</dd>
                 </div>
               ))}
             </dl>
