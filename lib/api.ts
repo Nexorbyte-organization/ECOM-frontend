@@ -546,6 +546,44 @@ export async function getReviewsForTalent(talentId: string): Promise<(Review & {
 }
 
 // Dashboards
+export interface Analytics {
+    scope: 'organization' | 'platform';
+    generatedAt: string;
+    events: {
+        total: number; positions: number; hires: number; bookedValueEgp: number;
+        byStatus: Record<string, number>; byCategory: Record<string, number>;
+        monthlyCreated: { month: string; count: number }[];
+        recent: { id: string; title: string; status: string; eventDate: string; requiredCount: number; hires: number; organizerId: string; organization: string }[];
+    };
+    staffing: {
+        applications: Record<string, number>; directInvitations: number;
+        attendance: Record<string, number>; qrCheckIns: number;
+        referrals: Record<string, number>; reviews: { count: number; average: number };
+    };
+    finance: {
+        paidFunding: Record<string, { count: number; amountEgp: number }>;
+        settlements: Record<string, { count: number; amountEgp: number; feeEgp: number }>;
+        payouts: Record<string, { count: number; amountEgp: number }>;
+        creditBalanceEgp: number; noShowFeesEgp: number;
+        cardRefunds: Record<string, { count: number; amountEgp: number }>;
+    };
+    alerts: {
+        underfundedEvents: number; underfundedAmountEgp: number;
+        pendingEventRequests: number; flaggedUshers: number;
+    };
+    people: {
+        usersByRole?: Record<string, number>; staffByRole?: Record<string, number>;
+        blocked?: number; verified?: number; favorites: number;
+        topOrganizations?: { id: string; name: string; events: number; completed: number }[];
+        topUshers?: { id: string; name: string; rate: number; completed: number }[];
+    };
+}
+
+export async function getAnalytics(scope: 'organization' | 'platform'): Promise<Analytics> {
+    const payload = await apiRequest(scope === 'platform' ? '/admin/analytics' : '/provider/analytics');
+    return payload.data as Analytics;
+}
+
 export interface TalentDashboardStats {
     reliabilityScore: number;
     ratingAverage: number;
