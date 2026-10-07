@@ -181,7 +181,7 @@ export default function EventFundingCard({ event, isOwner, refreshKey = 0, onEve
                 <p className={`mt-3 text-xs ${summary.overdue ? 'font-semibold text-danger-400' : 'text-dark-400'}`}>
                     {summary.overdue ? <AlertTriangle size={12} className="mr-1 inline" /> : null}
                     {summary.shortfallAmount > 0
-                        ? `${summary.overdue ? 'Overdue — ' : ''}due by ${formatDateTime(summary.deadline)} (${summary.deadlineHours}h before the start). Bookings still unfunded then are cancelled automatically.`
+                        ? `${summary.overdue ? 'Overdue, ' : ''}due by ${formatDateTime(summary.deadline)} (${summary.deadlineHours}h before the start). Bookings still unfunded then are cancelled automatically.`
                         : `After ${formatDateTime(summary.deadline)} you can only book more ushers whose pay you have already funded.`}
                 </p>
             )}

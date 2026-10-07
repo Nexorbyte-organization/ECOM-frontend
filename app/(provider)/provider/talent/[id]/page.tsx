@@ -71,7 +71,7 @@ export default function TalentDetailPage() {
                     <Avatar src={profile.photo} name={profile.fullName} size="xl" />
                     <div className="flex-1">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <h1 className="display text-5xl sm:text-6xl">{profile.fullName}</h1>
+                            <h1 className="display text-3xl sm:text-4xl">{profile.fullName}</h1>
                             {verified && <Badge variant="success">✅ Verified</Badge>}
                         </div>
                         <div className="flex items-center gap-4 text-sm text-dark-400 mb-3 flex-wrap">

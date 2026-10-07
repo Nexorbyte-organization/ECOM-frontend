@@ -150,7 +150,7 @@ export default function EventHoldPayments({ event, isOwner, refreshKey = 0, onEv
             <div className="mt-5 flex flex-col gap-2 border-y border-dark-600 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <p className="text-xs font-semibold text-dark-400">Booking fee · not refundable</p>
-                    <p className="mt-1 display-sm text-3xl tabular-nums text-dark-50">
+                    <p className="mt-1 display-sm text-2xl tabular-nums text-dark-50">
                         {egp(summary.fee.amount)}
                         <span className="ms-3 font-sans text-xs font-normal text-dark-400">
                             {egp(summary.perUsherDayFee)} × {summary.requiredCount} ushers × {summary.dayCount} {summary.dayCount === 1 ? 'day' : 'days'}
@@ -175,12 +175,12 @@ export default function EventHoldPayments({ event, isOwner, refreshKey = 0, onEv
                                 <p className="mt-0.5 text-xs text-dark-400">{dayDate(day)}</p>
                             </div>
                             <div>
-                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex flex-col gap-2.5">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <Badge variant={badge.tone}>{badge.label}</Badge>
                                         <span className="text-xs text-dark-400">Hold {egp(day.holdAmount)}</span>
                                     </div>
-                                    {isOwner && needsHold && continueOrStart(`day-${day.dayIndex}`, day.pendingCheckout, `Authorize ${egp(day.holdAmount)} hold`, { kind: 'day_hold', dayIndex: day.dayIndex })}
+                                    {isOwner && needsHold && <div className="[&>button]:w-full">{continueOrStart(`day-${day.dayIndex}`, day.pendingCheckout, `Authorize ${egp(day.holdAmount)} hold`, { kind: 'day_hold', dayIndex: day.dayIndex })}</div>}
                                 </div>
                                 <p className={`mt-1.5 text-xs ${day.state === 'unsecured' ? 'font-semibold text-danger-400' : 'text-dark-400'}`}>
                                     {day.state === 'unsecured' && <AlertTriangle size={12} className="me-1 inline" />}

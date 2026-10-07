@@ -45,7 +45,7 @@ export default function Modal({ isOpen, onClose, title, children, className }: M
         <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto p-3 sm:p-6" role="presentation">
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-[#041512]/60 animate-fade-in"
+                className="fixed inset-0 bg-ink/50 animate-fade-in"
                 onClick={onClose}
             />
 
@@ -64,7 +64,7 @@ export default function Modal({ isOpen, onClose, title, children, className }: M
                 {/* Header */}
                 {title && (
                     <div className="flex items-center justify-between p-6 border-b border-dark-700">
-                        <h2 id={titleId} className="display-sm text-xl text-dark-50">{title}</h2>
+                        <h2 id={titleId} className="display-sm text-lg text-dark-50">{title}</h2>
                         <button
                             onClick={onClose}
                             aria-label="Close dialog"

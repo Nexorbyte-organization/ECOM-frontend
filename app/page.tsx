@@ -13,6 +13,10 @@ import {
   MapPin,
   Plus,
   Minus,
+  QrCode,
+  Wallet,
+  ShieldCheck,
+  Check,
   Twitter,
   Linkedin,
   Instagram,
@@ -25,6 +29,7 @@ import Button from '@/components/ui/Button';
 import { useTheme } from '@/lib/theme';
 import LanguageDropdown from '@/components/shared/LanguageDropdown';
 import BrandLogo from '@/components/shared/BrandLogo';
+import { DateBlock, FillBar } from '@/components/ui/Ticket';
 
 export default function HomePage() {
   const { user, isLoading, isTalent, isProvider, isAdmin } = useAuth();
@@ -51,6 +56,7 @@ export default function HomePage() {
 
   // FAQ state
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [path, setPath] = useState<'org' | 'staff'>('org');
 
   // Redirection for logged-in users
   useEffect(() => {
@@ -96,32 +102,6 @@ export default function HomePage() {
       { question: t('faq_q4'), answer: t('faq_a4') }
     ];
 
-    const whyFeatures = [
-      {
-        title: isArabic ? arCopy('ملفات منظّمين واضحة', 'بروفايلات أشرز واضحة') : 'Detailed Usher Profiles',
-        desc: isArabic ? arCopy('راجع الخبرة واللغات والمدن وسجل الفعاليات قبل الاختيار', 'شوف الخبرة واللغات والمدن وتاريخ الإيفينتس قبل ما تختار') : 'Review experience, languages, cities, and event history before choosing',
-      },
-      {
-        title: isArabic ? arCopy('طلبات تقديم منظّمة', 'طلبات التقديم في مكان واحد') : 'Organized Applications',
-        desc: isArabic ? arCopy('استقبل طلبات المنظمين وراجعها واقبل الأنسب لفعاليتك', 'استقبل طلبات الأشرز وراجعها واختار الأنسب لإيفينتك') : 'Receive usher applications, review them, and accept the right fit',
-      },
-      {
-        title: isArabic ? arCopy('إدارة قائمة المنظمين', 'إدارة ليستة الأشرز') : 'Usher Roster Management',
-        desc: isArabic ? arCopy('اطلع على المنظمين المقبولين والمحجوزين لكل فعالية', 'شوف الأشرز المقبولين والمحجوزين لكل إيفينت') : 'See every accepted and booked usher for each event in one place',
-      },
-      {
-        title: isArabic ? arCopy('سجل الحضور', 'متابعة الحضور') : 'Attendance Records',
-        desc: isArabic ? arCopy('سجّل الحضور والغياب واحتفظ بسجل واضح لكل فعالية', 'سجّل مين حضر ومين غاب وخلي تاريخ كل إيفينت واضح') : 'Record attendance and absences with a clear history for every event',
-      },
-      {
-        title: isArabic ? arCopy('تقييمات بعد الفعالية', 'تقييمات بعد الإيفينت') : 'Post-Event Ratings',
-        desc: isArabic ? arCopy('قيّم أداء المنظمين وساعد الملتزمين على بناء سمعتهم', 'قيّم أداء الأشرز وساعد الملتزمين يبنوا سمعة أقوى') : 'Rate usher performance and help reliable people build their reputation',
-      },
-      {
-        title: isArabic ? arCopy('سجل التحذيرات', 'تحذيرات الاعتذار المتأخر') : 'Warning Records',
-        desc: isArabic ? arCopy('تظهر الاعتذارات المتأخرة ومشكلات الالتزام المتكررة بوضوح', 'الاعتذارات المتأخرة ومشاكل الالتزام المتكررة بتبان بوضوح') : 'Late excuses and repeated reliability issues remain clearly visible',
-      },
-    ];
 
     const navLinks = [
       { label: t('calculator'), href: '#estimator' },
@@ -150,8 +130,8 @@ export default function HomePage() {
       { time: t('time_4'), title: t('d_title_4'), desc: t('d_desc_4') },
     ];
     const heroFacts = [t('lp_fact_1'), t('lp_fact_2'), t('lp_fact_3')];
-    const h2 = 'display text-[2.5rem] sm:text-5xl text-dark-50' + (isArabic ? ' !text-4xl sm:!text-[2.75rem]' : '');
-    const controlBtn = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-dark-500 hover:bg-dark-850 text-xs font-semibold text-dark-200 transition-colors cursor-pointer';
+    const h2 = 'display text-3xl sm:text-4xl text-dark-50';
+    const controlBtn = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-dark-500 hover:bg-dark-850 text-xs font-semibold text-dark-200 transition-colors cursor-pointer';
 
     return (
       <div className="min-h-screen bg-dark-950 text-dark-50 font-sans">
@@ -234,101 +214,104 @@ export default function HomePage() {
         </header>
 
         <main>
-        {/* ─── HERO: yellow field, the logo scaled up into two windows ──────── */}
-        <section className="on-color bg-ticket-amber">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-10 md:pt-16 lg:pt-20">
-            <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-14">
-              <div className="text-start">
-                <h1 className={`display ${isArabic ? 'text-[2.75rem] sm:text-6xl lg:text-7xl' : 'text-[3.5rem] sm:text-7xl lg:text-[5.75rem] xl:text-[6.5rem]'}`}>
-                  {t('lp_hero_title')}
-                </h1>
-                <p className="mt-6 max-w-[36ch] text-lg font-medium leading-relaxed sm:text-xl">
-                  {t('lp_hero_sub')}
-                </p>
-                <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                  <button
-                    id="find-staff-cta"
-                    onClick={() => router.push('/register?role=provider')}
-                    className="press inline-flex min-h-12 items-center justify-center rounded-xl border-2 border-ticket-ink bg-ticket-ink px-7 text-base font-bold text-white shadow-[4px_4px_0_0_#fff] cursor-pointer"
-                  >
-                    {isArabic ? arCopy('ابحث عن موظفين', 'دوّر على ستاف') : 'Find Staff'}
-                  </button>
-                  <button
-                    id="become-usher-cta"
-                    onClick={() => router.push('/register?role=talent')}
-                    className="press inline-flex min-h-12 items-center justify-center rounded-xl border-2 border-ticket-ink bg-white px-7 text-base font-bold text-ticket-ink shadow-[4px_4px_0_0_#0B1F1B] cursor-pointer"
-                  >
-                    {isArabic ? arCopy('انضم كموظف', 'اشتغل كأشر') : 'Become an Usher'}
-                  </button>
-                </div>
+        {/* ─── HERO: one idea, fits one screen ──────────────────── */}
+        <section className="bg-accent-50">
+          <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 pb-14 pt-10 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:gap-14 lg:pb-20 lg:pt-16">
+            <div className="text-start">
+              <h1 className={`display max-w-[15ch] ${isArabic ? 'text-4xl sm:text-5xl lg:text-[3.4rem]' : 'text-[2.6rem] sm:text-6xl lg:text-[3.9rem]'}`}>
+                {t('lp_hero_title')}
+              </h1>
+              <p className="mt-5 max-w-[34rem] text-lg leading-relaxed text-dark-300">{t('lp_hero_sub')}</p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Button id="find-staff-cta" size="lg" onClick={() => router.push('/register?role=provider')}>
+                  {isArabic ? arCopy('ابحث عن موظفين', 'دوّر على ستاف') : 'Find Staff'}
+                </Button>
+                <Button id="become-usher-cta" size="lg" variant="secondary" onClick={() => router.push('/register?role=talent')}>
+                  {isArabic ? arCopy('انضم كموظف', 'اشتغل كأشر') : 'Become an Usher'}
+                </Button>
               </div>
+            </div>
 
-              <div className="relative mx-auto flex w-full max-w-[34rem] justify-center gap-3 sm:gap-4 lg:mx-0 lg:justify-end" dir="ltr">
-                <div
-                  role="img"
-                  aria-label={t('lp_hero_photo_alt')}
-                  className="punch-window h-fit w-[42%] self-start border-[3px] border-ticket-ink lg:w-[clamp(200px,17vw,260px)]"
-                  style={{ '--photo': 'url(/oo-ushers-event-hero.png)', '--zoom': '300%', '--px': '59%', '--py': '21%', '--delay': '0.2s' } as React.CSSProperties}
-                />
-                <div
-                  aria-hidden="true"
-                  className="punch-window mt-10 h-fit w-[42%] self-start border-[3px] border-ticket-ink lg:w-[clamp(200px,17vw,260px)]"
-                  style={{ '--photo': 'url(/oo-ushers-event-hero.png)', '--zoom': '300%', '--px': '91%', '--py': '66%', '--delay': '0.55s' } as React.CSSProperties}
-                />
-                {/* A sample gig, stuck on top. */}
-                <div aria-hidden="true" className="sticker-wobble absolute -bottom-6 start-1/2 w-[17rem] -translate-x-1/2 sm:-bottom-4 sm:start-[12%] sm:translate-x-0">
-                  <div className="ticket !flex border-ticket-ink bg-white shadow-[5px_5px_0_0_#0B1F1B]" style={{ '--ticket-bg': 'var(--color-ticket-amber)' } as React.CSSProperties}>
-                    <div className="flex w-16 shrink-0 flex-col items-center justify-center bg-ticket-coral py-3 text-ticket-ink"><span className="display text-3xl leading-none">14</span><span className="text-xs font-semibold">Oct</span></div>
-                    <div className="ticket-body bg-white px-3 py-2.5 text-ticket-ink"><p className="display-sm text-base">Brand launch</p><p className="text-xs">Cairo, 8 ushers, 900 EGP</p></div>
+            {/* The product, not a stock graphic: two photo punches and a real event row on top. */}
+            <div className="relative mx-auto aspect-[5/4] w-full max-w-[34rem] overflow-hidden rounded-3xl bg-bottle lg:mx-0" dir="ltr">
+              <div
+                role="img"
+                aria-label={t('lp_hero_photo_alt')}
+                className="punch-window absolute start-[7%] top-[9%] w-[47%] ring-4 ring-white/10"
+                style={{ '--photo': 'url(/oo-ushers-event-hero.png)', '--zoom': '300%', '--px': '59%', '--py': '21%', '--delay': '0.15s' } as React.CSSProperties}
+              />
+              <div
+                aria-hidden="true"
+                className="punch-window absolute end-[6%] top-[30%] w-[40%] ring-4 ring-white/10"
+                style={{ '--photo': 'url(/oo-ushers-event-hero.png)', '--zoom': '300%', '--px': '91%', '--py': '66%', '--delay': '0.4s' } as React.CSSProperties}
+              />
+              <div aria-hidden="true" className="absolute bottom-[7%] start-[6%] w-[68%] max-w-[17rem] rounded-xl bg-white p-3 shadow-xl">
+                <div className="flex items-center gap-3 text-ink">
+                  <DateBlock date="2026-10-14" tone="coral" className="!size-12" />
+                  <div className="min-w-0">
+                    <p className="display-sm truncate text-[15px]">Brand launch</p>
+                    <p className="text-xs text-[#53635C]">New Cairo</p>
+                    <FillBar filled={8} total={12} className="mt-1 [&_span:last-child]:!text-[#53635C]" />
                   </div>
                 </div>
               </div>
             </div>
+          </div>
+        </section>
 
-            <ul className="mt-16 grid border-t-2 border-ticket-ink md:grid-cols-3 md:divide-x-2 md:divide-ticket-ink rtl:md:divide-x-reverse">
-              {heroFacts.map((fact) => (
-                <li key={fact} className="flex items-start gap-3 py-5 text-sm font-semibold md:px-6 md:first:ps-0">
-                  <span aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 rounded-full border-2 border-ticket-ink bg-white" />
-                  {fact}
+        {/* ─── What you get: one strip, not three cards ─────────── */}
+        <section aria-label="What Usher records" className="border-b border-edge bg-dark-900">
+          <ul className="mx-auto grid max-w-7xl gap-5 px-4 py-8 text-start sm:px-6 md:grid-cols-3 md:gap-10">
+            {[
+              { icon: QrCode, text: heroFacts[0], hue: 'bg-cat-teal/12 text-cat-teal-ink' },
+              { icon: Wallet, text: heroFacts[1], hue: 'bg-cat-sun/15 text-cat-sun-ink' },
+              { icon: ShieldCheck, text: heroFacts[2], hue: 'bg-cat-coral/12 text-cat-coral-ink' },
+            ].map(({ icon: Icon, text, hue }) => (
+              <li key={text} className="flex items-center gap-3 text-[15px] font-medium text-dark-100">
+                <span className={`grid size-10 shrink-0 place-items-center rounded-lg ${hue}`}><Icon size={20} aria-hidden="true" /></span>
+                {text}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* ─── Two ways in: one at a time ───────────────────────── */}
+        <section className="py-20 sm:py-24">
+          <div className="mx-auto grid max-w-7xl items-start gap-10 px-4 text-start sm:px-6 lg:grid-cols-[5fr_7fr] lg:gap-16">
+            <div className={`rounded-2xl p-6 transition-colors duration-300 sm:p-8 ${path === 'org' ? 'bg-cat-sky/12' : 'bg-cat-coral/10'}`}>
+              <div role="tablist" aria-label={t('lp_paths_title')} className="inline-flex rounded-xl bg-dark-900 p-1 shadow-sm">
+                {[
+                  { key: 'org' as const, label: isArabic ? arCopy('لمنظمي الفعاليات', 'لمنظّمي الإيفينتس') : 'For Organizers' },
+                  { key: 'staff' as const, label: isArabic ? arCopy('للباحثين عن عمل', 'للستاف') : 'For Staff' },
+                ].map((tab) => (
+                  <button key={tab.key} role="tab" aria-selected={path === tab.key} onClick={() => setPath(tab.key)}
+                    className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${path === tab.key ? 'bg-primary-500 text-on-primary' : 'text-dark-300 hover:text-dark-50'}`}>
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+              <h2 className={`${h2} mt-6 max-w-[14ch]`}>{t('lp_paths_title')}</h2>
+              <Button className="mt-8" size="lg" onClick={() => router.push(path === 'org' ? '/register?role=provider' : '/register?role=talent')}>
+                {path === 'org' ? (isArabic ? arCopy('ابحث عن موظفين', 'دوّر على ستاف') : 'Find Staff') : (isArabic ? arCopy('انضم كموظف', 'اشتغل كأشر') : 'Become an Usher')}
+              </Button>
+            </div>
+            <ol className="divide-y divide-edge border-y border-edge" aria-live="polite">
+              {(path === 'org' ? orgSteps : staffSteps).map((step, i) => (
+                <li key={step.title} className="flex gap-5 py-6">
+                  <span aria-hidden="true" className={`display-sm grid size-9 shrink-0 place-items-center rounded-full text-lg ${['bg-cat-teal/12 text-cat-teal-ink', 'bg-cat-sun/15 text-cat-sun-ink', 'bg-cat-coral/12 text-cat-coral-ink'][i % 3]}`}>{i + 1}</span>
+                  <div>
+                    <p className="display-sm text-xl">{step.title}</p>
+                    <p className="mt-1 max-w-[46ch] text-dark-300">{step.desc}</p>
+                  </div>
                 </li>
               ))}
-            </ul>
+            </ol>
           </div>
         </section>
 
-        {/* ─── TWO WAYS IN ──────────────────────────────────── */}
-        <section className="py-20 sm:py-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <h2 className={`${h2} max-w-[18ch] text-start`}>{t('lp_paths_title')}</h2>
-
-            <div className="mt-12 grid gap-12 border-t border-dark-600 pt-12 lg:grid-cols-2 lg:gap-0 lg:divide-x lg:divide-dark-600 rtl:lg:divide-x-reverse">
-              {[
-                { key: 'org', heading: isArabic ? arCopy('لمنظمي الفعاليات', 'لمنظّمي الإيفينتس') : 'For Organizers', steps: orgSteps, cta: isArabic ? 'ابدأ التوظيف' : 'Start Hiring', href: '/register?role=provider', variant: 'primary' as const },
-                { key: 'staff', heading: isArabic ? arCopy('للباحثين عن عمل', 'للستاف') : 'For Staff', steps: staffSteps, cta: isArabic ? 'ابحث عن فرصة عمل' : 'Find Your Next Gig', href: '/register?role=talent', variant: 'secondary' as const },
-              ].map((col, colIndex) => (
-                <div key={col.key} className={`text-start ${colIndex === 0 ? 'lg:pe-14' : 'lg:ps-14'}`}>
-                  <h3 className="display-sm text-2xl text-dark-50">{col.heading}</h3>
-                  <ol className="mt-8 space-y-7">
-                    {col.steps.map((step, i) => (
-                      <li key={step.title} className="flex gap-5">
-                        <span aria-hidden="true" className={`display-sm grid size-11 shrink-0 place-items-center rounded-full border-2 border-edge text-xl text-ticket-ink ${["bg-ticket-coral","bg-ticket-mint","bg-ticket-sky"][i % 3]}`}>{i + 1}</span>
-                        <div>
-                          <p className="font-semibold text-dark-50">{step.title}</p>
-                          <p className="mt-1 max-w-[44ch] text-sm leading-relaxed text-dark-300">{step.desc}</p>
-                        </div>
-                      </li>
-                    ))}
-                  </ol>
-                  <Button variant={col.variant} size="lg" className="mt-10" onClick={() => router.push(col.href)}>{col.cta}</Button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ─── ESTIMATOR ────────────────────────────────────── */}
-        <section id="estimator" className="on-color border-y-2 border-ticket-ink bg-ticket-sky py-20 sm:py-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        {/* ─── Estimator ────────────────────────────────────────── */}
+        <section id="estimator" className="border-y border-edge bg-primary-50/60 py-20 sm:py-24">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="max-w-2xl text-start">
               <h2 className={h2}>{t('estimator_title')}</h2>
               <p className="mt-4 text-base leading-relaxed text-dark-300">{t('estimator_desc')}</p>
@@ -336,8 +319,7 @@ export default function HomePage() {
 
             <div className="mt-12 grid grid-cols-1 items-start gap-10 lg:grid-cols-12 lg:gap-14">
               <div className="space-y-10 text-start lg:col-span-7">
-
-                <fieldset className="space-y-3">
+                <fieldset>
                   <legend className="mb-3 text-sm font-semibold text-dark-100">{t('select_service')}</legend>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {Object.entries(rates).map(([key, item]) => {
@@ -348,13 +330,13 @@ export default function HomePage() {
                           type="button"
                           onClick={() => setEventType(key as 'exhibition' | 'gala' | 'conference' | 'banquet')}
                           aria-pressed={selected}
-                          className={`flex gap-3 rounded-lg border p-4 text-start transition-colors cursor-pointer ${selected ? 'border-primary-500 bg-dark-950' : 'border-dark-600 bg-dark-950 hover:border-dark-300'}`}
+                          className={`press flex gap-3 rounded-xl border bg-dark-900 p-4 text-start cursor-pointer ${selected ? 'border-primary-500 ring-4 ring-primary-500/15' : 'border-edge hover:border-dark-500'}`}
                         >
-                          <span aria-hidden="true" className={`mt-1 size-3 shrink-0 rounded-full border-[1.5px] ${selected ? 'border-primary-500 bg-primary-500' : 'border-dark-400'}`} />
+                          <span aria-hidden="true" className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border ${selected ? 'border-primary-500 bg-primary-500 text-on-primary' : 'border-dark-500'}`}>{selected && <Check size={12} strokeWidth={3} />}</span>
                           <span>
                             <span className="block text-sm font-semibold text-dark-50">{item.name}</span>
                             <span className="mt-1 block text-xs leading-relaxed text-dark-300">{item.desc}</span>
-                            <span className="mt-3 block text-sm font-semibold tabular-nums text-dark-50">{item.rate.toLocaleString()} EGP / {t('days').slice(0, 3)}</span>
+                            <span className="mt-3 block text-sm font-semibold tabular-nums text-primary-600 dark:text-primary-400">{item.rate.toLocaleString()} EGP / {t('days').slice(0, 3)}</span>
                           </span>
                         </button>
                       );
@@ -366,15 +348,14 @@ export default function HomePage() {
                   <div className="space-y-4">
                     <div className="flex items-baseline justify-between gap-3">
                       <label htmlFor="staff-range" className="text-sm font-semibold text-dark-100">{t('num_staff')}</label>
-                      <span className="display-sm text-2xl tabular-nums text-dark-50">{staffCount} <span className="text-sm font-medium text-dark-300">{t('ushers')}</span></span>
+                      <span className="display-sm text-2xl tabular-nums">{staffCount} <span className="text-sm font-medium text-dark-300">{t('ushers')}</span></span>
                     </div>
                     <input id="staff-range" type="range" min="1" max="30" value={staffCount} onChange={(e) => setStaffCount(parseInt(e.target.value))} className="estimator-range w-full cursor-pointer" />
                   </div>
-
                   <div className="space-y-4">
                     <div className="flex items-baseline justify-between gap-3">
                       <label htmlFor="days-range" className="text-sm font-semibold text-dark-100">{t('duration')}</label>
-                      <span className="display-sm text-2xl tabular-nums text-dark-50">{daysCount} <span className="text-sm font-medium text-dark-300">{t('days')}</span></span>
+                      <span className="display-sm text-2xl tabular-nums">{daysCount} <span className="text-sm font-medium text-dark-300">{t('days')}</span></span>
                     </div>
                     <input id="days-range" type="range" min="1" max="10" value={daysCount} onChange={(e) => setDaysCount(parseInt(e.target.value))} className="estimator-range w-full cursor-pointer" />
                   </div>
@@ -395,9 +376,9 @@ export default function HomePage() {
                           type="button"
                           onClick={() => setUniformOption(opt.key as 'formal' | 'smart-casual' | 'branded')}
                           aria-pressed={selected}
-                          className={`flex items-start gap-3 rounded-lg border bg-dark-950 p-3.5 text-start transition-colors cursor-pointer ${selected ? 'border-primary-500' : 'border-dark-600 hover:border-dark-300'}`}
+                          className={`press flex items-start gap-3 rounded-xl border bg-dark-900 p-3.5 text-start cursor-pointer ${selected ? 'border-primary-500 ring-4 ring-primary-500/15' : 'border-edge hover:border-dark-500'}`}
                         >
-                          <span aria-hidden="true" className={`mt-0.5 size-3 shrink-0 rounded-full border-[1.5px] ${selected ? 'border-primary-500 bg-primary-500' : 'border-dark-400'}`} />
+                          <span aria-hidden="true" className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border ${selected ? 'border-primary-500 bg-primary-500 text-on-primary' : 'border-dark-500'}`}>{selected && <Check size={12} strokeWidth={3} />}</span>
                           <span>
                             <span className="block text-sm font-semibold text-dark-50">{opt.name}</span>
                             <span className="mt-0.5 block text-xs text-dark-300">{opt.note}</span>
@@ -409,10 +390,8 @@ export default function HomePage() {
                 </fieldset>
               </div>
 
-              {/* The quote: a bottle-green slip with the total in tungsten. */}
-              <div className="rounded-xl bg-bottle p-6 text-start text-bottle-text sm:p-8 lg:sticky lg:top-24 lg:col-span-5">
-                <h3 className="display-sm border-b border-bottle-line pb-4 text-2xl text-white">{t('est_summary')}</h3>
-
+              <div className="rounded-2xl bg-bottle p-6 text-start text-bottle-text sm:p-8 lg:sticky lg:top-24 lg:col-span-5">
+                <h3 className="display-sm border-b border-bottle-line pb-4 text-xl text-white">{t('est_summary')}</h3>
                 <dl className="mt-5 space-y-3 text-sm">
                   <div className="flex justify-between gap-4"><dt className="text-bottle-muted">{t('est_rate')}</dt><dd className="tabular-nums">{rates[eventType].rate.toLocaleString()} EGP / {t('days').slice(0, 3)}</dd></div>
                   <div className="flex justify-between gap-4"><dt className="text-bottle-muted">{t('est_hired')}</dt><dd>{staffCount} {t('ushers')}</dd></div>
@@ -421,21 +400,14 @@ export default function HomePage() {
                     <div className="flex justify-between gap-4"><dt className="text-bottle-muted">{t('est_polo')}</dt><dd className="tabular-nums">+{(staffCount * uniformFees.branded).toLocaleString()} EGP</dd></div>
                   )}
                 </dl>
-
                 <div className="mt-6 border-t border-bottle-line pt-5">
                   <p className="text-sm text-bottle-muted">{t('est_total')}</p>
-                  <p className="display mt-1 flex items-baseline gap-2 text-6xl tabular-nums text-accent-400" dir="ltr">
-                    {totalEstimate.toLocaleString()} <span className="text-xl text-bottle-text">EGP</span>
+                  <p className="display mt-1 flex items-baseline gap-2 text-5xl tabular-nums text-accent-400" dir="ltr">
+                    {totalEstimate.toLocaleString()} <span className="text-lg text-bottle-text">EGP</span>
                   </p>
                   <p className="mt-1 text-xs text-bottle-muted">{t('vat_inc')}</p>
                 </div>
-
-                <Button
-                  variant="signal"
-                  size="lg"
-                  className="mt-7 w-full"
-                  onClick={() => router.push(`/register?role=provider&staff=${staffCount}&days=${daysCount}&type=${eventType}`)}
-                >
+                <Button variant="signal" size="lg" className="mt-7 w-full" onClick={() => router.push(`/register?role=provider&staff=${staffCount}&days=${daysCount}&type=${eventType}`)}>
                   {t('lock_rate')}
                 </Button>
                 <p className="mt-3 text-center text-xs text-bottle-muted">{t('no_card')}</p>
@@ -444,93 +416,69 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ─── CALL SHEET ───────────────────────────────────── */}
+        {/* ─── Event day: a timeline, beside what stays on record ─ */}
         <section id="duties" className="py-20 sm:py-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <div className="grid grid-cols-1 gap-14 text-start lg:grid-cols-2 lg:gap-20">
-              <div>
-                <h2 className={h2}>{t('duties_title')}</h2>
-                <p className="mt-4 max-w-[52ch] text-base leading-relaxed text-dark-300">{t('duties_desc')}</p>
-
-                <ol className="mt-10 border-b border-dark-600">
-                  {callSheet.map((step) => (
-                    <li key={step.time} className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-5 border-t border-dark-600 py-5">
-                      <p className="display-sm flex items-center gap-2 text-xl text-primary-500">
-                        {step.present && <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full bg-accent-400" />}
-                        {step.time}
-                      </p>
-                      <div>
-                        <h3 className="font-semibold text-dark-50">{step.title}</h3>
-                        <p className="mt-1 text-sm leading-relaxed text-dark-300">{step.desc}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-
-              <div>
-                <h3 className="display-sm text-3xl text-dark-50">{t('trust_header')}</h3>
-                <dl className="mt-8 border-b border-dark-600">
-                  {[
-                    { q: t('trust_q1'), a: t('trust_a1') },
-                    { q: t('trust_q2'), a: t('trust_a2') },
-                    { q: t('trust_q3'), a: t('trust_a3') },
-                  ].map((pt) => (
-                    <div key={pt.q} className="border-t border-dark-600 py-5">
-                      <dt className="font-semibold text-dark-50">{pt.q}</dt>
-                      <dd className="mt-1 max-w-[52ch] text-sm leading-relaxed text-dark-300">{pt.a}</dd>
-                    </div>
-                  ))}
-                </dl>
-
-                <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <p className="font-semibold text-dark-50">{t('ready_to_hire')}</p>
-                    <p className="text-sm text-dark-300">{t('reg_org')}</p>
-                  </div>
-                  <Button onClick={() => router.push('/register?role=provider')}>{t('create_org')}</Button>
-                </div>
-              </div>
+          <div className="mx-auto grid max-w-7xl gap-14 px-4 text-start sm:px-6 lg:grid-cols-[7fr_5fr] lg:gap-20">
+            <div>
+              <h2 className={`${h2} max-w-[18ch]`}>{t('duties_title')}</h2>
+              <p className="mt-4 max-w-[52ch] text-base leading-relaxed text-dark-300">{t('duties_desc')}</p>
+              <ol className="relative mt-10 space-y-8 border-s border-edge ps-8">
+                {callSheet.map((step, i) => (
+                  <li key={step.time} className="relative">
+                    <span aria-hidden="true" className={`absolute -start-[39px] top-1 size-3.5 rounded-full border-2 border-dark-950 ${step.present ? 'live-dot bg-accent-450' : ['bg-cat-sky', 'bg-cat-sun', 'bg-cat-teal', 'bg-cat-coral'][i % 4]}`} />
+                    <p className="text-sm font-semibold text-primary-600 dark:text-primary-400">{step.time}</p>
+                    <h3 className="display-sm mt-0.5 text-xl">{step.title}</h3>
+                    <p className="mt-1 max-w-[48ch] text-dark-300">{step.desc}</p>
+                  </li>
+                ))}
+              </ol>
             </div>
-          </div>
-        </section>
 
-        {/* ─── WHAT THE RECORD SHOWS ────────────────────────── */}
-        <section className="on-color border-y-2 border-ticket-ink bg-ticket-coral py-20 sm:py-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 text-start">
-            <h2 className={`${h2} max-w-[20ch]`}>{t('lp_why_title')}</h2>
-            {/* One slip, three lines: a receipt of what you can verify, not three matching cards. */}
-            <dl className="mt-12 max-w-4xl rounded-2xl border-2 border-ticket-ink bg-white px-6 shadow-[6px_6px_0_0_#0B1F1B] sm:px-10 md:ms-[8%]">
-              {whyFeatures.slice(0, 3).map((feat, i) => (
-                <div key={feat.title} className={`grid gap-2 py-7 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] md:gap-10 ${i > 0 ? 'border-t-2 border-dashed border-ticket-ink/40' : ''}`}>
-                  <dt className="display-sm text-2xl sm:text-3xl">{feat.title}</dt>
-                  <dd className="text-base leading-relaxed text-dark-300">{feat.desc}</dd>
+            <aside className="lg:pt-24">
+              <h3 className="display-sm text-2xl">{t('trust_header')}</h3>
+              <dl className="mt-6 divide-y divide-edge border-y border-edge">
+                {[
+                  { q: t('trust_q1'), a: t('trust_a1') },
+                  { q: t('trust_q2'), a: t('trust_a2') },
+                  { q: t('trust_q3'), a: t('trust_a3') },
+                ].map((pt) => (
+                  <div key={pt.q} className="py-5">
+                    <dt className="font-semibold text-dark-50">{pt.q}</dt>
+                    <dd className="mt-1 text-sm leading-relaxed text-dark-300">{pt.a}</dd>
+                  </div>
+                ))}
+              </dl>
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p className="font-semibold text-dark-50">{t('ready_to_hire')}</p>
+                  <p className="text-sm text-dark-300">{t('reg_org')}</p>
                 </div>
-              ))}
-            </dl>
+                <Button onClick={() => router.push('/register?role=provider')}>{t('create_org')}</Button>
+              </div>
+            </aside>
           </div>
         </section>
 
-        {/* ─── FAQ ──────────────────────────────────────────── */}
-        <section id="faq" className="py-20 sm:py-24">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 text-start">
+        {/* ─── FAQ ──────────────────────────────────────────────── */}
+        <section id="faq" className="border-t border-edge bg-dark-900 py-20 sm:py-24">
+          <div className="mx-auto max-w-3xl px-4 text-start sm:px-6">
             <h2 className={h2}>{t('faq_title')}</h2>
-            <div className="mt-10 border-b border-dark-600">
+            <div className="mt-10 divide-y divide-edge border-y border-edge">
               {faqs.map((faq, index) => {
                 const isOpen = openFaq === index;
                 return (
-                  <div key={index} className="border-t border-dark-600">
+                  <div key={index}>
                     <button
                       onClick={() => toggleFaq(index)}
                       aria-expanded={isOpen}
                       aria-controls={`faq-panel-${index}`}
-                      className="flex w-full items-center justify-between gap-6 py-5 text-start font-semibold text-dark-50 cursor-pointer"
+                      className="flex w-full cursor-pointer items-center justify-between gap-6 py-5 text-start font-semibold text-dark-50"
                     >
                       <span>{faq.question}</span>
-                      {isOpen ? <Minus size={18} className="shrink-0 text-dark-300" aria-hidden="true" /> : <Plus size={18} className="shrink-0 text-dark-300" aria-hidden="true" />}
+                      {isOpen ? <Minus size={18} className="shrink-0 text-primary-500" aria-hidden="true" /> : <Plus size={18} className="shrink-0 text-dark-300" aria-hidden="true" />}
                     </button>
                     {isOpen && (
-                      <div id={`faq-panel-${index}`} role="region" className="pb-6 pe-10 text-sm leading-relaxed text-dark-300">
+                      <div id={`faq-panel-${index}`} role="region" className="animate-fade-in pb-6 pe-10 text-sm leading-relaxed text-dark-300">
                         {faq.answer}
                       </div>
                     )}
@@ -541,21 +489,20 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ─── CLOSING ──────────────────────────────────────── */}
+        {/* ─── Closing ──────────────────────────────────────────── */}
         <section className="bg-bottle text-bottle-text">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-24 text-start">
-            <h2 className={`display max-w-[16ch] text-white ${isArabic ? 'text-4xl sm:text-6xl' : 'text-5xl sm:text-7xl'}`}>{t('lp_cta_title')}</h2>
-            <p className="mt-6 max-w-[48ch] text-base leading-relaxed text-bottle-muted">{t('banner_desc')}</p>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+          <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-16 text-start sm:px-6 sm:py-20 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className={`display max-w-[16ch] text-white ${isArabic ? 'text-3xl sm:text-5xl' : 'text-4xl sm:text-5xl'}`}>{t('lp_cta_title')}</h2>
+              <p className="mt-4 max-w-[48ch] leading-relaxed text-bottle-muted">{t('banner_desc')}</p>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Button id="final-find-staff" variant="signal" size="lg" onClick={() => router.push('/register?role=provider')}>
-                {t('hire_staff_short')}
+                {isArabic ? arCopy('ابحث عن موظفين', 'دوّر على ستاف') : 'Find Staff'}
               </Button>
-              <button
-                id="final-join-staff"
-                onClick={() => router.push('/register?role=talent')}
-                className="inline-flex min-h-10 items-center justify-center rounded-lg border border-bottle-line px-6 py-3 text-base font-semibold text-bottle-text transition-colors hover:bg-bottle-lift cursor-pointer"
-              >
-                {t('apply_usher')}
+              <button id="final-join-staff" onClick={() => router.push('/register?role=talent')}
+                className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-lg border border-white/30 px-6 text-base font-semibold text-white transition-colors hover:bg-white/10">
+                {isArabic ? arCopy('انضم كموظف', 'اشتغل كأشر') : 'Become an Usher'}
               </button>
             </div>
           </div>

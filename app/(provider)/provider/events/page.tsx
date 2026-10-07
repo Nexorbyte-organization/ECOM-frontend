@@ -8,7 +8,8 @@ import { useLanguage } from '@/lib/i18n';
 import { getProviderProfileByUserId, getProviderEvents } from '@/lib/api';
 import { Event, EventStatus } from '@/types';
 import Tabs from '@/components/ui/Tabs';
-import GigTicket from '@/components/events/GigTicket';
+import EventRow from '@/components/events/EventRow';
+import { RowList } from '@/components/ui/Ticket';
 import Badge from '@/components/ui/Badge';
 import { PlusCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -54,11 +55,11 @@ export default function ProviderEventsPage() {
             {error && <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}
             <header className="flex flex-wrap items-end justify-between gap-4">
                 <div>
-                    <h1 className="display text-5xl sm:text-6xl">{t('nav_events')}</h1>
+                    <h1 className="display text-3xl sm:text-4xl">{t('nav_events')}</h1>
                     <p className="mt-2 text-dark-300">{isArabic ? 'إدارة ونشر عروض الفعاليات الخاصة بك' : 'Manage your event listings'}</p>
                 </div>
                 {isOrganizer && (
-                    <Link href="/provider/events/new" className="press hidden min-h-12 items-center gap-2 rounded-xl border-2 border-edge bg-accent-400 px-6 font-bold text-ticket-ink shadow-[3px_3px_0_0_var(--color-edge)] md:inline-flex">
+                    <Link href="/provider/events/new" className="press hidden min-h-12 items-center gap-2 rounded-xl bg-primary-500 px-6 font-bold text-on-primary md:inline-flex">
                         <PlusCircle size={18} />{isArabic ? 'فعالية جديدة' : 'New Event'}
                     </Link>
                 )}
@@ -71,21 +72,21 @@ export default function ProviderEventsPage() {
             {loading ? (
                 <ContentSkeleton variant="list" />
             ) : events.length === 0 ? (
-                <section className="rounded-2xl border-2 border-dashed border-dark-500 p-10 text-center sm:p-14">
+                <section className="rounded-2xl border border-dashed border-dark-500 p-10 text-center sm:p-14">
                     <p className="display text-4xl">{emptyCopy}</p>
                     {isOrganizer && (
-                        <Link href="/provider/events/new" className="press mt-6 inline-flex min-h-12 items-center rounded-xl border-2 border-edge bg-accent-400 px-7 font-bold text-ticket-ink">
+                        <Link href="/provider/events/new" className="press mt-6 inline-flex min-h-12 items-center rounded-xl bg-primary-500 px-7 font-bold text-on-primary">
                             {t('create_first_event')}
                         </Link>
                     )}
                 </section>
             ) : (
-                <div className="space-y-4">
+                <RowList>
                     {events.map((event) => (
-                        <GigTicket key={event._id} event={event} href={`/provider/events/${event._id}`}
+                        <EventRow key={event._id} event={event} href={`/provider/events/${event._id}`}
                             aside={<Badge variant={statusVariant(event.status)}>{getTabLabel(event.status)}</Badge>} />
                     ))}
-                </div>
+                </RowList>
             )}
         </div>
     );

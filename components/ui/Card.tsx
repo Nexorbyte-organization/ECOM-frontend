@@ -14,7 +14,7 @@ export default function Card({ children, className, hover, onClick }: CardProps)
             onClick={onClick}
             className={cn(
                 'glass rounded-xl p-5 sm:p-6',
-                hover && 'cursor-pointer transition-colors duration-150 hover:border-dark-300',
+                hover && 'cursor-pointer transition-colors duration-150 hover:border-dark-500',
                 onClick && 'cursor-pointer',
                 className
             )}
@@ -39,5 +39,5 @@ interface CardTitleProps {
 }
 
 export function CardTitle({ children, className }: CardTitleProps) {
-    return <h3 className={cn('display-sm text-xl text-dark-50', className)}>{children}</h3>;
+    return <h3 className={cn('display-sm text-lg text-dark-50', className)}>{children}</h3>;
 }

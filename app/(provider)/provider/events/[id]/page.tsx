@@ -502,7 +502,8 @@ export default function EventDetailPage() {
             </button>
 
             {/* Header */}
-            <section className={`on-color overflow-hidden rounded-2xl border-2 border-ticket-ink ${toneBg[toneFor(event.category)]}`}>
+            <section className="overflow-hidden rounded-2xl border border-edge bg-dark-900">
+                <div aria-hidden="true" className={`h-1.5 ${toneBg[toneFor(event.category)]}`} />
                 {event.photo && (
                     <div className="w-full h-48 sm:h-64 relative overflow-hidden">
                         <img 
@@ -520,8 +521,8 @@ export default function EventDetailPage() {
                                 <Badge variant="primary">{event.category}</Badge>
                                 <Badge variant={statusVariant(event.status)}>{event.status}</Badge>
                             </div>
-                            <h1 className="display text-4xl sm:text-6xl">{event.title}</h1>
-                            <div className="flex items-center gap-4 mt-4 flex-wrap text-sm font-medium">
+                            <h1 className="display text-3xl sm:text-4xl">{event.title}</h1>
+                            <div className="flex items-center gap-4 mt-4 flex-wrap text-sm text-dark-300">
                                 <span className="flex items-center gap-1"><MapPin size={12} /> {event.location}</span>
                                 {event.gatheringLocation && (
                                     <span className="flex items-center gap-1" title="Gathering Location"><MapPin size={12} className="text-primary-400" /> Gathering: {event.gatheringLocation}</span>

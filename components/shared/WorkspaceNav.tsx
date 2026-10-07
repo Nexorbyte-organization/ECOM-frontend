@@ -63,7 +63,7 @@ export function TopTabs() {
                         className={cn('relative px-3.5 py-2 text-sm font-semibold transition-colors',
                             active ? 'text-dark-50' : 'text-dark-300 hover:text-dark-50')}>
                         {link.label}
-                        {active && <span aria-hidden="true" className="absolute inset-x-3.5 -bottom-[13px] h-[3px] bg-accent-400" />}
+                        {active && <span aria-hidden="true" className="absolute inset-x-3.5 -bottom-[13px] h-0.5 bg-primary-500" />}
                     </Link>
                 );
             })}
@@ -84,8 +84,8 @@ export function BottomNav() {
         const active = isActivePath(pathname, link.href);
         return (
             <Link key={link.href} href={link.href} aria-current={active ? 'page' : undefined}
-                className={cn('relative flex min-w-0 flex-1 flex-col items-center gap-0.5 pb-1 pt-2.5 text-[11px] font-semibold transition-colors', active ? 'text-dark-50' : 'text-dark-400')}>
-                {active && <span aria-hidden="true" className="absolute inset-x-5 top-0 h-[3px] bg-accent-400" />}
+                className={cn('relative flex min-w-0 flex-1 flex-col items-center gap-0.5 pb-1 pt-2.5 text-[11px] font-semibold transition-colors', active ? 'text-primary-600 dark:text-primary-500' : 'text-dark-400')}>
+                {active && <span aria-hidden="true" className="absolute inset-x-6 top-0 h-0.5 bg-primary-500" />}
                 <link.icon size={21} />
                 <span className="max-w-full truncate">{link.label}</span>
             </Link>
@@ -97,7 +97,7 @@ export function BottomNav() {
             {open && overflow.length > 0 && (
                 <div className="fixed bottom-[78px] end-3 z-50 w-48 rounded-xl border border-dark-600 bg-dark-900 p-1.5 shadow-xl animate-scale-in md:hidden">
                     {overflow.map((link) => (
-                        <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold text-dark-100 hover:bg-dark-850">
+                        <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-dark-100 hover:bg-dark-850">
                             <link.icon size={18} className="text-dark-300" />{link.label}
                         </Link>
                     ))}
@@ -110,7 +110,7 @@ export function BottomNav() {
                             return (
                                 <Link key="action" href={action.href} aria-label={action.label}
                                     className="press -mt-6 flex flex-1 flex-col items-center gap-0.5 text-[11px] font-semibold text-dark-50">
-                                    <span className="grid size-14 place-items-center rounded-full border-4 border-dark-900 bg-accent-400 text-ticket-ink">
+                                    <span className="grid size-14 place-items-center rounded-full border-4 border-dark-900 bg-primary-500 text-on-primary shadow-md">
                                         <action.icon size={26} />
                                     </span>
                                 </Link>

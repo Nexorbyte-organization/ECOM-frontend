@@ -177,7 +177,7 @@ export default function CreateEventPage() {
             </Link>
 
             <div>
-                <h1 className="display text-5xl sm:text-6xl">Create New Event</h1>
+                <h1 className="display text-3xl sm:text-4xl">Create New Event</h1>
                 <p className="text-dark-400 mt-1">Fill in the details to post a new event listing</p>
             </div>
 
@@ -227,7 +227,7 @@ export default function CreateEventPage() {
                             <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
-                                className="w-full h-32 rounded-xl border-2 border-dashed border-dark-700 hover:border-primary-500/50 bg-dark-800/20 hover:bg-dark-800/40 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all duration-200"
+                                className="w-full h-32 rounded-xl border border-dashed border-dark-700 hover:border-primary-500/50 bg-dark-800/20 hover:bg-dark-800/40 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all duration-200"
                             >
                                 <div className="p-2 rounded-lg bg-dark-800 text-dark-400 group-hover:text-primary-400">
                                     <Upload size={20} />
@@ -405,7 +405,7 @@ export default function CreateEventPage() {
                 <Card>
                     <h3 className="text-sm font-semibold text-dark-300 mb-4">Additional Details</h3>
                     <div className="space-y-4">
-                        <Input label="Dress Code" value={dressCode} onChange={(e) => setDressCode(e.target.value)} placeholder="e.g., Business formal — black suit" />
+                        <Input label="Dress Code" value={dressCode} onChange={(e) => setDressCode(e.target.value)} placeholder="e.g., Business formal, black suit" />
                         <div className="space-y-1.5">
                             <label className="block text-sm font-medium text-dark-300">Notes</label>
                             <textarea

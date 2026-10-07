@@ -6,7 +6,8 @@ import React, { useEffect, useState } from 'react';
 import { getOpenEvents } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 import { Event, EventFilters } from '@/types';
-import GigTicket from '@/components/events/GigTicket';
+import EventRow from '@/components/events/EventRow';
+import { RowList } from '@/components/ui/Ticket';
 import { toneBg, toneFor } from '@/lib/ticket';
 import { EVENT_CATEGORIES } from '@/lib/utils';
 import { Search, Filter } from 'lucide-react';
@@ -51,7 +52,7 @@ export default function BrowseJobsPage() {
         <div className="text-start">
             {error && <p role="alert" className="mb-6 rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}
             <header className="mb-8">
-                <h1 className="display text-5xl sm:text-6xl">{t('browse_jobs_title')}</h1>
+                <h1 className="display text-3xl sm:text-4xl">{t('browse_jobs_title')}</h1>
                 <p className="mt-2 max-w-[52ch] text-dark-300">{t('browse_jobs_desc')}</p>
             </header>
 
@@ -66,7 +67,7 @@ export default function BrowseJobsPage() {
                             aria-label={t('search_placeholder')}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full rounded-xl border-2 border-edge bg-dark-900 py-3 ps-11 pe-4 text-sm text-dark-50 placeholder:text-dark-400 focus:shadow-[3px_3px_0_0_var(--color-accent-400)]"
+                            className="w-full rounded-xl border border-edge bg-dark-900 py-3 ps-11 pe-4 text-sm text-dark-50 placeholder:text-dark-400 focus:"
                         />
                     </div>
                     <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-0">
@@ -77,9 +78,9 @@ export default function BrowseJobsPage() {
                                     key={cat.value || 'all'}
                                     onClick={() => setCategoryFilter(cat.value)}
                                     aria-pressed={active}
-                                    className={`press flex shrink-0 cursor-pointer items-center gap-2.5 whitespace-nowrap rounded-xl border-2 px-3.5 py-2 text-sm font-bold transition-colors lg:border-transparent lg:py-2.5 ${active ? 'border-edge bg-accent-400 text-ticket-ink' : 'border-edge bg-dark-900 text-dark-100 lg:bg-transparent lg:hover:bg-dark-850'}`}
+                                    className={`press flex shrink-0 cursor-pointer items-center gap-2.5 whitespace-nowrap rounded-xl border-2 px-3.5 py-2 text-sm font-bold transition-colors lg:border-transparent lg:py-2.5 ${active ? 'border-edge bg-primary-500 text-on-primary' : 'border-edge bg-dark-900 text-dark-100 lg:bg-transparent lg:hover:bg-dark-850'}`}
                                 >
-                                    <span aria-hidden="true" className={`size-3 rounded-full border-2 border-edge ${cat.value ? toneBg[toneFor(cat.value)] : 'bg-dark-900'}`} />
+                                    <span aria-hidden="true" className={`size-3 rounded-full border border-edge ${cat.value ? toneBg[toneFor(cat.value)] : 'bg-dark-900'}`} />
                                     {cat.label}
                                 </button>
                             );
@@ -92,17 +93,17 @@ export default function BrowseJobsPage() {
                     {loading ? (
                         <ContentSkeleton variant="list" />
                     ) : filteredEvents.length === 0 ? (
-                        <div className="rounded-2xl border-2 border-dashed border-dark-500 p-10 text-center">
+                        <div className="rounded-2xl border border-dashed border-dark-500 p-10 text-center">
                             <Filter size={32} className="mx-auto mb-3 text-dark-400" />
                             <p className="display-sm text-2xl">{t('no_jobs_matching')}</p>
                             <p className="mt-1 text-sm text-dark-300">{t('adjust_filters')}</p>
                         </div>
                     ) : (
-                        <div className="space-y-4">
+                        <RowList>
                             {filteredEvents.map((event) => {
                                 const left = Math.max(0, event.requiredCount - event.hiredTalents.length);
                                 return (
-                                    <GigTicket
+                                    <EventRow
                                         key={event._id}
                                         event={event}
                                         href={`/talent/jobs/${event._id}`}
@@ -111,7 +112,7 @@ export default function BrowseJobsPage() {
                                     />
                                 );
                             })}
-                        </div>
+                        </RowList>
                     )}
                 </section>
             </div>

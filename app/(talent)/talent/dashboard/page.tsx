@@ -12,8 +12,8 @@ import { getTalentProfileByUserId, getTalentDashboardStats, isVerifiedTalent, ge
 import { TalentProfile, Referral, Event } from '@/types';
 import Button from '@/components/ui/Button';
 import Avatar from '@/components/ui/Avatar';
-import Ticket from '@/components/ui/Ticket';
-import GigTicket from '@/components/events/GigTicket';
+import { DateBlock, RowList } from '@/components/ui/Ticket';
+import EventRow from '@/components/events/EventRow';
 import NextUp from '@/components/events/NextUp';
 import { useProfileCompletion } from '@/components/shared/ProfileCompletionGate';
 import { toneFor } from '@/lib/ticket';
@@ -90,9 +90,9 @@ export default function TalentDashboard() {
     const bookedIds = new Set(upcoming.map((e) => e._id));
     const freshGigs = fresh.filter((e) => !bookedIds.has(e._id) && e.hiredTalents.length < e.requiredCount).slice(0, 3);
     const record = [
-        { value: `${stats?.reliabilityScore ?? 0}%`, label: c.reliable },
-        { value: `${stats?.ratingAverage ?? 0}`, label: `${c.rating} (${stats?.totalRatings ?? 0})` },
-        { value: String(stats?.completedEventsCount ?? 0), label: c.done },
+        { value: `${stats?.reliabilityScore ?? 0}%`, label: c.reliable, hue: 'text-primary-600 dark:text-primary-400' },
+        { value: `${stats?.ratingAverage ?? 0}`, label: `${c.rating} (${stats?.totalRatings ?? 0})`, hue: 'text-cat-sun-ink' },
+        { value: String(stats?.completedEventsCount ?? 0), label: c.done, hue: 'text-cat-sky-ink' },
     ];
 
     return (
@@ -103,14 +103,14 @@ export default function TalentDashboard() {
                 <div className="flex items-center gap-4">
                     <Avatar src={profile?.photo} name={profile?.fullName || ''} size="lg" />
                     <div>
-                        <h1 className="display text-5xl sm:text-6xl">{c.hey} {profile?.fullName?.split(' ')[0] || ''}</h1>
+                        <h1 className="display text-3xl sm:text-4xl">{c.hey} {profile?.fullName?.split(' ')[0] || ''}</h1>
                         {profile && isVerifiedTalent(profile) && <p className="mt-1 text-sm font-semibold text-success-500">{c.verified}</p>}
                     </div>
                 </div>
-                <dl className="grid grid-cols-3 divide-x divide-dashed divide-dark-500 rtl:divide-x-reverse md:min-w-[26rem]">
+                <dl className="grid grid-cols-3 divide-x divide-edge rtl:divide-x-reverse md:min-w-[26rem]">
                     {record.map((r) => (
                         <div key={r.label} className="px-4 first:ps-0">
-                            <dd className="display text-4xl tabular-nums">{r.value}</dd>
+                            <dd className={`display text-3xl tabular-nums ${r.hue}`}>{r.value}</dd>
                             <dt className="mt-1 text-xs text-dark-300">{r.label}</dt>
                         </div>
                     ))}
@@ -119,24 +119,24 @@ export default function TalentDashboard() {
 
             {next ? (
                 <NextUp event={next} label={c.next}>
-                    <Link href={`/talent/jobs/${next._id}`} className="press inline-flex min-h-12 items-center rounded-lg bg-ticket-ink px-6 text-base font-semibold text-white">{c.checkin}</Link>
-                    <Link href={`/talent/jobs/${next._id}`} className="press inline-flex min-h-12 items-center rounded-lg border-2 border-ticket-ink px-6 text-base font-semibold">{c.open}</Link>
+                    <Link href={`/talent/jobs/${next._id}`} className="press inline-flex min-h-12 items-center rounded-lg bg-white px-6 text-base font-semibold text-ink hover:bg-bottle-text">{c.checkin}</Link>
+                    <Link href={`/talent/jobs/${next._id}`} className="press inline-flex min-h-12 items-center rounded-lg border border-white/40 px-6 text-base font-semibold text-white hover:bg-white/10">{c.open}</Link>
                 </NextUp>
             ) : (
-                <section className="rounded-2xl border-2 border-dashed border-dark-500 p-8 text-center sm:p-12">
+                <section className="rounded-2xl border border-dashed border-dark-500 p-8 text-center sm:p-12">
                     <p className="display text-4xl sm:text-5xl">{c.nothing}</p>
                     <p className="mx-auto mt-3 max-w-md text-dark-300">{c.nothingSub}</p>
-                    <Link href="/talent/jobs" className="press mt-6 inline-flex min-h-12 items-center rounded-lg bg-accent-400 px-7 text-base font-semibold text-ticket-ink">{c.browse}</Link>
+                    <Link href="/talent/jobs" className="press mt-6 inline-flex min-h-12 items-center rounded-lg bg-accent-400 px-7 text-base font-semibold text-ink">{c.browse}</Link>
                 </section>
             )}
 
             {pendingReferrals.length > 0 && (
                 <section aria-label={c.offers}>
-                    <h2 className="display-sm text-3xl">{c.offers}</h2>
+                    <h2 className="display-sm text-2xl">{c.offers}</h2>
                     <div className="-mx-4 mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 sm:mx-0 sm:px-0">
                         {pendingReferrals.map((ref) => (
                             <div key={ref._id} className="w-[85%] shrink-0 snap-start sm:w-[26rem]">
-                                <Ticket date={ref.event.eventDate} tone={toneFor(ref.event.category)}>
+                                <div className="flex gap-4 rounded-xl border border-edge bg-dark-900 p-4"><DateBlock date={ref.event.eventDate} tone={toneFor(ref.event.category)} /><div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2.5">
                                         <Avatar src={ref.referrer.photo} name={ref.referrer.fullName} size="sm" />
                                         <p className="text-sm text-dark-300"><span className="font-semibold text-dark-50">{ref.referrer.fullName}</span> {c.invited}</p>
@@ -147,7 +147,7 @@ export default function TalentDashboard() {
                                         <Button size="sm" disabled={isCheckingProfile || !isProfileComplete} isLoading={actionLoading === ref._id} onClick={(e) => handleReferral(ref._id, true, e.currentTarget)}>{t('accept') || c.accept}</Button>
                                         <Button size="sm" variant="secondary" disabled={isCheckingProfile || !isProfileComplete} isLoading={actionLoading === ref._id} onClick={(e) => handleReferral(ref._id, false, e.currentTarget)}>{t('decline') || c.decline}</Button>
                                     </div>
-                                </Ticket>
+                                </div></div>
                             </div>
                         ))}
                     </div>
@@ -155,22 +155,22 @@ export default function TalentDashboard() {
             )}
 
             {later.length > 0 && (
-                <section aria-label={c.coming} className="space-y-3">
-                    <h2 className="display-sm text-3xl">{c.coming}</h2>
-                    {later.map((event) => <GigTicket key={event._id} event={event} href={`/talent/jobs/${event._id}`} />)}
+                <section aria-label={c.coming} className="space-y-4">
+                    <h2 className="display-sm text-2xl">{c.coming}</h2>
+                    <RowList>{later.map((event) => <EventRow key={event._id} event={event} href={`/talent/jobs/${event._id}`} />)}</RowList>
                 </section>
             )}
 
             {freshGigs.length > 0 && (
-                <section aria-label={c.fresh} className="space-y-3">
+                <section aria-label={c.fresh} className="space-y-4">
                     <div className="flex items-end justify-between gap-4">
-                        <h2 className="display-sm text-3xl">{c.fresh}</h2>
+                        <h2 className="display-sm text-2xl">{c.fresh}</h2>
                         <Link href="/talent/jobs" className="text-sm font-semibold underline underline-offset-4">{c.all}</Link>
                     </div>
-                    {freshGigs.map((event) => (
-                        <GigTicket key={event._id} event={event} href={`/talent/jobs/${event._id}`}
+                    <RowList>{freshGigs.map((event) => (
+                        <EventRow key={event._id} event={event} href={`/talent/jobs/${event._id}`}
                             aside={<span className="display-sm text-lg tabular-nums">{event.budget} <span className="font-sans text-xs font-medium text-dark-300">EGP</span></span>} />
-                    ))}
+                    ))}</RowList>
                 </section>
             )}
 
