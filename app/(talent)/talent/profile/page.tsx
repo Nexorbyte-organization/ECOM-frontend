@@ -297,7 +297,7 @@ export default function TalentProfilePage() {
         <div ref={pageRef} className="max-w-3xl mx-auto space-y-6 animate-fade-in text-start">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="display text-5xl sm:text-6xl">{t('my_profile_title')}</h1>
+                    <h1 className="display text-3xl sm:text-4xl">{t('my_profile_title')}</h1>
                     <p className="text-dark-400 mt-1 font-semibold">{t('my_profile_desc')}</p>
                 </div>
                 {success && (
@@ -581,7 +581,7 @@ export default function TalentProfilePage() {
                         </div>
                     ))}
                     <input ref={portfolioInputRef} type="file" accept="image/jpeg,image/png" className="hidden" onChange={addPortfolioImage} />
-                    <button type="button" disabled={portfolioBusy || (profile?.portfolioImages.length || 0) >= 12} onClick={() => portfolioInputRef.current?.click()} className="rounded-xl border-2 border-dashed border-dark-50 hover:border-primary-500/50 aspect-video flex flex-col items-center justify-center text-dark-400 hover:text-primary-500 transition-all cursor-pointer bg-dark-950 disabled:opacity-50">
+                    <button type="button" disabled={portfolioBusy || (profile?.portfolioImages.length || 0) >= 12} onClick={() => portfolioInputRef.current?.click()} className="rounded-xl border border-dashed border-dark-50 hover:border-primary-500/50 aspect-video flex flex-col items-center justify-center text-dark-400 hover:text-primary-500 transition-all cursor-pointer bg-dark-950 disabled:opacity-50">
                         {portfolioBusy ? <SkeletonGroup className="w-2/3"><Skeleton className="mx-auto h-6 w-6" /><Skeleton className="mt-2 h-3 w-full" /></SkeletonGroup> : <><Plus size={20} /><span className="text-xs mt-1 font-bold">{t('add_photo')}</span></>}
                     </button>
                 </div>

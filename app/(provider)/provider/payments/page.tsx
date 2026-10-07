@@ -40,7 +40,7 @@ export default function ProviderPaymentsPage() {
     return (
         <div className="mx-auto max-w-4xl space-y-6 animate-fade-in">
             <div>
-                <h1 className="display text-5xl sm:text-6xl">Payments</h1>
+                <h1 className="display text-3xl sm:text-4xl">Payments</h1>
                 <p className="mt-1 text-sm text-dark-400">Refunds to your card, your credit, and how you pay for ushers.</p>
             </div>
             {error && <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}

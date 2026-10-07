@@ -192,7 +192,7 @@ export default function AdminUsersPage() {
             {actionError && <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{actionError}</p>}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="display text-5xl sm:text-6xl">Users</h1>
+                    <h1 className="display text-3xl sm:text-4xl">Users</h1>
                     <p className="text-dark-400 mt-1">Manage all platform users</p>
                 </div>
                 <Button

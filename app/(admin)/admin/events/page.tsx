@@ -128,7 +128,7 @@ export default function AdminEventsPage() {
         <div className="space-y-6 animate-fade-in">
             {error && <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}
             <div>
-                <h1 className="display text-5xl sm:text-6xl">Events</h1>
+                <h1 className="display text-3xl sm:text-4xl">Events</h1>
                 <p className="text-dark-400 mt-1">Manage all platform events</p>
             </div>
 

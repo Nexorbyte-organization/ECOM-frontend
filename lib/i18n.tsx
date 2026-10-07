@@ -84,7 +84,7 @@ const translations: Record<Language, Record<string, string>> = {
         // Duties Timeline
         duties_tag: "How It Works",
         duties_title: "Clear Attendance from Booking to Review",
-        duties_desc: "OO-Ushers gives organizers a simple record of who was hired, who attended, and how each usher performed—without complicated event-day tools.",
+        duties_desc: "OO-Ushers gives organizers a simple record of who was hired, who attended, and how each usher performed, without complicated event-day tools.",
         time_1: "Before",
         d_title_1: "Confirm Your Usher Roster",
         d_desc_1: "Review accepted applications and see the ushers booked for your event in one place.",
@@ -596,7 +596,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Duties Timeline
     duties_tag: "الموضوع بيمشي إزاي",
     duties_title: "حضور واضح من وقت الحجز لحد التقييم",
-    duties_desc: "OO-Ushers بتدي منظّم الإيفينت سجل بسيط يوضّح مين اتحجز، ومين حضر، وكان أداؤه عامل إزاي—من غير أدوات تشغيل معقّدة.",
+    duties_desc: "OO-Ushers بتدي منظّم الإيفينت سجل بسيط يوضّح مين اتحجز، ومين حضر، وكان أداؤه عامل إزاي-من غير أدوات تشغيل معقّدة.",
     time_1: "قبل الإيفينت",
     d_title_1: "أكد ليستة الأشرز",
     d_desc_1: "راجع الطلبات المقبولة وشوف كل الأشرز المحجوزين لإيفينتك في مكان واحد.",

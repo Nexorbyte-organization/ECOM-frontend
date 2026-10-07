@@ -229,7 +229,7 @@ export default function JobDetailPage() {
                         <Badge variant="primary">{event.category}</Badge>
                         <Badge variant={event.status === 'open' ? 'success' : 'default'}>{event.status}</Badge>
                     </div>
-                    <h1 className="display text-5xl sm:text-6xl">{event.title}</h1>
+                    <h1 className="display text-3xl sm:text-4xl">{event.title}</h1>
                 </div>
             </Card>
 
@@ -374,7 +374,7 @@ export default function JobDetailPage() {
                             <div className="pt-3 border-t border-dark-700/50 space-y-3">
                                 <p className="text-xs text-dark-300">
                                     {event.standbyPosition ? `You’re #${event.standbyPosition} in line. ` : ''}
-                                    You don’t need to go to the venue and standby is unpaid. If a spot opens before the event starts, you’re moved into the team automatically and notified — you can then excuse yourself within 2 hours with no penalty. Taking another booking that day takes you off this list.
+                                    You don’t need to go to the venue and standby is unpaid. If a spot opens before the event starts, you’re moved into the team automatically and notified, you can then excuse yourself within 2 hours with no penalty. Taking another booking that day takes you off this list.
                                 </p>
                                 <Button variant="secondary" className="w-full" onClick={handleLeaveStandby} isLoading={leavingStandby}>
                                     Leave standby

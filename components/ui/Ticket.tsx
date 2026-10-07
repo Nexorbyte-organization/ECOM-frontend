@@ -1,60 +1,44 @@
 import React from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { TicketTone, toneBg } from '@/lib/ticket';
+import { TicketTone, toneTint, toneText } from '@/lib/ticket';
 
-/** The date half of a ticket: a big day numeral on a loud colour. */
-export function DateStub({ date, tone, className }: { date: string; tone: TicketTone; className?: string }) {
+/** The date of an event: a day numeral on a soft tint of its category colour. */
+export function DateBlock({ date, tone, className }: { date: string; tone: TicketTone; className?: string }) {
     const d = new Date(`${date.slice(0, 10)}T00:00:00`);
     return (
-        <div className={cn('flex w-[84px] shrink-0 flex-col items-center justify-center px-2 py-4 text-ticket-ink', toneBg[tone], className)}>
-            <span className="display text-[2.75rem] leading-none tabular-nums">{d.getDate()}</span>
-            <span className="mt-1.5 text-sm font-semibold">{d.toLocaleDateString('en-US', { month: 'short' })}</span>
-            <span className="text-xs opacity-75">{d.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+        <div className={cn('flex size-[60px] shrink-0 flex-col items-center justify-center rounded-xl', toneTint[tone], toneText[tone], className)}>
+            <span className="display text-[1.65rem] leading-none tabular-nums">{d.getDate()}</span>
+            <span className="mt-0.5 text-xs font-semibold">{d.toLocaleDateString('en-US', { month: 'short' })}</span>
         </div>
     );
 }
 
-/** Staffing as punched dots: filled = booked, hollow = still open. Past 12 it becomes a count. */
-export function FillDots({ filled, total, className }: { filled: number; total: number; className?: string }) {
-    const label = `${filled}/${total}`;
-    if (total > 12) {
-        return <span className={cn('display-sm text-lg tabular-nums text-dark-50', className)}>{label}</span>;
-    }
+/** Staffing as a quiet bar and a count. Green when full, sun when it is filling, neutral when empty. */
+export function FillBar({ filled, total, className }: { filled: number; total: number; className?: string }) {
+    const pct = total ? Math.min(100, Math.round((filled / total) * 100)) : 0;
     return (
-        <span className={cn('inline-flex items-center gap-2', className)} role="img" aria-label={label}>
-            <span className="flex flex-wrap gap-[3px]" aria-hidden="true">
-                {Array.from({ length: total }, (_, i) => (
-                    <span key={i} className={cn('size-2.5 rounded-full border-[1.5px]', i < filled ? 'border-dark-50 bg-dark-50' : 'border-dark-400')} />
-                ))}
+        <span className={cn('inline-flex items-center gap-2.5', className)} role="img" aria-label={`${filled}/${total}`}>
+            <span className="h-1.5 w-16 overflow-hidden rounded-full bg-dark-700" aria-hidden="true">
+                <span className={cn('block h-full rounded-full', pct >= 100 ? 'bg-primary-500' : 'bg-accent-450')} style={{ width: `${pct}%` }} />
             </span>
-            <span className="text-xs font-semibold tabular-nums text-dark-300">{label}</span>
+            <span className="text-xs font-semibold tabular-nums text-dark-300">{filled}/{total}</span>
         </span>
     );
 }
 
-interface TicketProps {
-    date: string;
-    tone: TicketTone;
-    href?: string;
-    children: React.ReactNode;
-    className?: string;
-    onClick?: () => void;
-    /** Page colour behind the ticket so the notches match; defaults to the page background. */
-    bg?: string;
+/** Kept so older screens still compile; same quiet bar. */
+export const FillDots = FillBar;
+
+/** One grouped surface for a list of rows. Rows are divided by hairlines, not boxed one by one. */
+export function RowList({ children, className }: { children: React.ReactNode; className?: string }) {
+    return <div className={cn('divide-y divide-edge overflow-hidden rounded-xl border border-edge bg-dark-900', className)}>{children}</div>;
 }
 
-/** An event as a ticket: stub + perforation + body. Whole thing is the link when `href` is set. */
-export default function Ticket({ date, tone, href, children, className, onClick, bg }: TicketProps) {
-    const inner = (
-        <>
-            <DateStub date={date} tone={tone} />
-            <div className="ticket-body bg-dark-900 p-4 sm:p-5">{children}</div>
-        </>
-    );
-    const classes = cn('ticket press', className);
-    const style = bg ? ({ '--ticket-bg': bg } as React.CSSProperties) : undefined;
-    return href
-        ? <Link href={href} className={classes} style={style}>{inner}</Link>
-        : <div className={classes} style={style} onClick={onClick}>{inner}</div>;
+interface RowProps { href?: string; children: React.ReactNode; leading?: React.ReactNode; className?: string }
+/** A row inside a RowList: leading block, content, optional trailing slot. */
+export default function Row({ href, children, leading, className }: RowProps) {
+    const inner = (<>{leading}<div className="min-w-0 flex-1">{children}</div></>);
+    const classes = cn('press flex items-start gap-4 p-4 sm:p-5', href && 'hover:bg-dark-850', className);
+    return href ? <Link href={href} className={classes}>{inner}</Link> : <div className={classes}>{inner}</div>;
 }
