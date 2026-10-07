@@ -74,14 +74,11 @@ const arabicValue: Record<string, string> = {
 function labelFor(value: string, language: string) {
     return language === 'en' ? humanize(value) : arabicValue[value] || humanize(value);
 }
-function Metric({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
-    return <Card className="min-w-0">
-        <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0"><p className="text-xs font-semibold text-dark-400">{label}</p>
-                <p className="mt-2 break-words text-2xl font-bold tabular-nums text-dark-50">{value}</p></div>
-            <span className="rounded-xl bg-primary-500/10 p-2.5 text-primary-400" aria-hidden="true">{icon}</span>
-        </div>
-    </Card>;
+function Metric({ label, value, icon, tone }: { label: string; value: string; icon: React.ReactNode; tone?: 'alert' }) {
+    return <div className={`min-w-0 border-t-[3px] pt-3 ${tone === 'alert' ? 'border-accent-400' : 'border-edge'}`}>
+        <p className="flex items-center gap-2 text-sm text-dark-300"><span aria-hidden="true" className="text-dark-400">{icon}</span>{label}</p>
+        <p className="display mt-1 break-words text-3xl tabular-nums text-dark-50 sm:text-4xl xl:text-[2.6rem]">{value}</p>
+    </div>;
 }
 function Rows({ values, format, empty }: { values: [string, number][]; format: (value: number) => string; empty: string }) {
     const { language } = useLanguage();
@@ -93,7 +90,7 @@ function Rows({ values, format, empty }: { values: [string, number][]; format: (
     </dl> : <p className="text-sm text-dark-400">{empty}</p>;
 }
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-    return <Card><h2 className="mb-4 text-base font-bold text-dark-100">{title}</h2>{children}</Card>;
+    return <section className="rounded-xl border-2 border-edge bg-dark-900 p-5"><h2 className="display-sm mb-4 text-2xl text-dark-50">{title}</h2>{children}</section>;
 }
 
 export default function AnalyticsDashboard({ scope }: { scope: Scope }) {
@@ -101,7 +98,7 @@ export default function AnalyticsDashboard({ scope }: { scope: Scope }) {
     const copy = language === 'en' ? english : arabic;
     const locale = language === 'en' ? 'en-EG' : 'ar-EG';
     const count = (value: number) => new Intl.NumberFormat(locale).format(value);
-    const egp = (value: number) => new Intl.NumberFormat(locale, { style: 'currency', currency: 'EGP', maximumFractionDigits: 2 }).format(value);
+    const egp = (value: number) => new Intl.NumberFormat(locale, { style: 'currency', currency: 'EGP', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(value);
     const [data, setData] = useState<Analytics | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -136,20 +133,20 @@ export default function AnalyticsDashboard({ scope }: { scope: Scope }) {
     const eventUrl = (id: string) => scope === 'platform' ? '/admin/events' : `/provider/events/${id}`;
 
     return <div className="space-y-6 text-start">
-        <div><h1 className="text-2xl font-bold text-dark-50">{copy.title}</h1><p className="mt-1 text-sm text-dark-400">{copy.subtitle}</p></div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Metric label={copy.events} value={count(events.total)} icon={<CalendarDays size={20} />} />
-            <Metric label={copy.hires} value={count(events.hires)} icon={<Users size={20} />} />
-            <Metric label={copy.applications} value={count(totalApplications)} icon={<Activity size={20} />} />
-            <Metric label={copy.collected} value={egp(onlineCollected)} icon={<CircleDollarSign size={20} />} />
+        <header><h1 className="display text-5xl sm:text-6xl">{copy.title}</h1><p className="mt-2 text-sm text-dark-300">{copy.subtitle}</p></header>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-8 xl:grid-cols-4">
+            <Metric label={copy.events} value={count(events.total)} icon={<CalendarDays size={16} />} />
+            <Metric label={copy.hires} value={count(events.hires)} icon={<Users size={16} />} />
+            <Metric label={copy.applications} value={count(totalApplications)} icon={<Activity size={16} />} />
+            <Metric label={copy.collected} value={egp(onlineCollected)} icon={<CircleDollarSign size={16} />} />
         </div>
         <section aria-label={copy.attention}>
-            <h2 className="mb-3 text-base font-bold text-dark-100">{copy.attention}</h2>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <Metric label={copy.underfunded} value={count(alerts.underfundedEvents)} icon={<AlertTriangle size={20} />} />
-                <Metric label={copy.shortfall} value={egp(alerts.underfundedAmountEgp)} icon={<CircleDollarSign size={20} />} />
-                {scope === 'platform' && <><Metric label={copy.pendingRequests} value={count(alerts.pendingEventRequests)} icon={<Activity size={20} />} />
-                    <Metric label={copy.flagged} value={count(alerts.flaggedUshers)} icon={<Users size={20} />} /></>}
+            <h2 className="display-sm mb-4 text-3xl">{copy.attention}</h2>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-8 xl:grid-cols-4">
+                <Metric tone="alert" label={copy.underfunded} value={count(alerts.underfundedEvents)} icon={<AlertTriangle size={16} />} />
+                <Metric tone="alert" label={copy.shortfall} value={egp(alerts.underfundedAmountEgp)} icon={<CircleDollarSign size={16} />} />
+                {scope === 'platform' && <><Metric tone="alert" label={copy.pendingRequests} value={count(alerts.pendingEventRequests)} icon={<Activity size={16} />} />
+                    <Metric tone="alert" label={copy.flagged} value={count(alerts.flaggedUshers)} icon={<Users size={16} />} /></>}
             </div>
         </section>
         <div className="grid gap-6 xl:grid-cols-2">
@@ -157,7 +154,7 @@ export default function AnalyticsDashboard({ scope }: { scope: Scope }) {
                 <p className="mb-4 text-xs text-dark-400">{copy.lastYear}</p>
                 <div className="flex h-32 items-end gap-1.5" role="img" aria-label={monthly.map(({ month, count: value }) => `${month}: ${count(value)}`).join(', ')}>
                     {monthly.map(({ month, count: value }) => <div key={month} className="group flex h-full min-w-0 flex-1 flex-col justify-end" title={`${month}: ${count(value)}`}>
-                        <div className="min-h-1 rounded-t bg-primary-500" style={{ height: `${Math.max(3, value / maxMonth * 100)}%` }} />
+                        <div className="min-h-1 rounded-t border-2 border-b-0 border-edge bg-accent-400" style={{ height: `${Math.max(3, value / maxMonth * 100)}%` }} />
                     </div>)}
                 </div>
                 <div className="mt-2 flex justify-between text-xs text-dark-400"><span>{monthly[0].month}</span><span>{monthly[11].month}</span></div>
@@ -200,7 +197,7 @@ export default function AnalyticsDashboard({ scope }: { scope: Scope }) {
             </Section>
             <Section title={copy.recent}>
                 {events.recent.length ? <ul className="space-y-2">{events.recent.map((event) => <li key={event.id}>
-                    <Link href={eventUrl(event.id)} className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-dark-700 p-3 hover:border-primary-400 focus-visible:ring-2 focus-visible:ring-primary-400">
+                    <Link href={eventUrl(event.id)} className="press flex min-w-0 items-center justify-between gap-3 rounded-lg border-2 border-edge p-3">
                         <span className="min-w-0"><span className="block truncate font-semibold text-dark-100">{event.title}</span>
                             <span className="text-xs text-dark-400">{scope === 'platform' ? `${event.organization} · ` : ''}{count(event.hires)}/{count(event.requiredCount)}</span></span>
                         <span className="shrink-0 capitalize text-xs text-dark-300">{labelFor(event.status, language)}</span>

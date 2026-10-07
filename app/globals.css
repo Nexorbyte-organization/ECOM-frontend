@@ -17,40 +17,50 @@
 
 @theme {
   /* ─── Primary: bottle green ─────────────────────── */
-  --color-primary-50:  #EAF1EE;
-  --color-primary-100: #D3E3DC;
-  --color-primary-200: #A9C7BC;
-  --color-primary-300: #6F9E8F;
-  --color-primary-400: #3F7A69;
-  --color-primary-450: #2C6556;
-  --color-primary-500: #12423A;
-  --color-primary-555: #0E3A33;
-  --color-primary-600: #0B3029;
-  --color-primary-700: #08251F;
-  --color-primary-800: #061C18;
-  --color-primary-900: #041512;
-  --color-on-primary: #F6F8F6;
+  --color-primary-50:  #E3F7EF;
+  --color-primary-100: #C2EEDC;
+  --color-primary-200: #8EDDBF;
+  --color-primary-300: #4FC79A;
+  --color-primary-400: #12A877;
+  --color-primary-450: #0B8F65;
+  --color-primary-500: #0B7A5A;
+  --color-primary-555: #086B4E;
+  --color-primary-600: #075C43;
+  --color-primary-700: #054833;
+  --color-primary-800: #03352A;
+  --color-primary-900: #022419;
+  --color-on-primary: #FFFFFF;
+  --color-edge: #0B1F1B;
 
   /* ─── Accent: tungsten — presence and attention only ─ */
-  --color-accent-50:  #FFF6E5;
-  --color-accent-100: #FFE9C2;
-  --color-accent-200: #FFD58A;
-  --color-accent-300: #FFC25E;
-  --color-accent-400: #FFB23E;
-  --color-accent-450: #F5A12A;
-  --color-accent-500: #FFB23E;
-  --color-accent-600: #D98A12;
-  --color-accent-700: #7A4A05;
-  --color-accent-800: #5A3504;
-  --color-accent-900: #3A2203;
+  --color-accent-50:  #FFF8D9;
+  --color-accent-100: #FFF0A8;
+  --color-accent-200: #FFE673;
+  --color-accent-300: #FFDA4D;
+  --color-accent-400: #FFD23F;
+  --color-accent-450: #F5C21F;
+  --color-accent-500: #FFD23F;
+  --color-accent-600: #C99A00;
+  --color-accent-700: #6B5200;
+  --color-accent-800: #4A3900;
+  --color-accent-900: #2E2400;
 
   /* ─── Bottle: the dark brand field (hero, workspace rail). Same in both themes. ─ */
-  --color-bottle: #0E3A33;
-  --color-bottle-deep: #0A2B26;
-  --color-bottle-lift: #16493F;
-  --color-bottle-line: #2A5A51;
-  --color-bottle-text: #E6EFEA;
-  --color-bottle-muted: #A9C2B7;
+  --color-bottle: #064E3B;
+  --color-bottle-deep: #043B2D;
+  --color-bottle-lift: #0A6A52;
+  --color-bottle-line: #1E8467;
+  --color-bottle-text: #E6FFF5;
+  --color-bottle-muted: #9FE3C8;
+
+  /* ─── Ticket colours: loud on purpose. Each event category gets one. ─ */
+  --color-ticket-coral: #FF6B5B;
+  --color-ticket-lime: #C6F135;
+  --color-ticket-sky: #5CC8FF;
+  --color-ticket-pink: #FF8FD0;
+  --color-ticket-amber: #FFD23F;
+  --color-ticket-mint: #4FE3A1;
+  --color-ticket-ink: #0B1F1B;
 
   /* ─── Semantic ───────────────────────────────────── */
   --color-success-50:  #E6F4EE;
@@ -79,12 +89,12 @@
   --color-dark-400: #7F908B;
   --color-dark-450: #98A7A2;
   --color-dark-500: #B4BFBB;
-  --color-dark-600: #C9D1CC;
+  --color-dark-600: #D3D9D5;
   --color-dark-700: #DEE4E0;
-  --color-dark-800: #E8ECE9;
-  --color-dark-850: #EDF0EE;
-  --color-dark-900: #F8F9F7;
-  --color-dark-950: #F0F2EF;
+  --color-dark-800: #ECEDE8;
+  --color-dark-850: #F3F4F0;
+  --color-dark-900: #FFFFFF;
+  --color-dark-950: #FFFFFF;
 
   /* ─── Type ───────────────────────────────────────── */
   --font-sans: var(--font-text-latin), var(--font-text-arabic), ui-sans-serif, system-ui, 'Segoe UI', Tahoma, sans-serif;
@@ -111,19 +121,20 @@
 
 /* ─── Dark: bottle ─────────────────────────────────── */
 html.dark {
-  --color-primary-50:  #12302B;
-  --color-primary-100: #1A3F38;
-  --color-primary-200: #2D5A51;
-  --color-primary-300: #B5CCC3;
-  --color-primary-400: #D2E1DA;
-  --color-primary-450: #DCE8E2;
-  --color-primary-500: #E6EFEA;
-  --color-primary-555: #D5E4DC;
-  --color-primary-600: #C5D8CE;
-  --color-primary-700: #A9C2B7;
-  --color-primary-800: #8AA89B;
-  --color-primary-900: #6E8D80;
-  --color-on-primary: #0A1A17;
+  --color-primary-50:  #0F3A2E;
+  --color-primary-100: #14503F;
+  --color-primary-200: #1E7A5E;
+  --color-primary-300: #7DE3B8;
+  --color-primary-400: #7DE3B8;
+  --color-primary-450: #66E8AE;
+  --color-primary-500: #4FE3A1;
+  --color-primary-555: #3FD493;
+  --color-primary-600: #35C487;
+  --color-primary-700: #2BA871;
+  --color-primary-800: #228A5D;
+  --color-primary-900: #1A6C49;
+  --color-on-primary: #06231B;
+  --color-edge: #4B5E57;
 
   --color-dark-50:  #F0F2EF;
   --color-dark-100: #E1E7E3;
@@ -197,7 +208,7 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 
 .glass, .card-premium {
   background: var(--color-dark-900);
-  border: 1px solid var(--color-dark-600);
+  border: 2px solid var(--color-edge);
 }
 
 .divider { height: 1px; background: var(--color-dark-600); }
@@ -301,3 +312,39 @@ html.dark textarea.bg-dark-950.border-dark-50 { color-scheme: dark; }
 }
 [dir="rtl"] .nav-link::after { transform-origin: right; }
 .nav-link:hover::after, .nav-link[aria-current="page"]::after { transform: scaleX(1); }
+
+
+/* ─── Tickets ─────────────────────────────────────────── */
+/* A ticket is a stub and a body split by a perforation. The two notches are the punch:
+   half-circles in the page colour cut into the seam. */
+.ticket { --ticket-bg: var(--color-dark-950); position: relative; display: flex; overflow: hidden; border-radius: 12px; border: 2px solid var(--color-edge); box-shadow: 0 0 0 0 var(--color-edge); transition: transform .14s cubic-bezier(.3,.7,.4,1.4), box-shadow .14s; }
+.ticket-body { position: relative; flex: 1; min-width: 0; border-inline-start: 2px dashed var(--color-edge); }
+.ticket-body::before, .ticket-body::after {
+  content: ''; position: absolute; inset-inline-start: -11px; width: 20px; height: 20px; border-radius: 50%; background: var(--ticket-bg); z-index: 1;
+}
+.ticket-body::before { top: -10px; }
+.ticket-body::after { bottom: -10px; }
+
+/* Press physics: everything tappable gives under the finger and lifts under the cursor. */
+.press { transition: transform .14s cubic-bezier(.3, .7, .4, 1.4); will-change: transform; }
+.press:active { transform: scale(.972); }
+@media (hover: hover) { .press:hover { transform: translate(-2px, -3px) rotate(-.35deg); } .press:active { transform: scale(.972); } .ticket.press:hover { box-shadow: 6px 7px 0 0 var(--color-edge); } }
+@media (prefers-reduced-motion: reduce) { .press, .press:hover, .press:active { transform: none; } }
+
+/* Live countdown dot */
+@keyframes live-pulse { 0% { box-shadow: 0 0 0 0 rgb(255 178 62 / .7); } 70%, 100% { box-shadow: 0 0 0 9px rgb(255 178 62 / 0); } }
+.live-dot { animation: live-pulse 1.8s ease-out infinite; }
+@media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+
+/* Tab underline that slides because it is one element, not one per tab. */
+.safe-bottom { padding-bottom: max(.5rem, env(safe-area-inset-bottom)); }
+
+/* Text on a loud colour band: remap the neutral scale to ink so every nested class stays readable. */
+.on-color {
+  --color-dark-50: #0B1F1B; --color-dark-100: #0B1F1B; --color-dark-200: #143029; --color-dark-300: #1E3B33;
+  --color-dark-400: #2C4E44; --color-dark-500: rgb(11 31 27 / .4); --color-dark-600: rgb(11 31 27 / .45);
+  --color-dark-850: rgb(255 255 255 / .35); --color-edge: #0B1F1B; color: #0B1F1B;
+}
+@keyframes sticker-wobble { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(-2deg) translateY(-4px); } }
+.sticker-wobble { animation: sticker-wobble 4.5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .sticker-wobble { animation: none; } }

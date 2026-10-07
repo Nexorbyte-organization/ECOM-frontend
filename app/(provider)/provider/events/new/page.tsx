@@ -177,7 +177,7 @@ export default function CreateEventPage() {
             </Link>
 
             <div>
-                <h1 className="text-2xl font-bold text-dark-50">Create New Event</h1>
+                <h1 className="display text-5xl sm:text-6xl">Create New Event</h1>
                 <p className="text-dark-400 mt-1">Fill in the details to post a new event listing</p>
             </div>
 

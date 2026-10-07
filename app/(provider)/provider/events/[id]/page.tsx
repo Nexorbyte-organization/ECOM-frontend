@@ -37,6 +37,8 @@ import { useAuth } from '@/lib/auth';
 import EditEventModal, { canEditEvent } from '@/components/events/EditEventModal';
 import EventFundingCard from '@/components/events/EventFundingCard';
 import EventHoldPayments from '@/components/events/EventHoldPayments';
+import Tabs from '@/components/ui/Tabs';
+import { toneBg, toneFor } from '@/lib/ticket';
 import { EventScheduleList } from '@/components/events/EventDaysField';
 import { lineStatus } from '@/components/payments/paymentLabels';
 
@@ -492,7 +494,7 @@ export default function EventDetailPage() {
         && paymentLines.some((line) => line.payoutMethodType !== 'cash');
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
+        <div className="mx-auto max-w-6xl space-y-6">
             <Link href={`/provider/events/${event._id}/map`} className="inline-flex items-center gap-2 rounded-xl border border-primary-500/40 bg-primary-500/10 px-4 py-3 text-sm font-semibold text-primary-400 hover:bg-primary-500/20 focus-visible:outline-2 focus-visible:outline-primary-400"><MapPin size={17} /> Open event map and locations</Link>
             {error && <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}
             <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-dark-400 hover:text-dark-200 transition-colors cursor-pointer">
@@ -500,7 +502,7 @@ export default function EventDetailPage() {
             </button>
 
             {/* Header */}
-            <Card className="overflow-hidden p-0">
+            <section className={`on-color overflow-hidden rounded-2xl border-2 border-ticket-ink ${toneBg[toneFor(event.category)]}`}>
                 {event.photo && (
                     <div className="w-full h-48 sm:h-64 relative overflow-hidden">
                         <img 
@@ -511,15 +513,15 @@ export default function EventDetailPage() {
                         <div className="absolute inset-0 bg-gradient-to-t from-dark-950/70 to-transparent" />
                     </div>
                 )}
-                <div className="p-6">
+                <div className="p-6 sm:p-9">
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                         <div>
                             <div className="flex items-center gap-2 mb-2">
                                 <Badge variant="primary">{event.category}</Badge>
                                 <Badge variant={statusVariant(event.status)}>{event.status}</Badge>
                             </div>
-                            <h1 className="text-xl font-bold text-dark-50">{event.title}</h1>
-                            <div className="flex items-center gap-4 mt-2 flex-wrap text-xs text-dark-400">
+                            <h1 className="display text-4xl sm:text-6xl">{event.title}</h1>
+                            <div className="flex items-center gap-4 mt-4 flex-wrap text-sm font-medium">
                                 <span className="flex items-center gap-1"><MapPin size={12} /> {event.location}</span>
                                 {event.gatheringLocation && (
                                     <span className="flex items-center gap-1" title="Gathering Location"><MapPin size={12} className="text-primary-400" /> Gathering: {event.gatheringLocation}</span>
@@ -572,8 +574,10 @@ export default function EventDetailPage() {
                         )}
                     </div>
                 </div>
-            </Card>
+            </section>
 
+            <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]">
+                <aside className="space-y-6 lg:order-2 lg:sticky lg:top-24">
             {event.fundingMode === 'preauth' ? (
                 <EventHoldPayments
                     event={event}
@@ -614,25 +618,14 @@ export default function EventDetailPage() {
                 </Card>
             )}
 
+                </aside>
+                <div className="min-w-0 space-y-6 lg:order-1">
             {/* Tabs */}
-            <div className="flex gap-2">
-                {[
-                    { key: 'details' as const, label: 'Details' },
-                    { key: 'applicants' as const, label: `Applicants (${applicants.length})` },
-                    { key: 'attendance' as const, label: 'Attendance' },
-                ].map((t) => (
-                    <button
-                        key={t.key}
-                        onClick={() => setActiveTab(t.key)}
-                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border cursor-pointer ${activeTab === t.key
-                            ? 'bg-primary-500/15 text-primary-300 border-primary-500/30'
-                            : 'text-dark-400 border-dark-700 hover:border-dark-600'
-                            }`}
-                    >
-                        {t.label}
-                    </button>
-                ))}
-            </div>
+            <Tabs label="Event" value={activeTab} onChange={setActiveTab} items={[
+                { value: 'details' as const, label: 'Details' },
+                { value: 'applicants' as const, label: 'Applicants', count: applicants.length },
+                { value: 'attendance' as const, label: 'Attendance' },
+            ]} />
 
             {/* Tab Content */}
             {activeTab === 'details' && (
@@ -1034,6 +1027,9 @@ export default function EventDetailPage() {
                     )}
                 </div>
             )}
+
+                </div>
+            </div>
 
             <Modal isOpen={reviewModal.open} onClose={() => setReviewModal({ open: false, talentUserId: '', talentName: '' })} title={`Rate ${reviewModal.talentName}`}>
                 <div className="space-y-4">

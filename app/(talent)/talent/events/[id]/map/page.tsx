@@ -25,7 +25,7 @@ export default function TalentEventMapPage() {
     return <div className="space-y-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
             <div><Link href={`/talent/jobs/${id}`} className="text-sm text-primary-400 hover:underline">← Event details</Link>
-                <h1 className="mt-2 text-2xl font-bold text-dark-50">{event?.title || 'Event'} map</h1>
+                <h1 className="display text-5xl sm:text-6xl">{event?.title || 'Event'} map</h1>
                 <p className="mt-1 text-sm text-dark-300">Your assigned location: <strong className="text-primary-400">{map?.pins.map((pin) => pin.name).join(', ') || '—'}</strong></p></div>
             {map?.imageUrl && <button type="button" onClick={() => mapRef.current?.requestFullscreen()} className="rounded-xl border border-dark-600 px-4 py-2 text-sm text-dark-100 focus-visible:outline-2 focus-visible:outline-primary-400"><Expand size={16} className="me-2 inline" />Full screen</button>}
         </div>

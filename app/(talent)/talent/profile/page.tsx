@@ -297,7 +297,7 @@ export default function TalentProfilePage() {
         <div ref={pageRef} className="max-w-3xl mx-auto space-y-6 animate-fade-in text-start">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-black text-dark-50">{t('my_profile_title')}</h1>
+                    <h1 className="display text-5xl sm:text-6xl">{t('my_profile_title')}</h1>
                     <p className="text-dark-400 mt-1 font-semibold">{t('my_profile_desc')}</p>
                 </div>
                 {success && (

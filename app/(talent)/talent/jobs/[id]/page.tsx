@@ -229,7 +229,7 @@ export default function JobDetailPage() {
                         <Badge variant="primary">{event.category}</Badge>
                         <Badge variant={event.status === 'open' ? 'success' : 'default'}>{event.status}</Badge>
                     </div>
-                    <h1 className="text-xl font-bold text-dark-50">{event.title}</h1>
+                    <h1 className="display text-5xl sm:text-6xl">{event.title}</h1>
                 </div>
             </Card>
 

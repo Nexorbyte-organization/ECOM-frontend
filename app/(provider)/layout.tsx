@@ -5,14 +5,13 @@ import { PageSkeleton } from '@/components/ui/Skeleton';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
-import Sidebar from '@/components/shared/Sidebar';
 import Navbar from '@/components/shared/Navbar';
+import { BottomNav } from '@/components/shared/WorkspaceNav';
 import ProfileCompletionGate from '@/components/shared/ProfileCompletionGate';
 import Button from '@/components/ui/Button';
 import { ShieldAlert } from 'lucide-react';
 
 export default function ProviderLayout({ children }: { children: React.ReactNode }) {
-    const [sidebarOpen, setSidebarOpen] = useState(false);
     const { user, isLoading, isProvider, isAdmin, stopActingAsOrganization } = useAuth();
     const [stopping, setStopping] = useState(false);
     const [stopError, setStopError] = useState('');
@@ -42,12 +41,10 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
     }
 
     return (
-        <div className="flex min-h-screen">
-            <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-            <main className="min-w-0 flex-1 lg:ml-0">
-                <Navbar onMenuClick={() => setSidebarOpen(true)} />
+        <div className="min-h-screen">
+            <Navbar />
                 {user.actingAs && (
-                    <div role="status" className="mx-4 mt-4 sm:mx-6 lg:mx-8 rounded-xl border border-warning-500 bg-warning-400/25 p-3 text-accent-700 shadow-sm dark:text-white">
+                    <div role="status" className="mx-4 mt-4 sm:mx-6 lg:mx-8 rounded-lg border border-warning-500 bg-warning-400/25 p-3 text-accent-700 dark:text-white">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-start gap-2 text-sm font-semibold">
                                 <ShieldAlert size={18} className="mt-0.5 shrink-0 text-accent-700 dark:text-white" aria-hidden="true" />
@@ -60,10 +57,10 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
                         {stopError && <p role="alert" className="mt-2 text-sm text-danger-400">{stopError}</p>}
                     </div>
                 )}
-                <ProfileCompletionGate accountType="provider">
-                    <div className="mx-auto w-full max-w-[1480px] p-4 sm:p-6 lg:p-8 pb-28 lg:pb-10">{children}</div>
-                </ProfileCompletionGate>
-            </main>
+            <ProfileCompletionGate accountType="provider">
+                <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:py-10 pb-32 md:pb-12">{children}</div>
+            </ProfileCompletionGate>
+            <BottomNav />
         </div>
     );
 }
