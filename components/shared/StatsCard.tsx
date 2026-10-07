@@ -13,21 +13,17 @@ interface StatsCardProps {
 
 export default function StatsCard({ label, value, icon, trend, className }: StatsCardProps) {
     return (
-        <div className={cn('glass rounded-2xl p-5 group hover:border-primary-300 transition-all duration-300', className)}>
-            <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                    <p className="text-xs font-medium text-dark-400 uppercase tracking-wider">{label}</p>
-                    <p className="text-2xl font-bold text-dark-50">{value}</p>
-                    {trend && (
-                        <p className={cn('text-xs font-medium', trend.positive ? 'text-success-500' : 'text-danger-500')}>
-                            {trend.value}
-                        </p>
-                    )}
-                </div>
-                <div className="p-2.5 rounded-xl bg-primary-50 text-primary-500 group-hover:bg-primary-100 transition-colors">
-                    {icon}
-                </div>
+        <div className={cn('glass rounded-xl p-5', className)}>
+            <div className="flex items-start justify-between gap-3">
+                <p className="text-sm text-dark-300">{label}</p>
+                <span className="text-dark-400" aria-hidden="true">{icon}</span>
             </div>
+            <p className="display mt-3 text-5xl tabular-nums text-dark-50">{value}</p>
+            {trend && (
+                <p className={cn('mt-2 text-xs font-medium', trend.positive ? 'text-success-500' : 'text-danger-500')}>
+                    {trend.value}
+                </p>
+            )}
         </div>
     );
 }

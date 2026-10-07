@@ -41,8 +41,8 @@ export default function LanguageDropdown({ variant = 'default', className = '' }
 
     const baseBtn =
         variant === 'outlined'
-            ? 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-dark-50 bg-dark-900 hover:bg-dark-800 text-xs font-black text-dark-50 shadow-[2px_2px_0_0_var(--color-primary-500)] cursor-pointer transition-all'
-            : 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-dark-600 bg-dark-800 hover:bg-dark-700 text-xs font-semibold text-dark-200 transition-all cursor-pointer';
+            ? 'flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-dark-50 bg-transparent hover:bg-dark-850 text-xs font-semibold text-dark-50 cursor-pointer transition-colors'
+            : 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-dark-500 bg-transparent hover:bg-dark-850 text-xs font-semibold text-dark-200 transition-colors cursor-pointer';
 
     return (
         <div className={`relative ${className}`} ref={ref}>
@@ -53,7 +53,7 @@ export default function LanguageDropdown({ variant = 'default', className = '' }
                 aria-haspopup="listbox"
                 aria-expanded={open}
             >
-                <Globe size={13} className="text-primary-500 flex-shrink-0" />
+                <Globe size={13} className="text-dark-300 flex-shrink-0" />
                 <span className="hidden sm:inline">{current.flag} {current.short}</span>
                 <ChevronDown
                     size={11}
@@ -78,13 +78,13 @@ export default function LanguageDropdown({ variant = 'default', className = '' }
                                     onClick={() => { setLanguage(lang.code as 'en' | 'ar' | 'ar-eg'); setOpen(false); }}
                                     className={`flex items-center gap-2.5 w-full px-2.5 py-2 text-xs rounded-lg text-start font-medium cursor-pointer transition-colors ${
                                         isActive
-                                            ? 'bg-primary-500 text-white'
+                                            ? 'bg-primary-500 text-on-primary'
                                             : 'text-dark-200 hover:bg-dark-700'
                                     }`}
                                 >
                                     <span className="text-base leading-none">{lang.flag}</span>
                                     <span className="flex-1">{lang.label}</span>
-                                    {isActive && <Check size={11} className="text-white flex-shrink-0" />}
+                                    {isActive && <Check size={11} className="flex-shrink-0" />}
                                 </button>
                             );
                         })}

@@ -129,8 +129,8 @@ export default function StaffCheckInPage() {
                         <QRCodeSVG value={view.checkInUrl!} size={248} level="M" marginSize={1} title={`Check-in for ${event?.title || 'the event'}`} />
                     </div>
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-dark-500">Or type this code</p>
-                        <p className="mt-1 font-mono text-4xl font-black tracking-[0.3em] text-dark-50" aria-live="polite">{view.code}</p>
+                        <p className="text-xs font-semibold text-dark-500">Or type this code</p>
+                        <p className="mt-1 display text-6xl tabular-nums tracking-[0.2em] text-dark-50" aria-live="polite">{view.code}</p>
                         <p className="mt-1 text-xs text-dark-500">Changes in {secondsLeft}s</p>
                     </div>
                     <div className="flex items-start justify-center gap-2 text-left text-sm text-dark-300">

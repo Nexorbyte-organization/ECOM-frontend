@@ -73,7 +73,7 @@ export default function BrowseJobsPage() {
                         onClick={() => setCategoryFilter('')}
                         className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap border-2 transition-all cursor-pointer ${
                           !categoryFilter 
-                            ? 'bg-primary-500 text-white border-dark-50 shadow-[2px_2px_0_0_var(--color-dark-50)]' 
+                            ? 'bg-primary-500 text-on-primary border-primary-500' 
                             : 'bg-dark-900 text-dark-200 border-dark-50 hover:bg-dark-800'
                         }`}
                     >
@@ -85,7 +85,7 @@ export default function BrowseJobsPage() {
                             onClick={() => setCategoryFilter(cat)}
                             className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap border-2 transition-all cursor-pointer ${
                               categoryFilter === cat 
-                                ? 'bg-primary-500 text-white border-dark-50 shadow-[2px_2px_0_0_var(--color-dark-50)]' 
+                                ? 'bg-primary-500 text-on-primary border-primary-500' 
                                 : 'bg-dark-900 text-dark-200 border-dark-50 hover:bg-dark-800'
                             }`}
                         >
@@ -105,7 +105,7 @@ export default function BrowseJobsPage() {
                     <p className="text-xs text-dark-500 mt-1 font-semibold">{t('adjust_filters')}</p>
                 </Card>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger-children">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {filteredEvents.map((event) => (
                         <Link key={event._id} href={`/talent/jobs/${event._id}`}>
                             <Card hover className="h-full flex flex-col justify-between">
@@ -121,7 +121,7 @@ export default function BrowseJobsPage() {
                                             <span>{event.location}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-xs text-dark-400 font-semibold">
-                                            <Clock size={13} className="text-blue-500" />
+                                            <Clock size={13} className="text-dark-300" />
                                             <span>{formatEventDates(event)} · {formatEventHours(event)}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-xs text-dark-400 font-semibold">

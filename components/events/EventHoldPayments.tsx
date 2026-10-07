@@ -19,7 +19,8 @@ interface EventHoldPaymentsProps {
     onEventChange?: (event: Event) => void;
 }
 
-const dayLabel = (day: HoldDay) => `Day ${day.dayIndex + 1} · ${new Date(`${day.date}T00:00:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`;
+const dayTitle = (day: HoldDay) => `Day ${day.dayIndex + 1}`;
+const dayDate = (day: HoldDay) => new Date(`${day.date}T00:00:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
 const STATE_BADGE: Record<HoldDayState, { label: string; tone: 'success' | 'warning' | 'danger' | 'default' | 'primary' }> = {
     scheduled: { label: 'Not open yet', tone: 'default' },
@@ -112,12 +113,12 @@ export default function EventHoldPayments({ event, isOwner, refreshKey = 0, onEv
     );
 
     return (
-        <Card className="border-primary-500/25">
+        <Card>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <div className="flex flex-wrap items-center gap-2">
-                        <ShieldCheck size={18} className="text-primary-500" />
-                        <h2 className="font-bold text-dark-50">Usher pay</h2>
+                        <ShieldCheck size={20} className="text-dark-300" />
+                        <h2 className="display-sm text-2xl text-dark-50">Usher pay</h2>
                         {statusBadge}
                         <Badge variant="warning">TEST MODE</Badge>
                     </div>
@@ -132,7 +133,7 @@ export default function EventHoldPayments({ event, isOwner, refreshKey = 0, onEv
 
             {isOwner && active && cards.length > 0 && (
                 <fieldset className="mt-4 space-y-2">
-                    <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-dark-400">Pay with</legend>
+                    <legend className="mb-1 text-xs font-semibold text-dark-400">Pay with</legend>
                     <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dark-700 p-2.5 text-sm text-dark-200">
                         <input type="radio" name={`hold-card-${event._id}`} checked={!selectedCardId} onChange={() => setSelectedCardId('')} />
                         Paymob checkout (enter a card)
@@ -146,12 +147,12 @@ export default function EventHoldPayments({ event, isOwner, refreshKey = 0, onEv
                 </fieldset>
             )}
 
-            <div className="mt-4 flex flex-col gap-2 rounded-xl border border-dark-700 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-5 flex flex-col gap-2 border-y border-dark-600 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-dark-400">Booking fee · not refundable</p>
-                    <p className="mt-1 font-bold text-dark-50">
+                    <p className="text-xs font-semibold text-dark-400">Booking fee · not refundable</p>
+                    <p className="mt-1 display-sm text-3xl tabular-nums text-dark-50">
                         {egp(summary.fee.amount)}
-                        <span className="ml-2 text-xs font-normal text-dark-400">
+                        <span className="ms-3 font-sans text-xs font-normal text-dark-400">
                             {egp(summary.perUsherDayFee)} × {summary.requiredCount} ushers × {summary.dayCount} {summary.dayCount === 1 ? 'day' : 'days'}
                         </span>
                     </p>
@@ -163,24 +164,29 @@ export default function EventHoldPayments({ event, isOwner, refreshKey = 0, onEv
                         : <Badge variant="warning">Due</Badge>}
             </div>
 
-            <ul className="mt-3 space-y-2">
+            <ul className="border-b border-dark-600">
                 {summary.days.map((day) => {
                     const badge = STATE_BADGE[day.state];
                     const needsHold = (day.state === 'awaiting_hold' || day.state === 'unsecured' || day.state === 'pending') && active;
                     return (
-                        <li key={day.dayIndex} className="rounded-xl border border-dark-700 p-3">
-                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <span className="font-semibold text-dark-50">{dayLabel(day)}</span>
-                                    <Badge variant={badge.tone}>{badge.label}</Badge>
-                                    <span className="text-xs text-dark-400">Hold {egp(day.holdAmount)}</span>
-                                </div>
-                                {isOwner && needsHold && continueOrStart(`day-${day.dayIndex}`, day.pendingCheckout, `Authorize ${egp(day.holdAmount)} hold`, { kind: 'day_hold', dayIndex: day.dayIndex })}
+                        <li key={day.dayIndex} className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-4 border-t border-dark-600 py-4 sm:grid-cols-[7rem_minmax(0,1fr)]">
+                            <div>
+                                <p className="display-sm text-xl text-primary-500">{dayTitle(day)}</p>
+                                <p className="mt-0.5 text-xs text-dark-400">{dayDate(day)}</p>
                             </div>
-                            <p className={`mt-1.5 text-xs ${day.state === 'unsecured' ? 'font-semibold text-danger-400' : 'text-dark-400'}`}>
-                                {day.state === 'unsecured' && <AlertTriangle size={12} className="mr-1 inline" />}
-                                {dayNote(day, summary)}
-                            </p>
+                            <div>
+                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <Badge variant={badge.tone}>{badge.label}</Badge>
+                                        <span className="text-xs text-dark-400">Hold {egp(day.holdAmount)}</span>
+                                    </div>
+                                    {isOwner && needsHold && continueOrStart(`day-${day.dayIndex}`, day.pendingCheckout, `Authorize ${egp(day.holdAmount)} hold`, { kind: 'day_hold', dayIndex: day.dayIndex })}
+                                </div>
+                                <p className={`mt-1.5 text-xs ${day.state === 'unsecured' ? 'font-semibold text-danger-400' : 'text-dark-400'}`}>
+                                    {day.state === 'unsecured' && <AlertTriangle size={12} className="me-1 inline" />}
+                                    {dayNote(day, summary)}
+                                </p>
+                            </div>
                         </li>
                     );
                 })}
@@ -206,7 +212,7 @@ export default function EventHoldPayments({ event, isOwner, refreshKey = 0, onEv
             {summary.fundsReleasedAt && (
                 <p className="mt-4 flex items-center gap-1 text-xs text-success-500"><CheckCircle2 size={13} /> All payments settled {formatDateTime(summary.fundsReleasedAt)}.</p>
             )}
-            {isOwner && <Link href="/provider/payments" className="mt-3 inline-block text-xs font-semibold text-primary-500 hover:underline">Payment history →</Link>}
+            {isOwner && <Link href="/provider/payments" className="mt-3 inline-block text-xs font-semibold text-primary-500 underline underline-offset-4">Payment history</Link>}
             {error && <p role="alert" className="mt-3 text-sm text-danger-400">{error}</p>}
         </Card>
     );

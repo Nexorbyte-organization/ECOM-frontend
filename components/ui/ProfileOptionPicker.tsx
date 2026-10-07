@@ -25,7 +25,7 @@ export default function ProfileOptionPicker({ title, options, selected, onToggle
                         type="button"
                         aria-pressed={allOption.checked}
                         onClick={allOption.onToggle}
-                        className={`min-h-8 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 ${allOption.checked ? 'border-primary-500 bg-primary-500 text-white' : 'border-dark-700 bg-dark-900 text-dark-200 hover:bg-dark-800'}`}
+                        className={`min-h-8 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 ${allOption.checked ? 'border-primary-500 bg-primary-500 text-on-primary' : 'border-dark-700 bg-dark-900 text-dark-200 hover:bg-dark-800'}`}
                     >
                         {allOption.label}
                     </button>
@@ -39,7 +39,7 @@ export default function ProfileOptionPicker({ title, options, selected, onToggle
                             aria-pressed={checked}
                             disabled={allOption?.checked}
                             onClick={() => onToggle(option)}
-                            className={`min-h-8 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 disabled:cursor-default ${checked ? 'border-primary-500 bg-primary-500 text-white' : 'cursor-pointer border-dark-700 bg-dark-900 text-dark-200 hover:bg-dark-800'}`}
+                            className={`min-h-8 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 disabled:cursor-default ${checked ? 'border-primary-500 bg-primary-500 text-on-primary' : 'cursor-pointer border-dark-700 bg-dark-900 text-dark-200 hover:bg-dark-800'}`}
                         >
                             {option}
                         </button>

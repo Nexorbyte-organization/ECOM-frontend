@@ -352,7 +352,7 @@ export default function TalentProfilePage() {
 
             {/* Basic Info */}
             <Card>
-                <h3 className="text-xs font-black text-dark-300 uppercase tracking-wider mb-4">{t('basic_info')}</h3>
+                <h3 className="text-xs font-black text-dark-300 mb-4">{t('basic_info')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input label={t('full_name_label')} value={fullName} error={fieldErrors.fullName} onChange={(e) => { setFullName(e.target.value); clearFieldError('fullName'); }} placeholder={t('full_name_label')} />
                     <div className="space-y-1.5">
@@ -371,7 +371,7 @@ export default function TalentProfilePage() {
                     <Input label={t('education_label')} value={education} error={fieldErrors.education} onChange={(e) => { setEducation(e.target.value); clearFieldError('education'); }} placeholder={isArabic ? 'الجامعة أو المدرسة' : 'University or school'} required />
                     
                     <div className="space-y-4 md:col-span-2 border-t border-dark-900 pt-4 mt-2">
-                        <h4 className="text-xs font-black text-dark-300 uppercase tracking-wider">{t('contact_info')}</h4>
+                        <h4 className="text-xs font-black text-dark-300 ">{t('contact_info')}</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Input
                                 label={t('phone_label')}
@@ -396,7 +396,7 @@ export default function TalentProfilePage() {
                                             setHasNoWhatsapp(e.target.checked);
                                             if (!e.target.checked) setWhatsappNumber('');
                                         }}
-                                        className="h-4 w-4 shrink-0 rounded accent-emerald-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+                                        className="h-4 w-4 shrink-0 rounded accent-primary-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-success-500"
                                     />
                                     {isArabic ? 'رقم واتساب مختلف' : 'Different WhatsApp number'}
                                 </label>
@@ -426,7 +426,7 @@ export default function TalentProfilePage() {
             {/* Payment Methods */}
             <Card>
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xs font-black text-dark-300 uppercase tracking-wider">{t('payment_accounts')}</h3>
+                    <h3 className="text-xs font-black text-dark-300 ">{t('payment_accounts')}</h3>
                     <Badge variant="primary">{isArabic ? 'مطلوب لإكمال الملف' : 'Required for completion'}</Badge>
                 </div>
                 <p className="text-xs text-dark-400 mb-4 font-semibold leading-relaxed">
@@ -568,7 +568,7 @@ export default function TalentProfilePage() {
 
             {/* Portfolio Images */}
             <Card>
-                <h3 className="text-xs font-black text-dark-300 uppercase tracking-wider mb-4">{t('portfolio_title')}</h3>
+                <h3 className="text-xs font-black text-dark-300 mb-4">{t('portfolio_title')}</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {profile?.portfolioImages.map((img, i) => (
                         <div key={i} className="relative group rounded-xl overflow-hidden aspect-video border-2 border-dark-50">
@@ -589,7 +589,7 @@ export default function TalentProfilePage() {
 
             {/* Event History */}
             <Card>
-                <h3 className="text-xs font-black text-dark-300 uppercase tracking-wider mb-4">
+                <h3 className="text-xs font-black text-dark-300 mb-4">
                     {t('event_history_title')} ({history.length})
                 </h3>
                 {historyLoading ? <ContentSkeleton variant="list" count={2} /> : historyError ? <p role="alert" className="text-sm text-danger-500">{historyError}</p> : history.length === 0 ? (

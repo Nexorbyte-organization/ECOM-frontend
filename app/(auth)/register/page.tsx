@@ -89,20 +89,15 @@ function RegisterForm() {
     return (
         <div className="min-h-screen flex">
             {/* Left Panel - Branding */}
-            <div className="hidden lg:flex lg:w-[46%] relative overflow-hidden bg-[#111827]">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(249,115,22,.35),transparent_28%),linear-gradient(145deg,#111827_0%,#1e293b_52%,#101827_100%)]" />
-                <div className="absolute inset-0 opacity-10">
-                    <div className="absolute top-32 right-20 w-80 h-80 bg-white rounded-full blur-3xl" />
-                    <div className="absolute bottom-10 left-10 w-64 h-64 bg-primary-300 rounded-full blur-3xl" />
-                </div>
+            <div className="hidden lg:flex lg:w-[46%] relative overflow-hidden bg-bottle text-bottle-text">
                 <div className="relative z-10 flex flex-col justify-center p-16 text-start">
                     <div className="mb-8 flex items-center justify-start">
                         <BrandLogo inverted />
                     </div>
-                    <h1 className="text-5xl font-black text-white mb-4">
+                    <h1 className={`display text-white mb-5 ${isArabic ? 'text-5xl' : 'text-7xl'}`}>
                         {t('join_network')}
                     </h1>
-                    <p className="text-lg text-white/70 max-w-md font-semibold">
+                    <p className="text-lg text-bottle-muted max-w-md leading-relaxed">
                         {t('signup_intro')}
                     </p>
                 </div>
@@ -121,22 +116,21 @@ function RegisterForm() {
                         <BrandLogo />
                     </div>
 
-                    <p className="section-tag mb-4">JOIN THE CREW</p>
-                    <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-dark-50 mb-2">{t('create_account')}</h2>
-                    <p className="text-dark-400 mb-8 font-semibold">
+                                        <h2 className="display text-4xl sm:text-5xl text-dark-50 mb-3">{t('create_account')}</h2>
+                    <p className="text-dark-300 mb-8">
                         {t('already_account')}{' '}
-                        <Link href="/login" className="text-primary-500 hover:text-primary-400 transition-colors">
+                        <Link href="/login" className="text-primary-500 font-semibold underline underline-offset-4 transition-colors">
                             {t('sign_in')}
                         </Link>
                     </p>
 
                     {inviteLoading && <ContentSkeleton variant="list" count={1} />}
                     {referredEvent && referrerProfile && (
-                        <div className="mb-6 p-4 rounded-2xl bg-gradient-to-br from-primary-500/10 to-accent-500/10 border border-primary-500/20 shadow-lg shadow-primary-500/5">
+                        <div className="mb-6 p-4 rounded-xl bg-dark-900 border border-dark-600 border-s-4 border-s-accent-400">
                             <div className="flex items-start gap-3">
-                                <Avatar src={referrerProfile.photo} name={referrerProfile.fullName} size="md" className="ring-2 ring-primary-500/30 shrink-0" />
+                                <Avatar src={referrerProfile.photo} name={referrerProfile.fullName} size="md" className="shrink-0" />
                                 <div className="space-y-1">
-                                    <p className="text-xs font-semibold text-primary-400 uppercase tracking-wider">{t('invited_tag')}</p>
+                                    <p className="text-xs font-semibold text-dark-300">{t('invited_tag')}</p>
                                     <p className="text-sm text-dark-200">
                                         <strong className="text-dark-100">{referrerProfile.fullName}</strong> {isEgyptian ? 'رشّحك تنضم لفريق الإيفينت!' : isArabic ? 'دعاك للانضمام إلى فريق العمل!' : 'invited you to join the usher team!'}
                                     </p>
@@ -163,18 +157,18 @@ function RegisterForm() {
                                 type="button"
                                 onClick={() => setRole('talent')}
                                 className={cn(
-                                    'p-4 rounded-xl border-2 text-left rtl:text-right transition-all duration-200 cursor-pointer relative overflow-hidden',
+                                    'p-4 rounded-lg border text-start transition-colors duration-150 cursor-pointer relative overflow-hidden',
                                     role === 'talent'
-                                        ? 'border-primary-500 bg-primary-500/10'
-                                        : 'border-dark-700 bg-dark-800/30 hover:border-dark-600'
+                                        ? 'border-primary-500 bg-dark-900'
+                                        : 'border-dark-600 hover:border-dark-300'
                                 )}
                             >
                                 {referredEvent && (
-                                    <span className="absolute top-0 right-0 bg-primary-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg uppercase tracking-wider">
+                                    <span className="absolute top-0 end-0 bg-accent-400 text-[#0B1F1B] text-[10px] font-bold px-2 py-0.5 rounded-es-md">
                                         {t('invited_tag')}
                                     </span>
                                 )}
-                                <Users size={24} className={cn('mb-2', role === 'talent' ? 'text-primary-450' : 'text-dark-400')} />
+                                <Users size={24} className={cn('mb-2', role === 'talent' ? 'text-primary-500' : 'text-dark-400')} />
                                 <p className={cn('text-sm font-black', role === 'talent' ? 'text-primary-500' : 'text-dark-50')}>
                                     {t('find_work')}
                                 </p>
@@ -184,14 +178,14 @@ function RegisterForm() {
                                 type="button"
                                 onClick={() => setRole('provider')}
                                 className={cn(
-                                    'p-4 rounded-xl border-2 text-left rtl:text-right transition-all duration-200 cursor-pointer',
+                                    'p-4 rounded-lg border text-start transition-colors duration-150 cursor-pointer',
                                     role === 'provider'
-                                        ? 'border-accent-500 bg-accent-500/10'
-                                        : 'border-dark-700 bg-dark-800/30 hover:border-dark-600'
+                                        ? 'border-primary-500 bg-dark-900'
+                                        : 'border-dark-600 hover:border-dark-300'
                                 )}
                             >
-                                <Building2 size={24} className={cn('mb-2', role === 'provider' ? 'text-accent-450' : 'text-dark-400')} />
-                                <p className={cn('text-sm font-black', role === 'provider' ? 'text-blue-600 dark:text-blue-400' : 'text-dark-50')}>
+                                <Building2 size={24} className={cn('mb-2', role === 'provider' ? 'text-primary-500' : 'text-dark-400')} />
+                                <p className={cn('text-sm font-black', role === 'provider' ? 'text-primary-500' : 'text-dark-50')}>
                                     {t('hire_staff_short')}
                                 </p>
                                 <p className="text-xs text-dark-450 mt-1 font-semibold">{t('hire_talent_desc')}</p>
@@ -230,7 +224,7 @@ function RegisterForm() {
                             required
                         />
 
-                        <Button type="submit" className="w-full font-black py-3 rounded-xl" size="lg" isLoading={isLoading}>
+                        <Button type="submit" className="w-full font-semibold" size="lg" isLoading={isLoading}>
                             {t('create_account_btn')}
                         </Button>
                     </form>
