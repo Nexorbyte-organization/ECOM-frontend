@@ -9,6 +9,8 @@ import { TalentProfile, Event, Application, Attendance, Review } from '@/types';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Avatar from '@/components/ui/Avatar';
+import Collapsible from '@/components/ui/Collapsible';
+import PhotoViewer from '@/components/ui/PhotoViewer';
 import { formatDate, formatEventDates } from '@/lib/utils';
 import { ArrowLeft, MapPin, Star, Briefcase, CalendarDays, Clock, Phone, MessageCircle } from 'lucide-react';
 
@@ -28,6 +30,7 @@ export default function TalentDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [verified, setVerified] = useState(false);
+    const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
     useEffect(() => {
         const id = params.id as string;
@@ -59,6 +62,11 @@ export default function TalentDetailPage() {
         );
     }
 
+    const photos = [profile.photo, ...profile.portfolioImages].filter(Boolean).map((src, i) => ({ src, alt: i === 0 ? profile.fullName : `${profile.fullName}, photo ${i + 1}` }));
+    const portfolioOffset = profile.photo ? 1 : 0;
+    const attended = history.filter((item) => item.attendance?.status === 'present').length;
+    const noShows = history.filter((item) => item.attendance && item.attendance.status !== 'present').length;
+
     return (
         <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
             <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-dark-400 hover:text-dark-200 transition-colors cursor-pointer">
@@ -68,7 +76,11 @@ export default function TalentDetailPage() {
             {/* Profile Header */}
             <Card>
                 <div className="flex flex-col sm:flex-row items-start gap-5">
-                    <Avatar src={profile.photo} name={profile.fullName} size="xl" />
+                    {profile.photo ? (
+                        <button type="button" onClick={() => setViewerIndex(0)} aria-label={`View ${profile.fullName}'s photo larger`} className="press cursor-zoom-in rounded-full">
+                            <Avatar src={profile.photo} name={profile.fullName} size="xl" />
+                        </button>
+                    ) : <Avatar src={profile.photo} name={profile.fullName} size="xl" />}
                     <div className="flex-1">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                             <h1 className="display text-3xl sm:text-4xl">{profile.fullName}</h1>
@@ -131,9 +143,11 @@ export default function TalentDetailPage() {
                     <h3 className="text-sm font-semibold text-dark-300 mb-3">Portfolio</h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {profile.portfolioImages.map((img, i) => (
-                            <div key={i} className="rounded-xl overflow-hidden aspect-video">
-                                <img src={img} alt={`Portfolio ${i + 1}`} className="w-full h-full object-cover" />
-                            </div>
+                            <button key={i} type="button" onClick={() => setViewerIndex(portfolioOffset + i)} aria-label={`View portfolio photo ${i + 1} larger`}
+                                className="group aspect-video cursor-zoom-in overflow-hidden rounded-xl">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={img} alt={`Portfolio ${i + 1}`} className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.04]" />
+                            </button>
                         ))}
                     </div>
                 </Card>
@@ -162,10 +176,10 @@ export default function TalentDetailPage() {
             </Card>
 
             {/* Event History */}
-            <Card>
-                <h3 className="text-sm font-semibold text-dark-300 mb-4">
-                    Event History ({history.length})
-                </h3>
+            <Collapsible
+                title={`Event History (${history.length})`}
+                summary={history.length ? `${attended} attended${noShows ? `, ${noShows} no-show` : ''}` : undefined}
+            >
                 {history.length === 0 ? (
                     <p className="text-sm text-dark-500 text-center py-6">No event history yet</p>
                 ) : (
@@ -200,7 +214,7 @@ export default function TalentDetailPage() {
                         ))}
                     </div>
                 )}
-            </Card>
+            </Collapsible>
 
             {/* Reviews */}
             {talentReviews.length > 0 && (
@@ -226,6 +240,7 @@ export default function TalentDetailPage() {
                     </div>
                 </Card>
             )}
+            <PhotoViewer label={`${profile.fullName}, photos`} photos={photos} index={viewerIndex} onIndexChange={setViewerIndex} onClose={() => setViewerIndex(null)} />
         </div>
     );
 }
