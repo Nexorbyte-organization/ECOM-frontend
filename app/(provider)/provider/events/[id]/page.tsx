@@ -36,6 +36,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import EditEventModal, { canEditEvent } from '@/components/events/EditEventModal';
 import EventFundingCard from '@/components/events/EventFundingCard';
+import EventHoldPayments from '@/components/events/EventHoldPayments';
 import { EventScheduleList } from '@/components/events/EventDaysField';
 import { lineStatus } from '@/components/payments/paymentLabels';
 
@@ -573,13 +574,22 @@ export default function EventDetailPage() {
                 </div>
             </Card>
 
-            <EventFundingCard
-                event={event}
-                isOwner={user?.role === UserRole.PROVIDER}
-                refreshKey={fundingRefreshKey}
-                onEventChange={(updated) => setEvent((current) => current ? { ...current, ...updated } : updated)}
-                onSummary={setFundingSummary}
-            />
+            {event.fundingMode === 'preauth' ? (
+                <EventHoldPayments
+                    event={event}
+                    isOwner={user?.role === UserRole.PROVIDER}
+                    refreshKey={fundingRefreshKey}
+                    onEventChange={(updated) => setEvent((current) => current ? { ...current, ...updated } : updated)}
+                />
+            ) : (
+                <EventFundingCard
+                    event={event}
+                    isOwner={user?.role === UserRole.PROVIDER}
+                    refreshKey={fundingRefreshKey}
+                    onEventChange={(updated) => setEvent((current) => current ? { ...current, ...updated } : updated)}
+                    onSummary={setFundingSummary}
+                />
+            )}
 
             {/* Any organization staff member can open a check-in point on their phone. */}
             {event.status !== EventStatus.CANCELLED && !event.fundsReleasedAt && (
