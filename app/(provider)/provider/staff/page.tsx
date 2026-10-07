@@ -233,7 +233,7 @@ export default function StaffManagementPage() {
         <div className="space-y-6 animate-fade-in">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-dark-50">Staff Management</h1>
+                    <h1 className="display text-5xl sm:text-6xl">Staff Management</h1>
                     <p className="text-dark-400 mt-1">Invite and manage roles for your event operations staff</p>
                 </div>
                 <Button onClick={() => { setError(''); setSuccess(''); setInviteOpen(true); }} icon={<UserPlus size={16} />}>

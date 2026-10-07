@@ -1,6 +1,6 @@
 import ContentSkeleton from '@/components/ui/Skeleton';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Menu, Sun, Moon, Monitor, Bell, LogOut } from 'lucide-react';
+import { Sun, Moon, Monitor, Bell, LogOut } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 import { useTheme } from '@/lib/theme';
 import { useRouter } from 'next/navigation';
@@ -10,13 +10,14 @@ import { AppNotification } from '@/types';
 import LanguageDropdown from '@/components/shared/LanguageDropdown';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
+import BrandLogo from '@/components/shared/BrandLogo';
+import { TopTabs } from '@/components/shared/WorkspaceNav';
 
 interface NavbarProps {
-    onMenuClick: () => void;
     title?: string;
 }
 
-export default function Navbar({ onMenuClick, title }: NavbarProps) {
+export default function Navbar({ title }: NavbarProps) {
     const { language, t } = useLanguage();
     const isArabic = language === 'ar' || language === 'ar-eg';
     const { theme, setTheme } = useTheme();
@@ -137,21 +138,16 @@ export default function Navbar({ onMenuClick, title }: NavbarProps) {
     };
 
     return (
-        <header className="sticky top-0 z-30 h-[76px] bg-dark-950 border-b border-dark-600 px-3 sm:px-6 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-                <button
-                    onClick={onMenuClick}
-                    aria-label="Open navigation"
-                    className="lg:hidden p-2 rounded-md hover:bg-dark-800 text-dark-300 hover:text-dark-100 transition-colors cursor-pointer"
-                >
-                    <Menu size={20} />
-                </button>
-                {title && <h1 className="display-sm text-xl text-dark-50">{getTranslatedTitle(title)}</h1>}
+        <header className="sticky top-0 z-30 h-[64px] bg-dark-950 border-b border-dark-600 px-3 sm:px-6 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-6">
+                <BrandLogo href="/" />
+                <TopTabs />
+                {title && <h1 className="sr-only">{getTranslatedTitle(title)}</h1>}
             </div>
 
             <div className="flex items-center gap-2">
                 {/* Theme Selector Dropdown */}
-                <div className="relative">
+                <div className="relative hidden sm:block">
                     <button
                         onClick={() => setThemeOpen(!themeOpen)}
                         aria-label={`Select theme. Current theme: ${theme}`}

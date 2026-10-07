@@ -2,15 +2,14 @@
 
 import { PageSkeleton } from '@/components/ui/Skeleton';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
-import Sidebar from '@/components/shared/Sidebar';
 import Navbar from '@/components/shared/Navbar';
+import { BottomNav } from '@/components/shared/WorkspaceNav';
 import ProfileCompletionGate from '@/components/shared/ProfileCompletionGate';
 
 export default function TalentLayout({ children }: { children: React.ReactNode }) {
-    const [sidebarOpen, setSidebarOpen] = useState(false);
     const { user, isLoading, isTalent } = useAuth();
     const router = useRouter();
 
@@ -29,14 +28,12 @@ export default function TalentLayout({ children }: { children: React.ReactNode }
     }
 
     return (
-        <div className="flex min-h-screen">
-            <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-            <main className="min-w-0 flex-1 lg:ml-0">
-                <Navbar onMenuClick={() => setSidebarOpen(true)} />
-                <ProfileCompletionGate accountType="talent">
-                    <div className="mx-auto w-full max-w-[1480px] p-4 sm:p-6 lg:p-8 pb-28 lg:pb-10">{children}</div>
-                </ProfileCompletionGate>
-            </main>
+        <div className="min-h-screen">
+            <Navbar />
+            <ProfileCompletionGate accountType="talent">
+                    <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:py-10 pb-32 md:pb-12">{children}</div>
+            </ProfileCompletionGate>
+            <BottomNav />
         </div>
     );
 }

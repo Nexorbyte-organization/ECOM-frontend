@@ -3,27 +3,48 @@
 import ContentSkeleton from '@/components/ui/Skeleton';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { useLanguage } from '@/lib/i18n';
-import { getTalentProfileByUserId, getTalentDashboardStats, isVerifiedTalent, getTalentPendingReferrals, acceptReferral, declineReferral } from '@/lib/api';
+import { useCopy } from '@/lib/copy';
+import { burstAt } from '@/lib/burst';
+import { getTalentProfileByUserId, getTalentDashboardStats, isVerifiedTalent, getTalentPendingReferrals, acceptReferral, declineReferral, getOpenEvents } from '@/lib/api';
 import { TalentProfile, Referral, Event } from '@/types';
-import StatsCard from '@/components/shared/StatsCard';
-import Card from '@/components/ui/Card';
-import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import { useProfileCompletion } from '@/components/shared/ProfileCompletionGate';
 import Avatar from '@/components/ui/Avatar';
-import { Shield, Star, CalendarDays, Clock, Briefcase, TrendingUp, UserPlus, Check, X, MapPin } from 'lucide-react';
-import { formatEventDates, formatEventHours } from '@/lib/utils';
-import Link from 'next/link';
+import Ticket from '@/components/ui/Ticket';
+import GigTicket from '@/components/events/GigTicket';
+import NextUp from '@/components/events/NextUp';
+import { useProfileCompletion } from '@/components/shared/ProfileCompletionGate';
+import { toneFor } from '@/lib/ticket';
+import { formatEventDates } from '@/lib/utils';
+
+const COPY = {
+    en: {
+        hey: 'Hey', next: 'Your next shift', open: 'Open details', checkin: 'Check in', nothing: 'Nothing booked yet.', nothingSub: 'Fresh gigs are waiting. Grab one before it fills.', browse: 'Find a gig',
+        offers: 'Friends sent you gigs', coming: 'Coming up', fresh: 'Fresh gigs', all: 'See all gigs', verified: 'Verified',
+        reliable: 'Reliable', rating: 'Rating', done: 'Gigs done', waiting: 'Waiting on replies', left: 'left', invited: 'sent you', accept: 'Accept', decline: 'Decline',
+    },
+    ar: {
+        hey: 'أهلاً', next: 'وردّيتك القادمة', open: 'عرض التفاصيل', checkin: 'تسجيل الحضور', nothing: 'لا توجد حجوزات بعد.', nothingSub: 'فرص جديدة بانتظارك. احجز واحدة قبل أن تمتلئ.', browse: 'ابحث عن فرصة',
+        offers: 'أصدقاؤك رشّحوك', coming: 'قادمًا', fresh: 'فرص جديدة', all: 'كل الفرص', verified: 'موثّق',
+        reliable: 'الالتزام', rating: 'التقييم', done: 'فرص منجزة', waiting: 'بانتظار الرد', left: 'متبقية', invited: 'رشّحك', accept: 'قبول', decline: 'رفض',
+    },
+    'ar-eg': {
+        hey: 'إزيك يا', next: 'شغلك الجاي', nothing: 'لسه مفيش حاجة محجوزة.', nothingSub: 'فيه شغل جديد مستنيك. الحق واحد قبل ما يتملي.', browse: 'دوّر على شغل',
+        offers: 'صحابك رشحوك', coming: 'جاي قريب', fresh: 'شغل جديد', all: 'كل الشغل', waiting: 'مستني ردّ', left: 'فاضل', invited: 'رشّحك',
+    },
+};
 
 export default function TalentDashboard() {
     const { user } = useAuth();
     const { isComplete: isProfileComplete, isChecking: isCheckingProfile } = useProfileCompletion();
     const { t } = useLanguage();
+    const c = useCopy(COPY);
     const [profile, setProfile] = useState<TalentProfile | null>(null);
     const [stats, setStats] = useState<Awaited<ReturnType<typeof getTalentDashboardStats>> | null>(null);
     const [pendingReferrals, setPendingReferrals] = useState<(Referral & { event: Event; referrer: TalentProfile })[]>([]);
+    const [fresh, setFresh] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [error, setError] = useState('');
@@ -33,12 +54,10 @@ export default function TalentDashboard() {
         const p = await getTalentProfileByUserId(user._id);
         setProfile(p);
         if (p) {
-            const [s, refs] = await Promise.all([
-                getTalentDashboardStats(p._id),
-                getTalentPendingReferrals(p._id),
-            ]);
+            const [s, refs] = await Promise.all([getTalentDashboardStats(p._id), getTalentPendingReferrals(p._id)]);
             setStats(s);
             setPendingReferrals(refs);
+            getOpenEvents({ limit: 6 }).then((res) => setFresh(res.data)).catch(() => undefined);
         }
         setLoading(false);
     };
@@ -51,192 +70,115 @@ export default function TalentDashboard() {
         });
     }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const handleAcceptReferral = async (referralId: string) => {
+    const handleReferral = async (referralId: string, accept: boolean, target: Element | null) => {
         setActionLoading(referralId);
         setError('');
         try {
-            await acceptReferral(referralId);
+            if (accept) { await acceptReferral(referralId); burstAt(target); } else await declineReferral(referralId);
             setPendingReferrals((prev) => prev.filter((r) => r._id !== referralId));
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Could not accept referral.');
+            setError(err instanceof Error ? err.message : accept ? 'Could not accept referral.' : 'Could not decline referral.');
         } finally {
             setActionLoading(null);
         }
     };
 
-    const handleDeclineReferral = async (referralId: string) => {
-        setActionLoading(referralId);
-        setError('');
-        try {
-            await declineReferral(referralId);
-            setPendingReferrals((prev) => prev.filter((r) => r._id !== referralId));
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Could not decline referral.');
-        } finally {
-            setActionLoading(null);
-        }
-    };
+    if (loading) return <ContentSkeleton variant="dashboard" />;
 
-    if (loading) {
-        return <ContentSkeleton variant="dashboard" />;
-    }
+    const upcoming = stats?.upcomingEvents ?? [];
+    const [next, ...later] = upcoming;
+    const bookedIds = new Set(upcoming.map((e) => e._id));
+    const freshGigs = fresh.filter((e) => !bookedIds.has(e._id) && e.hiredTalents.length < e.requiredCount).slice(0, 3);
+    const record = [
+        { value: `${stats?.reliabilityScore ?? 0}%`, label: c.reliable },
+        { value: `${stats?.ratingAverage ?? 0}`, label: `${c.rating} (${stats?.totalRatings ?? 0})` },
+        { value: String(stats?.completedEventsCount ?? 0), label: c.done },
+    ];
 
     return (
-        <div className="space-y-8 animate-fade-in text-start">
+        <div className="space-y-10 text-start">
             {error && <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}
-            {/* Welcome */}
-            <div>
-                <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-black text-dark-50">
-                        {t('welcome_back_name')}, {profile?.fullName || 'Talent'}
-                    </h1>
-                    {profile && isVerifiedTalent(profile) && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-success-500/15 border border-success-500/30 text-success-600 text-xs font-black">
-                            ✓ {t('verified_label')}
-                        </span>
-                    )}
-                </div>
-                <p className="text-dark-400 mt-1 font-semibold">{t('account_summary')}</p>
-            </div>
 
-            {/* Pending Referrals */}
-            {pendingReferrals.length > 0 && (
-                <div className="space-y-3">
-                    <h3 className="text-xs font-black text-dark-300 flex items-center gap-2">
-                        <UserPlus size={14} className="text-primary-400" />
-                        {t('pending_referrals_count')} ({pendingReferrals.length})
-                    </h3>
-                    {pendingReferrals.map((ref) => (
-                        <Card key={ref._id} className="border-primary-500/20">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                <div className="flex items-start gap-3">
-                                    <Avatar src={ref.referrer.photo} name={ref.referrer.fullName} size="md" />
-                                    <div>
-                                        <p className="text-sm text-dark-200">
-                                            <span className="font-bold text-dark-100">{ref.referrer.fullName}</span> {t('referred_to')}
-                                        </p>
-                                        <p className="text-sm font-black text-dark-50 mt-0.5">{ref.event.title}</p>
-                                        <div className="flex items-center gap-3 mt-1">
-                                            <span className="text-xs text-dark-400 flex items-center gap-1"><MapPin size={11} /> {ref.event.location}</span>
-                                            <span className="text-xs text-dark-400 flex items-center gap-1"><CalendarDays size={11} /> {formatEventDates(ref.event)}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2 shrink-0">
-                                    <Button
-                                        size="sm"
-                                        variant="success"
-                                        icon={<Check size={14} />}
-                                        onClick={() => handleAcceptReferral(ref._id)}
-                                        isLoading={actionLoading === ref._id}
-                                        disabled={isCheckingProfile || !isProfileComplete}
-                                        className="font-black"
-                                    >
-                                        {t('accept')}
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="danger"
-                                        icon={<X size={14} />}
-                                        onClick={() => handleDeclineReferral(ref._id)}
-                                        isLoading={actionLoading === ref._id}
-                                        disabled={isCheckingProfile || !isProfileComplete}
-                                        className="font-black"
-                                    >
-                                        {t('decline')}
-                                    </Button>
-                                </div>
-                            </div>
-                        </Card>
-                    ))}
+            <header className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+                <div className="flex items-center gap-4">
+                    <Avatar src={profile?.photo} name={profile?.fullName || ''} size="lg" />
+                    <div>
+                        <h1 className="display text-5xl sm:text-6xl">{c.hey} {profile?.fullName?.split(' ')[0] || ''}</h1>
+                        {profile && isVerifiedTalent(profile) && <p className="mt-1 text-sm font-semibold text-success-500">{c.verified}</p>}
+                    </div>
                 </div>
+                <dl className="grid grid-cols-3 divide-x divide-dashed divide-dark-500 rtl:divide-x-reverse md:min-w-[26rem]">
+                    {record.map((r) => (
+                        <div key={r.label} className="px-4 first:ps-0">
+                            <dd className="display text-4xl tabular-nums">{r.value}</dd>
+                            <dt className="mt-1 text-xs text-dark-300">{r.label}</dt>
+                        </div>
+                    ))}
+                </dl>
+            </header>
+
+            {next ? (
+                <NextUp event={next} label={c.next}>
+                    <Link href={`/talent/jobs/${next._id}`} className="press inline-flex min-h-12 items-center rounded-lg bg-ticket-ink px-6 text-base font-semibold text-white">{c.checkin}</Link>
+                    <Link href={`/talent/jobs/${next._id}`} className="press inline-flex min-h-12 items-center rounded-lg border-2 border-ticket-ink px-6 text-base font-semibold">{c.open}</Link>
+                </NextUp>
+            ) : (
+                <section className="rounded-2xl border-2 border-dashed border-dark-500 p-8 text-center sm:p-12">
+                    <p className="display text-4xl sm:text-5xl">{c.nothing}</p>
+                    <p className="mx-auto mt-3 max-w-md text-dark-300">{c.nothingSub}</p>
+                    <Link href="/talent/jobs" className="press mt-6 inline-flex min-h-12 items-center rounded-lg bg-accent-400 px-7 text-base font-semibold text-ticket-ink">{c.browse}</Link>
+                </section>
             )}
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatsCard
-                    label={t('stat_reliability')}
-                    value={`${stats?.reliabilityScore ?? 0}%`}
-                    icon={<Shield size={20} />}
-                />
-                <StatsCard
-                    label={t('stat_rating')}
-                    value={`${stats?.ratingAverage ?? 0} ★`}
-                    icon={<Star size={20} />}
-                />
-                <StatsCard
-                    label={t('stat_upcoming')}
-                    value={stats?.upcomingEventsCount ?? 0}
-                    icon={<CalendarDays size={20} />}
-                />
-                <StatsCard
-                    label={t('stat_pending')}
-                    value={stats?.pendingApplications ?? 0}
-                    icon={<Clock size={20} />}
-                />
-            </div>
-
-            {/* Quick Actions + Upcoming Events */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Quick Actions */}
-                <Card className="lg:col-span-1">
-                  <h3 className="text-xs font-black text-dark-300 mb-4">{t('quick_actions')}</h3>
-                    <div className="space-y-2">
-                        <Link
-                            href="/talent/jobs"
-                            className="flex items-center gap-3 p-3 rounded-xl hover:bg-dark-900 text-dark-300 hover:text-dark-100 transition-colors"
-                        >
-                            <Briefcase size={18} className="text-primary-400" />
-                            <span className="text-sm font-bold">{t('action_browse_jobs')}</span>
-                        </Link>
-                        <Link
-                            href="/talent/profile"
-                            className="flex items-center gap-3 p-3 rounded-xl hover:bg-dark-900 text-dark-300 hover:text-dark-100 transition-colors"
-                        >
-                            <TrendingUp size={18} className="text-success-400" />
-                            <span className="text-sm font-bold">{t('action_update_profile')}</span>
-                        </Link>
-                        <Link
-                            href="/talent/events"
-                            className="flex items-center gap-3 p-3 rounded-xl hover:bg-dark-900 text-dark-300 hover:text-dark-100 transition-colors"
-                        >
-                            <CalendarDays size={18} className="text-accent-400" />
-                            <span className="text-sm font-bold">{t('action_view_events')}</span>
-                        </Link>
+            {pendingReferrals.length > 0 && (
+                <section aria-label={c.offers}>
+                    <h2 className="display-sm text-3xl">{c.offers}</h2>
+                    <div className="-mx-4 mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 sm:mx-0 sm:px-0">
+                        {pendingReferrals.map((ref) => (
+                            <div key={ref._id} className="w-[85%] shrink-0 snap-start sm:w-[26rem]">
+                                <Ticket date={ref.event.eventDate} tone={toneFor(ref.event.category)}>
+                                    <div className="flex items-center gap-2.5">
+                                        <Avatar src={ref.referrer.photo} name={ref.referrer.fullName} size="sm" />
+                                        <p className="text-sm text-dark-300"><span className="font-semibold text-dark-50">{ref.referrer.fullName}</span> {c.invited}</p>
+                                    </div>
+                                    <h3 className="display-sm mt-2 text-xl">{ref.event.title}</h3>
+                                    <p className="mt-1 text-sm text-dark-300">{ref.event.location}, {formatEventDates(ref.event)}</p>
+                                    <div className="mt-4 flex gap-2">
+                                        <Button size="sm" disabled={isCheckingProfile || !isProfileComplete} isLoading={actionLoading === ref._id} onClick={(e) => handleReferral(ref._id, true, e.currentTarget)}>{t('accept') || c.accept}</Button>
+                                        <Button size="sm" variant="secondary" disabled={isCheckingProfile || !isProfileComplete} isLoading={actionLoading === ref._id} onClick={(e) => handleReferral(ref._id, false, e.currentTarget)}>{t('decline') || c.decline}</Button>
+                                    </div>
+                                </Ticket>
+                            </div>
+                        ))}
                     </div>
-                </Card>
+                </section>
+            )}
 
-                {/* Upcoming Events */}
-                <Card className="lg:col-span-2">
-                    <h3 className="text-xs font-black text-dark-300 mb-4">{t('stat_upcoming')}</h3>
-                    {stats?.upcomingEvents && stats.upcomingEvents.length > 0 ? (
-                        <div className="space-y-3">
-                            {stats.upcomingEvents.map((event) => (
-                                <div key={event._id} className="flex items-center justify-between p-3 rounded-xl bg-dark-900 border border-dark-950 hover:bg-dark-850 transition-colors">
-                                    <div>
-                                        <p className="text-sm font-bold text-dark-100">{event.title}</p>
-                                        <p className="text-xs text-dark-400 mt-0.5">
-                                            {formatEventDates(event)} · {formatEventHours(event)}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant="primary">{event.category}</Badge>
-                                        <Badge variant="success">{event.hiredTalents.length}/{event.requiredCount} {t('spots')}</Badge>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center py-8">
-                            <CalendarDays size={32} className="mx-auto text-dark-600 mb-2" />
-                            <p className="text-sm text-dark-500 font-semibold">{t('no_upcoming_events')}</p>
-                            <Link href="/talent/jobs" className="text-xs text-primary-555 hover:text-primary-450 mt-1 inline-block font-bold">
-                                {t('browse_jobs_arrow')}
-                            </Link>
-                        </div>
-                    )}
-                </Card>
-            </div>
+            {later.length > 0 && (
+                <section aria-label={c.coming} className="space-y-3">
+                    <h2 className="display-sm text-3xl">{c.coming}</h2>
+                    {later.map((event) => <GigTicket key={event._id} event={event} href={`/talent/jobs/${event._id}`} />)}
+                </section>
+            )}
+
+            {freshGigs.length > 0 && (
+                <section aria-label={c.fresh} className="space-y-3">
+                    <div className="flex items-end justify-between gap-4">
+                        <h2 className="display-sm text-3xl">{c.fresh}</h2>
+                        <Link href="/talent/jobs" className="text-sm font-semibold underline underline-offset-4">{c.all}</Link>
+                    </div>
+                    {freshGigs.map((event) => (
+                        <GigTicket key={event._id} event={event} href={`/talent/jobs/${event._id}`}
+                            aside={<span className="display-sm text-lg tabular-nums">{event.budget} <span className="font-sans text-xs font-medium text-dark-300">EGP</span></span>} />
+                    ))}
+                </section>
+            )}
+
+            {(stats?.pendingApplications ?? 0) > 0 && (
+                <p className="text-sm text-dark-300">
+                    <Link href="/talent/events" className="font-semibold text-dark-50 underline underline-offset-4">{stats?.pendingApplications} {c.waiting}</Link>
+                </p>
+            )}
         </div>
     );
 }

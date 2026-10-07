@@ -172,7 +172,7 @@ function AdminPaymentsContent() {
     return (
         <div className="mx-auto max-w-5xl space-y-6 animate-fade-in">
             <div>
-                <h1 className="text-2xl font-black text-dark-50">Payments</h1>
+                <h1 className="display text-5xl sm:text-6xl">Payments</h1>
                 <p className="mt-1 text-sm text-dark-400">Event funding, card refunds, organization credit, and payment tiers.</p>
             </div>
             {organizerId ? <OrganizationPayments organizerId={organizerId} /> : <PaymentsOverview />}
