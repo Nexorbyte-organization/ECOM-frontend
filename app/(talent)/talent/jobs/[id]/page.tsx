@@ -7,7 +7,7 @@ import ContentSkeleton from '@/components/ui/Skeleton';
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
-import { getEvent, applyToEvent, getTalentProfileByUserId, getTalentApplications, isVerifiedTalent, getAllTalents, referTalentToEvent, createReferralInvite } from '@/lib/api';
+import { getEvent, applyToEvent, acceptBookingInvitation, declineBookingInvitation, leaveStandby, getTalentProfileByUserId, getTalentApplications, isVerifiedTalent, getAllTalents, referTalentToEvent, createReferralInvite } from '@/lib/api';
 import { Event, Application, TalentProfile } from '@/types';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
@@ -15,9 +15,11 @@ import Button from '@/components/ui/Button';
 import Avatar from '@/components/ui/Avatar';
 import Modal from '@/components/ui/Modal';
 import { formatDate } from '@/lib/utils';
-import { MapPin, Clock, Users, Shirt, FileText, ArrowLeft, Send, CheckCircle, UserPlus, Search, CalendarX, Copy, Check, MessageCircle } from 'lucide-react';
+import { MapPin, Clock, Users, Shirt, FileText, ArrowLeft, Send, CheckCircle, UserPlus, Search, CalendarX, Copy, Check, MessageCircle, Hourglass } from 'lucide-react';
 import Link from 'next/link';
 import { useProfileCompletion } from '@/components/shared/ProfileCompletionGate';
+import PayProtectionNotice from '@/components/payments/PayProtectionNotice';
+import UsherCheckInCard, { isCheckInDay } from '@/components/events/UsherCheckInCard';
 
 export default function JobDetailPage() {
     const params = useParams();
@@ -30,6 +32,8 @@ export default function JobDetailPage() {
     const [loading, setLoading] = useState(true);
     const [applying, setApplying] = useState(false);
     const [applyError, setApplyError] = useState('');
+    const [standbyOk, setStandbyOk] = useState(false);
+    const [leavingStandby, setLeavingStandby] = useState(false);
 
     // Referral state
     const [referralLoading, setReferralLoading] = useState(false);
@@ -76,12 +80,47 @@ export default function JobDetailPage() {
         setApplying(true);
         setApplyError('');
         try {
-            const app = await applyToEvent(event._id, myProfile._id);
+            const app = await applyToEvent(event._id, myProfile._id, standbyOk);
             setExistingApp({ ...app, event } as Application & { event: Event });
         } catch (err) {
             setApplyError(err instanceof Error ? err.message : 'Could not apply to this event.');
         } finally {
             setApplying(false);
+        }
+    };
+
+    const [responding, setResponding] = useState<'accept' | 'decline' | null>(null);
+    const isPendingInvitation = Boolean(existingApp?.isDirect && existingApp.status === 'pending');
+
+    const handleRespond = async (decision: 'accept' | 'decline') => {
+        if (!existingApp || !isProfileComplete) return;
+        setResponding(decision);
+        setApplyError('');
+        try {
+            const updated = decision === 'accept'
+                ? await acceptBookingInvitation(existingApp._id)
+                : await declineBookingInvitation(existingApp._id);
+            setExistingApp({ ...existingApp, ...updated });
+            // Joining standby gives the usher a place in the queue.
+            if (updated.status === 'standby') setEvent(await getEvent(event!._id));
+        } catch (err) {
+            setApplyError(err instanceof Error ? err.message : 'Could not answer this booking invitation.');
+        } finally {
+            setResponding(null);
+        }
+    };
+
+    const handleLeaveStandby = async () => {
+        if (!existingApp) return;
+        setLeavingStandby(true);
+        setApplyError('');
+        try {
+            const updated = await leaveStandby(existingApp._id);
+            setExistingApp({ ...existingApp, ...updated });
+        } catch (err) {
+            setApplyError(err instanceof Error ? err.message : 'Could not leave the standby list.');
+        } finally {
+            setLeavingStandby(false);
         }
     };
 
@@ -143,8 +182,22 @@ export default function JobDetailPage() {
     }
 
     const statusBadgeVariant = existingApp
-        ? existingApp.status === 'accepted' ? 'success' : existingApp.status === 'rejected' ? 'danger' : 'warning'
+        ? existingApp.status === 'accepted' ? 'success'
+            : existingApp.status === 'rejected' ? 'danger'
+                : existingApp.status === 'standby' ? 'info'
+                    : existingApp.status === 'withdrawn' ? 'default' : 'warning'
         : 'default';
+    const isStandby = existingApp?.status === 'standby';
+    // A standby usher who was not needed, or was removed, ends up rejected with a standby time.
+    const wasOnStandby = existingApp?.status === 'rejected' && Boolean(existingApp.standbySince);
+    const statusLabel = (() => {
+        if (!existingApp) return '';
+        if (isPendingInvitation) return existingApp.standbyInvite ? 'Standby invitation' : 'Booking invitation';
+        if (isStandby) return 'You’re on standby';
+        if (existingApp.status === 'withdrawn') return 'You left the standby list';
+        if (wasOnStandby) return 'Released from standby';
+        return `${existingApp.isDirect ? 'Booking' : 'Application'} ${existingApp.status}`;
+    })();
 
     const isDeadlinePassed = new Date() > new Date(event.applicationDeadline);
     const isEventClosed = event.status !== 'open';
@@ -212,6 +265,7 @@ export default function JobDetailPage() {
                         <div>
                             <p className="text-xs text-dark-500">Positions</p>
                             <p className="text-sm text-dark-100">{event.hiredTalents.length} / {event.requiredCount} filled</p>
+                            {Boolean(event.standbyCount) && <p className="text-xs text-dark-400">{event.standbyCount} standby spot{event.standbyCount === 1 ? '' : 's'}</p>}
                         </div>
                     </div>
                     <div className="flex items-start gap-3">
@@ -277,14 +331,51 @@ export default function JobDetailPage() {
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <CheckCircle size={20} className={existingApp.status === 'accepted' ? 'text-success-400' : existingApp.status === 'rejected' ? 'text-danger-400' : 'text-warning-400'} />
+                                {isStandby
+                                    ? <Hourglass size={20} className="text-primary-400" />
+                                    : <CheckCircle size={20} className={existingApp.status === 'accepted' ? 'text-success-400' : existingApp.status === 'rejected' ? 'text-danger-400' : 'text-warning-400'} />}
                                 <div>
-                                    <p className="text-sm font-medium text-dark-100">Application {existingApp.status}</p>
-                                    <p className="text-xs text-dark-500">Applied {formatDate(existingApp.appliedAt)}</p>
+                                    <p className="text-sm font-medium text-dark-100">{statusLabel}</p>
+                                    <p className="text-xs text-dark-500">{existingApp.isDirect ? 'Invited' : 'Applied'} {formatDate(existingApp.appliedAt)}</p>
                                 </div>
                             </div>
                             <Badge variant={statusBadgeVariant}>{existingApp.status}</Badge>
                         </div>
+
+                        {isPendingInvitation && (
+                            <div className="pt-3 border-t border-dark-700/50 space-y-3">
+                                <p className="text-xs text-dark-300">
+                                    {existingApp.standbyInvite
+                                        ? 'The organization invited you to be on standby. Standby is unpaid and you don’t go to the venue. If a spot opens before the event starts, you’re moved into the team automatically and notified. You can leave standby anytime with no penalty.'
+                                        : 'The organization invited you to work at this event. You are only booked after you accept.'}
+                                </p>
+                                <div className="flex gap-2">
+                                    <Button className="flex-1" variant="success" onClick={() => handleRespond('accept')} isLoading={responding === 'accept'}
+                                        disabled={Boolean(responding) || isCheckingProfile || !isProfileComplete} icon={<Check size={16} />}>
+                                        {!isProfileComplete ? 'Complete profile to accept' : existingApp.standbyInvite ? 'Join standby' : 'Accept booking'}
+                                    </Button>
+                                    <Button className="flex-1" variant="secondary" onClick={() => handleRespond('decline')} isLoading={responding === 'decline'}
+                                        disabled={Boolean(responding) || isCheckingProfile || !isProfileComplete}>
+                                        Decline
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                        {isStandby && (
+                            <div className="pt-3 border-t border-dark-700/50 space-y-3">
+                                <p className="text-xs text-dark-300">
+                                    {event.standbyPosition ? `You’re #${event.standbyPosition} in line. ` : ''}
+                                    You don’t need to go to the venue and standby is unpaid. If a spot opens before the event starts, you’re moved into the team automatically and notified — you can then excuse yourself within 2 hours with no penalty. Taking another booking that day takes you off this list.
+                                </p>
+                                <Button variant="secondary" className="w-full" onClick={handleLeaveStandby} isLoading={leavingStandby}>
+                                    Leave standby
+                                </Button>
+                            </div>
+                        )}
+
+                        {existingApp.status === 'accepted' && <PayProtectionNotice protection={event.paymentProtection} />}
+                        {existingApp.status === 'accepted' && isCheckInDay(event) && <UsherCheckInCard event={event} />}
 
                         {/* WhatsApp Group Link — visible only to accepted ushers */}
                         {existingApp.status === 'accepted' && event.whatsappGroupLink && (
@@ -316,14 +407,23 @@ export default function JobDetailPage() {
                         )}
                     </div>
                 ) : canApply ? (
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-dark-100">Interested in this opportunity?</p>
-                            <p className="text-xs text-dark-500">Apply before {formatDate(event.applicationDeadline)}</p>
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-dark-100">Interested in this opportunity?</p>
+                                <p className="text-xs text-dark-500">Apply before {formatDate(event.applicationDeadline)}</p>
+                            </div>
+                            <Button onClick={handleApply} isLoading={applying} disabled={isCheckingProfile || !isProfileComplete} icon={<Send size={16} />}>
+                                {isProfileComplete ? 'Apply Now' : 'Complete Profile to Apply'}
+                            </Button>
                         </div>
-                        <Button onClick={handleApply} isLoading={applying} disabled={isCheckingProfile || !isProfileComplete} icon={<Send size={16} />}>
-                            {isProfileComplete ? 'Apply Now' : 'Complete Profile to Apply'}
-                        </Button>
+                        {Boolean(event.standbyCount) && (
+                            <label className="flex items-start gap-2 text-xs text-dark-300 cursor-pointer">
+                                <input type="checkbox" checked={standbyOk} onChange={(e) => setStandbyOk(e.target.checked)}
+                                    className="mt-0.5 h-4 w-4 accent-primary-500" />
+                                <span>I’m OK being on standby if the event is full. Standby is unpaid unless a spot opens before the start and I’m moved into the team.</span>
+                            </label>
+                        )}
                     </div>
                 ) : (
                     <div className="flex items-center gap-3">

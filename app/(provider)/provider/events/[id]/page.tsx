@@ -8,17 +8,17 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
     getEvent, getEventApplicants, getEventAttendance, updateApplicationStatus,
-    markAttendance, submitReview, isVerifiedTalent,
+    staffCheckIn, submitReview, isVerifiedTalent,
     getStaffMembers, assignSupervisorToEvent, getAllTalents,
-    getProviderProfileByUserId, getProviderEvents, directBookTalent,
-    requestEventAction, updateEvent, deleteEvent,
+    getProviderProfileByUserId, getProviderEvents, directBookTalent, getLastTeam, rebookLastTeam,
+    updateEvent, completeEvent, getEventReviews,
     createEventSettlement, getEventSettlement, getEventSettlementPreview,
     createIndividualSettlement, getIndividualSettlements, retrySettlementLinePayout,
     getOrganizerCards,
     markCashSettlementLinePaid,
-    generateEventAttendanceQr, getEventAttendanceQr,
 } from '@/lib/api';
-import { Event, Application, TalentProfile, Attendance, AttendanceQr, ApplicationStatus, AttendanceStatus, User, UserRole, EventActionRequestType, EventStatus, EventSettlement, EventSettlementPreview } from '@/types';
+import { tryGetCurrentLocation } from '@/lib/geolocation';
+import { Event, Application, TalentProfile, Attendance, ApplicationStatus, AttendanceStatus, User, UserRole, EventStatus, EventSettlement, EventSettlementPreview, EventFundingSummary, LastTeam } from '@/types';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -30,11 +30,13 @@ import { formatDate } from '@/lib/utils';
 import {
     MapPin, Clock, Users, Shirt, FileText, ArrowLeft, Check, X,
     UserCheck, Star, CalendarX, Search, Plus, Minus, Send, Phone, MessageCircle, CreditCard,
-    XCircle, Trash2, AlertTriangle, QrCode, ShieldCheck, LoaderCircle,
+    AlertTriangle, QrCode, LoaderCircle, Pencil, Hourglass,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
-import { QRCodeSVG } from 'qrcode.react';
+import EditEventModal, { canEditEvent } from '@/components/events/EditEventModal';
+import EventFundingCard from '@/components/events/EventFundingCard';
+import { lineStatus } from '@/components/payments/paymentLabels';
 
 const hasActiveCheckout = (settlement: EventSettlement | null) => Boolean(
     settlement?.collectionStatus === 'pending'
@@ -42,6 +44,12 @@ const hasActiveCheckout = (settlement: EventSettlement | null) => Boolean(
     && settlement.expiresAt
     && Date.parse(settlement.expiresAt) > Date.now()
 );
+
+const selfCheckIn = (record?: Attendance) => ['qr', 'code', 'location'].includes(record?.checkInMethod || '');
+const checkInMethodLabel = (method?: Attendance['checkInMethod']) => ({
+    qr: 'Scanned QR', code: 'Typed code', location: 'Checked in by location',
+    staff: 'Checked in by staff', auto: 'Did not check in', manual: 'Marked by staff', admin: 'Set by admin',
+} as Record<string, string>)[method || ''] || 'Recorded';
 
 export default function EventDetailPage() {
     const params = useParams();
@@ -56,18 +64,18 @@ export default function EventDetailPage() {
     const [reviewModal, setReviewModal] = useState<{ open: boolean; talentUserId: string; talentName: string }>({ open: false, talentUserId: '', talentName: '' });
     const [reviewRating, setReviewRating] = useState(5);
     const [reviewComment, setReviewComment] = useState('');
+    const [reviewedUserIds, setReviewedUserIds] = useState<string[]>([]);
+    const [editOpen, setEditOpen] = useState(false);
     const [payModalOpen, setPayModalOpen] = useState(false);
     const [settlementPreview, setSettlementPreview] = useState<EventSettlementPreview | null>(null);
     const [settlement, setSettlement] = useState<EventSettlement | null>(null);
     const [individualSettlements, setIndividualSettlements] = useState<EventSettlement[]>([]);
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [paymentError, setPaymentError] = useState('');
-    const [attendanceQr, setAttendanceQr] = useState<AttendanceQr | null>(null);
-    const [qrModalOpen, setQrModalOpen] = useState(false);
-    const [qrLoading, setQrLoading] = useState(false);
-    const [qrError, setQrError] = useState('');
     const [selectedCardId, setSelectedCardId] = useState('');
     const [cashTalentIds, setCashTalentIds] = useState<string[]>([]);
+    const [fundingSummary, setFundingSummary] = useState<EventFundingSummary | null>(null);
+    const [fundingRefreshKey, setFundingRefreshKey] = useState(0);
 
     const [supervisors, setSupervisors] = useState<Omit<User, 'password'>[]>([]);
     const [applicationBusy, setApplicationBusy] = useState<string | null>(null);
@@ -76,6 +84,8 @@ export default function EventDetailPage() {
     const [assigning, setAssigning] = useState(false);
 
     const [bookModalOpen, setBookModalOpen] = useState(false);
+    const [lastTeam, setLastTeam] = useState<LastTeam | null>(null);
+    const [rebookingLastTeam, setRebookingLastTeam] = useState(false);
     const [providerEvents, setProviderEvents] = useState<Event[]>([]);
     const [selectedTargetEventId, setSelectedTargetEventId] = useState('');
     const [selectedTalents, setSelectedTalents] = useState<TalentProfile[]>([]);
@@ -84,16 +94,6 @@ export default function EventDetailPage() {
     const [selectedSearchQuery, setSelectedSearchQuery] = useState('');
     const [bookOptionsLoading, setBookOptionsLoading] = useState(false);
     const [bookSubmitting, setBookSubmitting] = useState(false);
-
-    // Cancel / Delete state
-    const [actionModal, setActionModal] = useState<{
-        open: boolean;
-        type: 'cancel' | 'delete' | null;
-        mode: 'direct' | 'request';
-    }>({ open: false, type: null, mode: 'direct' });
-    const [actionReason, setActionReason] = useState('');
-    const [actionSubmitting, setActionSubmitting] = useState(false);
-    const [actionSuccess, setActionSuccess] = useState('');
 
     // WhatsApp group link (manual)
     const [waLink, setWaLink] = useState('');
@@ -112,12 +112,21 @@ export default function EventDetailPage() {
             }),
         ]);
         setEvent(e);
+        if (e?.status === EventStatus.OPEN) {
+            getLastTeam(id).then(setLastTeam).catch(() => setLastTeam(null));
+        } else {
+            setLastTeam(null);
+        }
         setApplicants(apps);
         setAttendanceRecords(att);
         setSupervisors(staff.filter((s) => s.role === UserRole.PROVIDER_SUPERVISOR));
+        // Reviews only drive the filled star beside Rate, so a failed read leaves them empty.
+        const reviews = await getEventReviews(id).catch(() => []);
+        setReviewedUserIds(reviews.map((review) => review.reviewedUserId));
         // Sync WhatsApp link input with saved event value
         setWaLink(e?.whatsappGroupLink ?? '');
-        if (e?.status === EventStatus.COMPLETED && user?.role === UserRole.PROVIDER) {
+        // Prefunded events are paid from held funds, shown by the funding card instead.
+        if (e?.status === EventStatus.COMPLETED && user?.role === UserRole.PROVIDER && e.fundingMode === 'pay_after') {
             const [bulkSettlement, individualPayments] = await Promise.all([
                 getEventSettlement(id), getIndividualSettlements(id),
             ]);
@@ -140,50 +149,17 @@ export default function EventDetailPage() {
         }
     };
 
-    const openActionModal = (type: 'cancel' | 'delete') => {
+    const [completing, setCompleting] = useState(false);
+    const handleCompleteEvent = async () => {
         if (!event) return;
-        const isOpen = event.status === EventStatus.OPEN;
-        setActionModal({ open: true, type, mode: isOpen ? 'direct' : 'request' });
-        setActionReason('');
-        setActionSuccess('');
-    };
-
-    const handleConfirmAction = async () => {
-        if (!event || !actionModal.type) return;
-        setActionSubmitting(true);
+        setCompleting(true);
         try {
-            if (actionModal.mode === 'direct') {
-                // Event is open — provider can act directly
-                if (actionModal.type === 'cancel') {
-                    await updateEvent(event._id, { status: EventStatus.CANCELLED });
-                    setActionSuccess('Event cancelled successfully.');
-                } else {
-                    await deleteEvent(event._id);
-                    setActionModal({ open: false, type: null, mode: 'direct' });
-                    router.push('/provider/events');
-                    return;
-                }
-            } else {
-                // Non-open event — submit a request to admin
-                const reqType = actionModal.type === 'cancel'
-                    ? EventActionRequestType.CANCEL
-                    : EventActionRequestType.DELETE;
-                await requestEventAction(event._id, reqType, actionReason || undefined);
-                setActionSuccess(
-                    actionModal.type === 'cancel'
-                        ? 'Cancellation request submitted. An admin will review it shortly.'
-                        : 'Deletion request submitted. An admin will review it shortly.'
-                );
-            }
+            await completeEvent(event._id);
             await fetchData();
-            setTimeout(() => {
-                setActionModal({ open: false, type: null, mode: 'direct' });
-                setActionSuccess('');
-            }, 2000);
-        } catch (err: unknown) {
-            toast.error(err instanceof Error ? err.message : 'Action failed');
+        } catch {
+            // The toast already explains why the event cannot be completed yet.
         } finally {
-            setActionSubmitting(false);
+            setCompleting(false);
         }
     };
 
@@ -237,6 +213,22 @@ export default function EventDetailPage() {
             toast.error(err instanceof Error ? err.message : 'Failed to initialize booking list');
         } finally {
             setBookOptionsLoading(false);
+        }
+    };
+
+    const handleRebookLastTeam = async () => {
+        if (!event) return;
+        setRebookingLastTeam(true);
+        try {
+            const result = await rebookLastTeam(event._id);
+            toast.success(result.invited.length
+                ? 'Invitations sent to ' + result.invited.length + ' usher' + (result.invited.length === 1 ? '' : 's') + '.'
+                : 'The previous team already has invitations or no slots are available.');
+            await fetchData();
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Could not rebook the previous team.');
+        } finally {
+            setRebookingLastTeam(false);
         }
     };
 
@@ -295,34 +287,19 @@ export default function EventDetailPage() {
         } finally { setApplicationBusy(null); }
     };
 
-    const handleMarkAttendance = async (talentId: string, status: AttendanceStatus) => {
+    // Staff check an usher in when the usher's phone cannot; the staff phone's location is sent
+    // when available. Nobody marks absent: a missed check-in becomes a no-show automatically.
+    const handleStaffCheckIn = async (talentId: string, status: 'present' | 'late') => {
         if (!event || attendanceBusy) return;
         setAttendanceBusy(talentId);
         setError('');
         try {
-            await markAttendance(event._id, talentId, status);
+            await staffCheckIn(event._id, talentId, status, await tryGetCurrentLocation());
             await fetchData();
+            setFundingRefreshKey((key) => key + 1);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Could not mark attendance.');
+            setError(err instanceof Error ? err.message : 'Could not check in this usher.');
         } finally { setAttendanceBusy(null); }
-    };
-
-    const handleOpenAttendanceQr = async () => {
-        if (!event) return;
-        setQrModalOpen(true);
-        setQrLoading(true);
-        setQrError('');
-        try {
-            const qr = event.attendanceQrGenerated
-                ? await getEventAttendanceQr(event._id)
-                : await generateEventAttendanceQr(event._id);
-            setAttendanceQr(qr);
-            setEvent((current) => current ? { ...current, attendanceQrGenerated: true } : current);
-        } catch (err) {
-            setQrError(err instanceof Error ? err.message : 'Could not load the attendance QR.');
-        } finally {
-            setQrLoading(false);
-        }
     };
 
     const handleOpenPayAll = async () => {
@@ -441,8 +418,9 @@ export default function EventDetailPage() {
                 reviewerId: user._id,
                 reviewedUserId: reviewModal.talentUserId,
                 rating: reviewRating,
-                comment: reviewComment,
+                comment: reviewComment.trim(),
             });
+            setReviewedUserIds((ids) => [...ids, reviewModal.talentUserId]);
             setReviewModal({ open: false, talentUserId: '', talentName: '' });
             setReviewRating(5);
             setReviewComment('');
@@ -478,6 +456,15 @@ export default function EventDetailPage() {
     }) || [];
     const paymobCharge = lockedSettlement?.collectionAmount ?? Math.round(paymentLines.reduce((total, line) => total + line.collectionAmount * 100, 0)) / 100;
     const cashDue = lockedSettlement?.cashDueAmount ?? Math.round(paymentLines.reduce((total, line) => total + (line.payoutMethodType === 'cash' ? line.usherAmount * 100 : 0), 0)) / 100;
+    // The backend moves standby ushers in earliest first.
+    const standbyQueue = applicants
+        .filter((app) => app.status === 'standby')
+        .sort((a, b) => Date.parse(a.standbySince || a.appliedAt) - Date.parse(b.standbySince || b.appliedAt));
+    // Absent and unmarked ushers are never part of an event payment.
+    const notPayable = applicants
+        .filter((app) => app.status === ApplicationStatus.ACCEPTED)
+        .map((app) => ({ app, status: attendanceRecords.find((record) => record.talentId === app.talentId)?.status }))
+        .filter(({ status }) => status !== AttendanceStatus.PRESENT && status !== AttendanceStatus.LATE);
     const automaticPayoutsUnavailable = settlementPreview && !settlementPreview.payoutSandboxConfigured
         && paymentLines.some((line) => line.payoutMethodType !== 'cash');
 
@@ -516,11 +503,23 @@ export default function EventDetailPage() {
                                 )}
                                 <span className="flex items-center gap-1"><Clock size={12} /> {formatDate(event.eventDate)} · {event.startTime}-{event.endTime}</span>
                                 <span className="flex items-center gap-1"><Users size={12} /> {event.hiredTalents.length}/{event.requiredCount}</span>
+                                {Boolean(event.standbyCount) && (
+                                    <span className="flex items-center gap-1" title="Unpaid on-call ushers who fill spots that open before the start">
+                                        <Hourglass size={12} /> Standby {standbyQueue.length}/{event.standbyCount}
+                                    </span>
+                                )}
                                 <span className={`flex items-center gap-1 ${new Date() > new Date(event.applicationDeadline) ? 'text-danger-400' : ''}`}>
                                     <CalendarX size={12} /> Deadline: {formatDate(event.applicationDeadline)} {new Date() > new Date(event.applicationDeadline) && '(Expired)'}
                                 </span>
                             </div>
                         </div>
+                        {event.status === EventStatus.OPEN && lastTeam && lastTeam.talents.length > 0 && (
+                            <Button variant="primary" onClick={handleRebookLastTeam}
+                                isLoading={rebookingLastTeam} icon={<Send size={15} />}
+                                title={'Invite ushers from ' + lastTeam.eventTitle}>
+                                Rebook last team ({lastTeam.talents.length})
+                            </Button>
+                        )}
                         {event.status === 'completed' && user?.role === UserRole.PROVIDER && (
                             <Button
                                 variant="primary"
@@ -533,34 +532,35 @@ export default function EventDetailPage() {
                         )}
 
 
-                        {/* Cancel & Delete — available to organizers only */}
-                        {user?.role === UserRole.PROVIDER && event.status !== EventStatus.CANCELLED && (
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    icon={<XCircle size={15} />}
-                                    onClick={() => openActionModal('cancel')}
-                                    className="text-danger-500 hover:bg-danger-50 border border-danger-200"
-                                >
-                                    {event.status === EventStatus.OPEN ? 'Cancel Event' : 'Request Cancel'}
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    icon={<Trash2 size={15} />}
-                                    onClick={() => openActionModal('delete')}
-                                    className="text-danger-500 hover:bg-danger-50 border border-danger-200"
-                                >
-                                    {event.status === EventStatus.OPEN ? 'Delete' : 'Request Delete'}
-                                </Button>
-                            </div>
+                        {/* Completion unlocks usher payments; the backend checks that the event has ended. */}
+                        {user?.role === UserRole.PROVIDER
+                            && (event.status === EventStatus.OPEN || event.status === EventStatus.CONFIRMED)
+                            && new Date(event.eventDate).toISOString().slice(0, 10) <= new Date().toISOString().slice(0, 10) && (
+                            <Button variant="success" size="sm" icon={<Check size={15} />} isLoading={completing} onClick={handleCompleteEvent}>
+                                Mark completed
+                            </Button>
+                        )}
+
+                        {/* Organizations edit details by stage; cancelling or deleting is left to admins. */}
+                        {user?.role === UserRole.PROVIDER && canEditEvent(event) && (
+                            <Button variant="secondary" size="sm" icon={<Pencil size={15} />} onClick={() => setEditOpen(true)} className="flex-shrink-0">
+                                Edit event
+                            </Button>
                         )}
                     </div>
                 </div>
             </Card>
 
-            {user?.role === UserRole.PROVIDER && (
+            <EventFundingCard
+                event={event}
+                isOwner={user?.role === UserRole.PROVIDER}
+                refreshKey={fundingRefreshKey}
+                onEventChange={(updated) => setEvent((current) => current ? { ...current, ...updated } : updated)}
+                onSummary={setFundingSummary}
+            />
+
+            {/* Any organization staff member can open a check-in point on their phone. */}
+            {event.status !== EventStatus.CANCELLED && !event.fundsReleasedAt && (
                 <Card className="border-primary-500/25">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-start gap-3">
@@ -568,63 +568,39 @@ export default function EventDetailPage() {
                                 <QrCode size={20} />
                             </div>
                             <div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <h2 className="font-bold text-dark-50">Attendance QR</h2>
-                                    {event.attendanceQrGenerated && <Badge variant="success">Generated</Badge>}
-                                </div>
+                                <h2 className="font-bold text-dark-50">Check-in</h2>
                                 <p className="mt-1 max-w-xl text-sm text-dark-400">
-                                    Display this code at the venue. Hired ushers who scan it are marked present automatically.
+                                    Open the check-in screen on a supervisor’s phone where ushers meet: the gathering point, the bus, or the venue.
+                                    Ushers scan its live QR or type its code, and must be near that phone. Anyone who does not check in counts as a no-show.
                                 </p>
-                                {!event.attendanceQrGenerated && event.status !== EventStatus.OPEN && (
-                                    <p className="mt-2 text-xs font-medium text-warning-400">
-                                        A QR cannot be generated after the event is closed.
-                                    </p>
-                                )}
                             </div>
                         </div>
-                        <Button
-                            variant={event.attendanceQrGenerated ? 'secondary' : 'primary'}
-                            icon={<QrCode size={16} />}
-                            onClick={handleOpenAttendanceQr}
-                            disabled={!event.attendanceQrGenerated && event.status !== EventStatus.OPEN}
-                            className="shrink-0"
-                        >
-                            {event.attendanceQrGenerated ? 'View QR' : 'Generate QR'}
-                        </Button>
+                        <Link href={`/provider/events/${event._id}/check-in`} className="shrink-0">
+                            <Button icon={<QrCode size={16} />}>Open check-in screen</Button>
+                        </Link>
                     </div>
                 </Card>
             )}
 
             {/* Tabs */}
-            {(() => {
-                const deadlinePassed = new Date() > new Date(event.applicationDeadline);
-                const eventClosed = event.status !== 'open';
-                const canTakeAttendance = deadlinePassed || eventClosed;
-                return (
-                    <div className="flex gap-2">
-                        {[
-                            { key: 'details' as const, label: 'Details', disabled: false },
-                            { key: 'applicants' as const, label: `Applicants (${applicants.length})`, disabled: false },
-                            { key: 'attendance' as const, label: 'Attendance', disabled: !canTakeAttendance },
-                        ].map((t) => (
-                            <button
-                                key={t.key}
-                                onClick={() => !t.disabled && setActiveTab(t.key)}
-                                disabled={t.disabled}
-                                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${t.disabled
-                                    ? 'text-dark-600 border-dark-800 cursor-not-allowed opacity-50'
-                                    : activeTab === t.key
-                                        ? 'bg-primary-500/15 text-primary-300 border-primary-500/30 cursor-pointer'
-                                        : 'text-dark-400 border-dark-700 hover:border-dark-600 cursor-pointer'
-                                    }`}
-                                title={t.disabled ? 'Available after application deadline passes or event is closed' : ''}
-                            >
-                                {t.label}
-                            </button>
-                        ))}
-                    </div>
-                );
-            })()}
+            <div className="flex gap-2">
+                {[
+                    { key: 'details' as const, label: 'Details' },
+                    { key: 'applicants' as const, label: `Applicants (${applicants.length})` },
+                    { key: 'attendance' as const, label: 'Attendance' },
+                ].map((t) => (
+                    <button
+                        key={t.key}
+                        onClick={() => setActiveTab(t.key)}
+                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border cursor-pointer ${activeTab === t.key
+                            ? 'bg-primary-500/15 text-primary-300 border-primary-500/30'
+                            : 'text-dark-400 border-dark-700 hover:border-dark-600'
+                            }`}
+                    >
+                        {t.label}
+                    </button>
+                ))}
+            </div>
 
             {/* Tab Content */}
             {activeTab === 'details' && (
@@ -799,7 +775,8 @@ export default function EventDetailPage() {
                                             <Badge variant="primary">{app.talent.reliabilityScore}% reliable</Badge>
                                             <Badge variant="warning">{app.talent.ratingAverage} ★</Badge>
                                             {isVerifiedTalent(app.talent) && <Badge variant="success">✅ Verified</Badge>}
-                                            {app.isDirect && <Badge variant="info">Direct</Badge>}
+                                            {app.isDirect && <Badge variant="info">{app.standbyInvite ? 'Standby invite' : 'Direct'}</Badge>}
+                                            {app.status === 'pending' && !app.isDirect && app.standbyOk && <Badge variant="default">OK with standby</Badge>}
                                             {app.referredBy && (() => {
                                                 const referrerName = applicants.find(a => a.talentId === app.referredBy)?.talent.fullName;
                                                 return <Badge variant="info">👥 Referred{referrerName ? ` by ${referrerName}` : ''}</Badge>;
@@ -819,15 +796,43 @@ export default function EventDetailPage() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    {app.status === 'pending' ? (
+                                    {app.status === 'standby' ? (
+                                        <>
+                                            <Badge variant="info">Standby #{standbyQueue.findIndex((item) => item._id === app._id) + 1}</Badge>
+                                            {event.hiredTalents.length < event.requiredCount && (
+                                                <Button size="sm" variant="success" icon={<Check size={14} />} disabled={Boolean(applicationBusy)} isLoading={applicationBusy === app._id} onClick={() => handleApplicationAction(app._id, ApplicationStatus.ACCEPTED)}>
+                                                    Move in
+                                                </Button>
+                                            )}
+                                            <Button size="sm" variant="danger" icon={<X size={14} />} disabled={Boolean(applicationBusy)} isLoading={applicationBusy === app._id} onClick={() => handleApplicationAction(app._id, ApplicationStatus.REJECTED)}>
+                                                Remove
+                                            </Button>
+                                        </>
+                                    ) : app.status === 'pending' && app.isDirect ? (
+                                        <>
+                                            <Badge variant="warning">Awaiting usher</Badge>
+                                            <Button size="sm" variant="danger" icon={<X size={14} />} disabled={Boolean(applicationBusy)} isLoading={applicationBusy === app._id} onClick={() => handleApplicationAction(app._id, ApplicationStatus.REJECTED)}>
+                                                Withdraw
+                                            </Button>
+                                        </>
+                                    ) : app.status === 'pending' ? (
                                         <>
                                             <Button size="sm" variant="success" icon={<Check size={14} />} disabled={Boolean(applicationBusy)} isLoading={applicationBusy === app._id} onClick={() => handleApplicationAction(app._id, ApplicationStatus.ACCEPTED)}>
                                                 Accept
                                             </Button>
+                                            {app.standbyOk && standbyQueue.length < (event.standbyCount || 0) && (
+                                                <Button size="sm" variant="secondary" icon={<Hourglass size={14} />} disabled={Boolean(applicationBusy)} isLoading={applicationBusy === app._id} onClick={() => handleApplicationAction(app._id, ApplicationStatus.STANDBY)}>
+                                                    Standby
+                                                </Button>
+                                            )}
                                             <Button size="sm" variant="danger" icon={<X size={14} />} disabled={Boolean(applicationBusy)} isLoading={applicationBusy === app._id} onClick={() => handleApplicationAction(app._id, ApplicationStatus.REJECTED)}>
                                                 Reject
                                             </Button>
                                         </>
+                                    ) : app.status === 'withdrawn' ? (
+                                        <Badge variant="default">Left standby</Badge>
+                                    ) : app.status === 'rejected' && app.standbySince ? (
+                                        <Badge variant="default">Released from standby</Badge>
                                     ) : (
                                         <Badge variant={app.status === 'accepted' ? 'success' : 'danger'}>{app.status}</Badge>
                                     )}
@@ -840,7 +845,7 @@ export default function EventDetailPage() {
 
             {activeTab === 'attendance' && (
                 <div className="space-y-3">
-                    {event.status === EventStatus.COMPLETED && user?.role === UserRole.PROVIDER && (
+                    {event.status === EventStatus.COMPLETED && user?.role === UserRole.PROVIDER && event.fundingMode === 'pay_after' && (
                         <Card className="border-primary-500/30 bg-gradient-to-br from-primary-500/10 to-transparent">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
@@ -877,16 +882,34 @@ export default function EventDetailPage() {
                         </Card>
                     ) : (
                         applicants.filter((a) => a.status === 'accepted').map((app) => {
+                            const showPaymentStatus = event.status === EventStatus.COMPLETED && user?.role === UserRole.PROVIDER;
                             const record = attendanceRecords.find((att) => att.talentId === app.talentId);
                             const attVariant = record?.status === 'present' ? 'success' as const : record?.status === 'late' ? 'warning' as const : record?.status === 'absent' ? 'danger' as const : 'default' as const;
                             const payment = individualSettlements.find((item) => item.targetTalentId === app.talentId) || settlement;
                             const paymentLine = payment?.lines.find((line) => line.talentId === app.talentId);
-                            const paymentLabel = paymentLine && (payment?.collectionStatus === 'failed' ? 'Payment failed'
-                                : payment?.collectionStatus === 'pending' ? 'Payment pending'
-                                    : payment?.collectionStatus === 'paid' ? paymentLine.payoutStatus === 'paid' ? 'Paid'
-                                        : paymentLine.payoutStatus === 'failed' ? 'Payout failed'
-                                            : paymentLine.payoutStatus === 'cash_due' ? 'Cash due' : 'Payout pending'
-                                        : null);
+                            const attended = record?.status === 'present' || record?.status === 'late';
+                            // Only present/late ushers are paid; absent or unmarked ushers are left out.
+                            const prefunded = event.fundingMode !== 'pay_after';
+                            const prefundLine = fundingSummary?.settlements.flatMap((item) => item.lines).find((line) => line.talentId === app.talentId);
+                            const releaseDue = fundingSummary?.releasePreview?.releaseDueAt || fundingSummary?.releaseDueAt;
+                            const prefundStatus = (): { label: string; variant: 'success' | 'danger' | 'warning' | 'default' | 'info' | 'primary' } => {
+                                if (prefundLine) { const status = lineStatus(prefundLine); return { label: status.label, variant: status.tone }; }
+                                if (event.fundsReleasedAt) return { label: 'No-show · wage returned to you', variant: 'default' };
+                                if (attended) return { label: releaseDue ? `Paid automatically ${formatDate(releaseDue)}` : 'Paid automatically after the event', variant: 'default' };
+                                return record?.status === 'absent' ? { label: 'No-show · not paid', variant: 'danger' } : { label: 'Not checked in yet', variant: 'default' };
+                            };
+                            const paymentStatus: { label: string; variant: 'success' | 'danger' | 'warning' | 'default' | 'info' | 'primary' } | null = !showPaymentStatus && !(prefunded && user?.role === UserRole.PROVIDER) ? null
+                                : prefunded ? prefundStatus()
+                                : !attended ? { label: record?.status === 'absent' ? 'No-show · not paid' : 'Not checked in', variant: 'default' }
+                                    : !paymentLine || !payment || payment.collectionStatus === 'not_started' ? { label: 'Not paid yet', variant: 'default' }
+                                        : payment.collectionStatus === 'failed' ? { label: 'Payment error', variant: 'danger' }
+                                            : payment.collectionStatus === 'pending' ? { label: 'Payment pending', variant: 'warning' }
+                                                : payment.collectionStatus === 'refunded' ? { label: 'Refunded', variant: 'default' }
+                                                    : paymentLine.payoutStatus === 'paid' ? { label: 'Paid', variant: 'success' }
+                                                        : paymentLine.payoutStatus === 'failed' ? { label: 'Payout error', variant: 'danger' }
+                                                            : paymentLine.payoutStatus === 'cash_due' ? { label: 'Cash due', variant: 'warning' }
+                                                                : { label: 'Payout pending', variant: 'warning' };
+                            const reviewed = reviewedUserIds.includes(app.talent.userId);
                             return (
                                 <Card key={app._id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="flex items-center gap-3">
@@ -895,7 +918,8 @@ export default function EventDetailPage() {
                                             <p className="text-sm font-semibold text-dark-100">{app.talent.fullName}</p>
                                             <div className="flex items-center gap-2.5 mt-1 flex-wrap">
                                                  {record && <Badge variant={attVariant}>{record.status}</Badge>}
-                                                 {paymentLabel && <Badge variant={paymentLabel === 'Paid' ? 'success' : paymentLabel.includes('failed') ? 'danger' : 'warning'}>{paymentLabel}</Badge>}
+                                                 {record && <Badge variant="info">{checkInMethodLabel(record.checkInMethod)}</Badge>}
+                                                 {paymentStatus && <Badge variant={paymentStatus.variant}>{paymentStatus.label}</Badge>}
                                                  {app.talent.phoneNumber && (
                                                      <span className="text-xs text-dark-300 font-medium flex items-center gap-1">
                                                          <Phone size={11} className="text-dark-500" />
@@ -922,22 +946,28 @@ export default function EventDetailPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Button size="sm" variant={record?.status === 'present' ? 'success' : 'secondary'} disabled={Boolean(attendanceBusy)} isLoading={attendanceBusy === app.talentId} onClick={() => handleMarkAttendance(app.talentId, AttendanceStatus.PRESENT)}>
-                                            Present
-                                        </Button>
-                                        <Button size="sm" variant={record?.status === 'late' ? 'success' : 'secondary'} disabled={Boolean(attendanceBusy)} isLoading={attendanceBusy === app.talentId} onClick={() => handleMarkAttendance(app.talentId, AttendanceStatus.LATE)}>
-                                            Late
-                                        </Button>
-                                        <Button size="sm" variant={record?.status === 'absent' ? 'danger' : 'secondary'} disabled={Boolean(attendanceBusy)} isLoading={attendanceBusy === app.talentId} onClick={() => handleMarkAttendance(app.talentId, AttendanceStatus.ABSENT)}>
-                                            Absent
-                                        </Button>
+                                        {/* Staff can only check someone in, never mark absent or override the usher's own check-in. */}
+                                        {!event.fundsReleasedAt && event.status !== EventStatus.CANCELLED && !(attended && selfCheckIn(record)) && record?.status !== 'present' && (
+                                            <>
+                                                <Button size="sm" variant="secondary" disabled={Boolean(attendanceBusy)} isLoading={attendanceBusy === app.talentId} title="Use when the usher’s phone cannot check in" onClick={() => handleStaffCheckIn(app.talentId, 'present')}>
+                                                    Check in
+                                                </Button>
+                                                {record?.status !== 'late' && (
+                                                    <Button size="sm" variant="ghost" disabled={Boolean(attendanceBusy)} onClick={() => handleStaffCheckIn(app.talentId, 'late')}>
+                                                        Late
+                                                    </Button>
+                                                )}
+                                            </>
+                                        )}
                                         <Button
                                             size="sm"
                                             variant="ghost"
-                                            icon={<Star size={14} />}
+                                            icon={<Star size={14} className={reviewed ? 'fill-warning-400 text-warning-400' : undefined} />}
+                                            disabled={reviewed}
+                                            title={reviewed ? 'You already rated this usher' : undefined}
                                             onClick={() => setReviewModal({ open: true, talentUserId: app.talent.userId, talentName: app.talent.fullName })}
                                         >
-                                            Rate
+                                            {reviewed ? 'Rated' : 'Rate'}
                                         </Button>
                                     </div>
                                 </Card>
@@ -946,44 +976,6 @@ export default function EventDetailPage() {
                     )}
                 </div>
             )}
-
-            {/* Attendance QR Modal */}
-            <Modal
-                isOpen={qrModalOpen}
-                onClose={() => setQrModalOpen(false)}
-                title="Attendance QR"
-            >
-                <div className="text-center">
-                    {qrLoading && (
-                        <ContentSkeleton variant="qr" />
-                    )}
-                    {qrError && (
-                        <div className="space-y-4 py-8" role="alert">
-                            <XCircle size={44} className="mx-auto text-danger-500" />
-                            <p className="text-sm text-danger-400">{qrError}</p>
-                        </div>
-                    )}
-                    {attendanceQr && !qrLoading && !qrError && (
-                        <div className="space-y-5">
-                            <div className="mx-auto w-fit rounded-lg bg-white p-4">
-                                <QRCodeSVG
-                                    value={attendanceQr.checkInUrl}
-                                    size={248}
-                                    level="H"
-                                    marginSize={1}
-                                    title={`Attendance check-in for ${event.title}`}
-                                />
-                            </div>
-                            <div className="flex items-start justify-center gap-2 text-sm text-dark-300">
-                                <ShieldCheck size={17} className="mt-0.5 shrink-0 text-success-500" />
-                                <p className="max-w-sm text-left">
-                                    This is the only attendance QR for this event. Keep it visible to hired ushers at check-in.
-                                </p>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </Modal>
 
             <Modal isOpen={reviewModal.open} onClose={() => setReviewModal({ open: false, talentUserId: '', talentName: '' })} title={`Rate ${reviewModal.talentName}`}>
                 <div className="space-y-4">
@@ -1003,7 +995,7 @@ export default function EventDetailPage() {
                         </div>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="block text-sm font-medium text-dark-300">Comment</label>
+                        <label className="block text-sm font-medium text-dark-300">Comment <span className="font-normal text-dark-500">(optional)</span></label>
                         <textarea
                             value={reviewComment}
                             onChange={(e) => setReviewComment(e.target.value)}
@@ -1187,6 +1179,11 @@ export default function EventDetailPage() {
                                 {individualSettlements.length > 0 && <p className="mb-2 text-xs text-warning-500">Individual checkout has started for this event. Complete remaining ushers individually.</p>}
                                 <p className="mb-2 text-xs text-dark-400">After Paymob confirms your checkout, automatic payouts start for every usher with a supported payout account. Cash is used only for the ushers shown below.</p>
                                 {!lockedSettlement && <p className="mb-2 text-xs text-dark-400">Select Pay in cash instead for any usher you want to pay directly, even if they have a payout account.</p>}
+                                {notPayable.length > 0 && (
+                                    <p className="mb-2 rounded-lg border border-dark-700 bg-dark-900/20 p-2 text-xs text-dark-300">
+                                        Not included: {notPayable.map(({ app, status }) => `${app.talent.fullName} (${status === 'absent' ? 'absent' : 'attendance not marked'})`).join(', ')}.
+                                    </p>
+                                )}
                                 <div className="max-h-72 space-y-2 overflow-y-auto pe-1">
                                     {paymentLines.map((line) => {
                                         const savedLine = '_id' in line;
@@ -1207,6 +1204,7 @@ export default function EventDetailPage() {
                                                             <p className="text-sm font-bold text-dark-50">{name}</p>
                                                             <Badge variant={line.attendanceStatus === 'late' ? 'warning' : 'success'}>{line.attendanceStatus}</Badge>
                                                             {isCash && <Badge variant="warning">CASH</Badge>}
+                                                            {!savedLine && <Badge variant="default">Not paid yet</Badge>}
                                                         </div>
                                                         <p className="mt-1 text-xs text-dark-400">
                                                             Receives {line.usherAmount} EGP · 5% fee: {line.platformFee} EGP
@@ -1236,10 +1234,11 @@ export default function EventDetailPage() {
                                                     {savedLine && (
                                                         <div className="flex items-center gap-2">
                                                             <Badge variant={linePayment?.collectionStatus === 'failed' || (linePayment?.collectionStatus === 'paid' && line.payoutStatus === 'failed') ? 'danger' : linePayment?.collectionStatus === 'paid' && line.payoutStatus === 'paid' ? 'success' : 'warning'}>
-                                                                {linePayment?.collectionStatus === 'failed' ? 'Payment failed'
+                                                                {linePayment?.collectionStatus === 'failed' ? 'Payment error'
                                                                     : linePayment?.collectionStatus === 'pending' ? 'Checkout pending'
-                                                                        : linePayment?.collectionStatus === 'paid' ? line.payoutStatus === 'paid' ? 'Paid' : line.payoutStatus.replace('_', ' ')
-                                                                            : 'Not paid'}
+                                                                        : linePayment?.collectionStatus === 'paid' ? line.payoutStatus === 'paid' ? 'Paid'
+                                                                            : line.payoutStatus === 'failed' ? 'Payout error' : line.payoutStatus.replace('_', ' ')
+                                                                            : 'Not paid yet'}
                                                             </Badge>
                                                             {isCash && linePayment?.collectionStatus === 'paid' && line.payoutStatus !== 'paid' && (
                                                                 <Button size="sm" variant="secondary" className="border-warning-500/40 text-warning-500" onClick={() => handleMarkCashPaid(line._id, linePayment)} disabled={paymentLoading}>
@@ -1316,82 +1315,13 @@ export default function EventDetailPage() {
                 </div>
             </Modal>
 
-            {/* Cancel / Delete Action Modal */}
-            <Modal
-                isOpen={actionModal.open}
-                onClose={() => setActionModal({ open: false, type: null, mode: 'direct' })}
-                title={
-                    actionModal.type === 'cancel'
-                        ? actionModal.mode === 'direct' ? 'Cancel Event' : 'Request Event Cancellation'
-                        : actionModal.mode === 'direct' ? 'Delete Event' : 'Request Event Deletion'
-                }
-            >
-                <div className="space-y-4">
-                    {actionSuccess ? (
-                        <div className="p-4 rounded-xl bg-success-500/10 border border-success-500/20 text-success-400 text-sm text-center animate-fade-in">
-                            ✅ {actionSuccess}
-                        </div>
-                    ) : (
-                        <>
-                            {/* Mode context banner */}
-                            {actionModal.mode === 'request' ? (
-                                <div className="p-3 rounded-xl bg-warning-500/10 border border-warning-500/20 text-warning-400 text-sm flex items-start gap-2">
-                                    <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
-                                    <span>
-                                        This event is <strong>not open</strong> — a direct {actionModal.type} is not allowed.
-                                        Your request will be sent to an admin for review. You&apos;ll see the result reflected once they decide.
-                                    </span>
-                                </div>
-                            ) : (
-                                <div className="p-3 rounded-xl bg-danger-500/10 border border-danger-500/20 text-danger-400 text-sm flex items-start gap-2">
-                                    <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
-                                    <span>
-                                        {actionModal.type === 'cancel'
-                                            ? 'This will immediately cancel the event and notify all accepted talents.'
-                                            : 'This will permanently delete the event and all associated applications. This cannot be undone.'}
-                                    </span>
-                                </div>
-                            )}
-
-                            <div className="space-y-1.5">
-                                <label className="block text-sm font-medium text-dark-300">
-                                    {actionModal.mode === 'request' ? 'Reason for request' : 'Reason (optional)'}
-                                </label>
-                                <textarea
-                                    value={actionReason}
-                                    onChange={(e) => setActionReason(e.target.value)}
-                                    rows={3}
-                                    placeholder={actionModal.mode === 'request'
-                                        ? 'Explain why you need to ' + actionModal.type + ' this event...'
-                                        : 'Optional: provide a reason...'}
-                                    className="w-full bg-dark-950 border-2 border-dark-50 rounded-xl px-4 py-2.5 text-sm text-dark-100 placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all resize-none"
-                                />
-                            </div>
-
-                            <div className="flex gap-3 pt-2">
-                                <Button
-                                    variant="secondary"
-                                    className="flex-1"
-                                    onClick={() => setActionModal({ open: false, type: null, mode: 'direct' })}
-                                >
-                                    Go Back
-                                </Button>
-                                <Button
-                                    variant="danger"
-                                    className="flex-1"
-                                    isLoading={actionSubmitting}
-                                    disabled={actionModal.mode === 'request' && !actionReason.trim()}
-                                    onClick={handleConfirmAction}
-                                >
-                                    {actionModal.mode === 'direct'
-                                        ? actionModal.type === 'cancel' ? 'Cancel Event' : 'Delete Event'
-                                        : 'Submit Request'}
-                                </Button>
-                            </div>
-                        </>
-                    )}
-                </div>
-            </Modal>
+            {editOpen && (
+                <EditEventModal
+                    event={event}
+                    onClose={() => setEditOpen(false)}
+                    onSaved={() => void fetchData()}
+                />
+            )}
         </div>
     );
 }

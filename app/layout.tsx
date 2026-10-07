@@ -4,6 +4,7 @@ import { AuthProvider } from "@/lib/auth";
 import { LanguageProvider } from "@/lib/i18n";
 import ToastProvider from "@/components/ui/ToastProvider";
 import { ThemeProvider } from "@/lib/theme";
+import { UpdateBanner } from "@/components/shared/UpdateNotice";
 
 export const metadata: Metadata = {
   title: "OO-Ushers — Book Professional Ushers for Your Event",
@@ -31,6 +32,7 @@ export default function RootLayout({
             <AuthProvider>
               {children}
             </AuthProvider>
+            <UpdateBanner />
             </ToastProvider>
           </LanguageProvider>
         </ThemeProvider>

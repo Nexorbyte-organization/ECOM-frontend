@@ -1,7 +1,7 @@
 # Authentication and API transport
 
 ## Current behavior
-AuthProvider loads /auth/me on mount, caches non-secret user metadata under usher_user, and keeps token null. No bearer/refresh token is stored in local storage. Registration supports talent/provider mapping to usher/organizer and does not create a session before email verification.
+AuthProvider loads /auth/me on mount, caches non-secret user metadata under usher_user, and keeps token null. No bearer/refresh token is stored in local storage. Registration supports talent/provider mapping to usher/organizer and does not create a session before email verification. When login fails because the email is not verified, the login page offers "Resend verification email" (`resendVerification`).
 
 Admin organization switching calls the backend switch/stop endpoints, then reloads /auth/me before changing workspaces. The normalized user carries `actingAs` metadata while switched; browser storage still contains only user metadata. On reload and refresh, /auth/me reconstructs the acting state from the server session.
 

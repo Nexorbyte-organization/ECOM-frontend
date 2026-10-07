@@ -8,10 +8,11 @@ import { GenderPreference } from '@/types';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
-import { EVENT_CATEGORIES, cn } from '@/lib/utils';
+import { EVENT_CATEGORIES, cn, maxStandbyCount } from '@/lib/utils';
 import { CalendarPlus, ArrowLeft, Camera, Trash2, Upload, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useProfileCompletion } from '@/components/shared/ProfileCompletionGate';
+import VenuePinField, { MIN_PAY_PER_DAY_EGP, VenuePin } from '@/components/events/VenuePinField';
 
 export default function CreateEventPage() {
     const { user } = useAuth();
@@ -28,11 +29,13 @@ export default function CreateEventPage() {
     const [endTime, setEndTime] = useState('');
     const [location, setLocation] = useState('');
     const [gatheringLocation, setGatheringLocation] = useState('');
+    const [venuePin, setVenuePin] = useState<VenuePin | null>(null);
     const [photo, setPhoto] = useState('');
     const [photoPreview, setPhotoPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [requiredCount, setRequiredCount] = useState('');
+    const [standbyCount, setStandbyCount] = useState('');
     const [budget, setBudget] = useState('');
     const [specifyGenders, setSpecifyGenders] = useState(false);
     const [malesCount, setMalesCount] = useState('');
@@ -81,8 +84,14 @@ export default function CreateEventPage() {
             return;
         }
 
-        if (!Number.isFinite(bgt) || bgt < 1) {
-            setError('Budget must be at least 1 EGP');
+        const standby = Number(standbyCount || 0);
+        if (!Number.isInteger(standby) || standby < 0 || standby > maxStandbyCount(reqCount)) {
+            setError(`Standby must be a whole number from 0 to ${maxStandbyCount(reqCount)} (half the staff count, rounded up)`);
+            return;
+        }
+
+        if (!Number.isFinite(bgt) || bgt < MIN_PAY_PER_DAY_EGP) {
+            setError(`Pay must be at least ${MIN_PAY_PER_DAY_EGP} EGP per usher for each event day`);
             return;
         }
 
@@ -131,8 +140,10 @@ export default function CreateEventPage() {
                 endTime,
                 location,
                 gatheringLocation: gatheringLocation || undefined,
+                ...(venuePin ? { venueLatitude: venuePin.latitude, venueLongitude: venuePin.longitude } : {}),
                 photo: photo || undefined,
                 requiredCount: reqCount,
+                standbyCount: standby,
                 specifyGenders,
                 malesCount: specifyGenders ? Number(malesCount) : undefined,
                 femalesCount: specifyGenders ? Number(femalesCount) : undefined,
@@ -243,6 +254,7 @@ export default function CreateEventPage() {
                             <Input label="Location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Venue name, city" required />
                         </div>
                         <Input label="Gathering Location (Optional)" value={gatheringLocation} onChange={(e) => setGatheringLocation(e.target.value)} placeholder="e.g., Hall 4 Gate 2 / Main Entrance lobby" />
+                        <VenuePinField value={venuePin} onChange={setVenuePin} />
                     </div>
                 </Card>
 
@@ -273,12 +285,27 @@ export default function CreateEventPage() {
                                 required 
                             />
                             <div className="space-y-1">
+                                <Input
+                                    label="Standby ushers (optional)"
+                                    type="number"
+                                    min={0}
+                                    max={maxStandbyCount(Number(requiredCount))}
+                                    value={standbyCount}
+                                    onChange={(e) => setStandbyCount(e.target.value)}
+                                    placeholder={`Up to ${maxStandbyCount(Number(requiredCount))}`}
+                                />
+                                <p className="text-[11px] text-dark-400 leading-normal">
+                                    Unpaid and on call. If a hired usher drops out before the start, the next one on standby is moved in automatically. Only ushers who agree to standby can be added.
+                                </p>
+                            </div>
+                            <div className="space-y-1">
                                 <Input 
-                                    label="Budget (EGP)" 
+                                    label="Pay per usher (EGP)" 
                                     type="number" 
+                                    min={MIN_PAY_PER_DAY_EGP}
                                     value={budget} 
                                     onChange={(e) => setBudget(e.target.value)} 
-                                    placeholder="e.g., 1500" 
+                                    placeholder={`At least ${MIN_PAY_PER_DAY_EGP} per day`} 
                                     required 
                                 />
                                 {budget && !isNaN(Number(budget)) && Number(budget) > 0 && (

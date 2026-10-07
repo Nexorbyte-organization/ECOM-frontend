@@ -20,6 +20,10 @@ export enum ApplicationStatus {
     ACCEPTED = 'accepted',
     REJECTED = 'rejected',
     EXCUSED = 'excused',
+    /** On call and unpaid; moved into the team automatically if a spot opens before the start. */
+    STANDBY = 'standby',
+    /** The usher left standby, or took another booking that day. */
+    WITHDRAWN = 'withdrawn',
 }
 
 export enum AttendanceStatus {
@@ -98,6 +102,8 @@ export interface TalentProfile {
     completedEventsCount: number;
     lateExcuseCount: number;
     consecutiveGoodEvents: number;
+    /** Set automatically after repeated no-shows; no new bookings until then. */
+    suspendedUntil?: string | null;
     paymentMethods?: PaymentMethod[];
     phoneNumber?: string;
     whatsappNumber?: string;
@@ -128,6 +134,10 @@ export interface Event {
     gatheringLocation?: string;
     photo?: string;
     requiredCount: number;
+    /** Unpaid on-call ushers kept in reserve; at most half the staff count, rounded up. */
+    standbyCount?: number;
+    /** Usher view only: 1-based place in this event's standby queue. */
+    standbyPosition?: number | null;
     specifyGenders?: boolean;
     malesCount?: number;
     femalesCount?: number;
@@ -141,8 +151,33 @@ export interface Event {
     supervisorIds?: string[];
     whatsappGroupId?: string;
     whatsappGroupLink?: string;
-    attendanceQrGenerated?: boolean;
     hasMapAssignment?: boolean;
+    /** Optional venue pin; ushers near it can check in with "I'm here". */
+    venueLatitude?: number | null;
+    venueLongitude?: number | null;
+    /** Platform fee kept for booked ushers who did not check in (organization view). */
+    noShowFeeCents?: number;
+    fundingMode?: FundingMode;
+    fundsReleasedAt?: string | null;
+    /** Usher view only: whether the organization already funded the pay for this event. */
+    paymentProtection?: PaymentProtection;
+}
+
+export type FundingMode = 'prefund' | 'pay_after';
+export type PaymentProtection = 'secured' | 'awaiting_funding' | 'released' | 'pay_after';
+
+export interface LastTeam {
+    eventId: string;
+    eventTitle: string;
+    eventDate: string;
+    talents: TalentProfile[];
+    unavailableCount: number;
+}
+
+export interface RebookLastTeamResult {
+    sourceEventId: string;
+    invited: string[];
+    skipped: { talentId: string; reason: string }[];
 }
 
 export interface EventMapPin {
@@ -159,10 +194,38 @@ export interface EventMap {
     ushers?: { id: string; name: string }[];
 }
 
-export interface AttendanceQr {
-    checkInUrl: string;
-    generatedAt: string;
+export interface GeoLocation {
+    latitude: number;
+    longitude: number;
+    accuracy?: number | null;
 }
+
+/** A staff phone showing the live check-in code for an event. */
+export interface CheckInPoint {
+    _id: string;
+    eventId: string;
+    staffUserId: string;
+    staffName?: string | null;
+    label?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    accuracyMeters?: number | null;
+    locationUpdatedAt?: string | null;
+    active: boolean;
+    live?: boolean;
+}
+
+export interface CheckInPointView {
+    point: CheckInPoint;
+    open: boolean;
+    opensAt: string;
+    closesAt: string;
+    checkInUrl?: string;
+    code?: string;
+    expiresAt?: string;
+}
+
+export type CheckInMethod = 'qr' | 'code' | 'location';
 
 export interface AttendanceCheckInResult {
     attendance: Attendance;
@@ -186,6 +249,12 @@ export interface Application {
     talentId: string;
     status: ApplicationStatus;
     isDirect: boolean;
+    /** The usher agreed to be on standby if the event is full. */
+    standbyOk?: boolean;
+    /** A direct invitation to the standby list. */
+    standbyInvite?: boolean;
+    /** Place in the standby queue; earliest is moved in first. */
+    standbySince?: string | null;
     referredBy?: string; // talent ID of the referrer
     appliedAt: string;
 }
@@ -206,6 +275,9 @@ export interface Attendance {
     status: AttendanceStatus;
     checkInTime: string | null;
     checkOutTime: string | null;
+    /** qr/code/location: the usher proved it with their phone. staff: checked in by staff.
+     *  auto: missed check-in, recorded as absent when check-in closed. */
+    checkInMethod?: 'qr' | 'code' | 'location' | 'staff' | 'auto' | 'manual' | 'admin';
 }
 
 export interface Review {
@@ -241,7 +313,7 @@ export interface RegistrationResponse {
 
 export type SettlementCollectionStatus = 'not_started' | 'pending' | 'paid' | 'failed' | 'refunded';
 export type SettlementPayoutStatus = 'not_started' | 'queued' | 'processing' | 'partially_paid' | 'paid' | 'failed';
-export type SettlementLinePayoutStatus = 'cash_due' | 'queued' | 'processing' | 'paid' | 'failed';
+export type SettlementLinePayoutStatus = 'cash_due' | 'queued' | 'processing' | 'paid' | 'failed' | 'awaiting_method';
 
 export interface OrganizerCard {
     _id: string;
@@ -257,7 +329,8 @@ export interface OrganizerCard {
 export interface SettlementLine {
     _id: string;
     talentId: string;
-    attendanceStatus: 'present' | 'late';
+    attendanceStatus: 'present' | 'late' | null;
+    lineType?: 'attendance' | 'cancellation_compensation';
     grossAmount: number;
     collectionAmount: number;
     platformFee: number;
@@ -298,7 +371,149 @@ export interface EventSettlement {
     paymentMethod?: string;
     payoutSandboxConfigured: boolean;
     testMode: true;
+    fundingSource?: 'checkout' | 'prefund';
     lines: SettlementLine[];
+}
+
+export type PaymentTier = 'standard' | 'trusted';
+export type TierReason = 'not_enough_paid_events' | 'overdue_payment' | 'negative_credit_balance';
+
+export interface PaymentTierStatus {
+    tier: PaymentTier;
+    automaticTier: PaymentTier;
+    override: PaymentTier | null;
+    reasons: TierReason[];
+    paidEventsCount: number;
+    requiredPaidEvents: number;
+    overdueEventsCount: number;
+    overdueEvents: { _id: string; title: string }[];
+}
+
+export interface EventFundingCheckout {
+    _id: string;
+    eventId: string;
+    source: 'paymob' | 'credit';
+    amount: number;
+    collectionStatus: SettlementCollectionStatus;
+    checkoutUrl?: string | null;
+    expiresAt?: string | null;
+    selectedCardId?: string | null;
+    collectionFailureReason?: string | null;
+    paymentMethod?: string | null;
+    collectedAt?: string | null;
+    createdAt: string;
+    active?: boolean;
+}
+
+export interface FundingRefund {
+    _id: string;
+    eventId: string;
+    eventTitle?: string | null;
+    amount: number;
+    reason: 'no_show' | 'surplus' | 'cancellation';
+    status: 'pending' | 'processing' | 'succeeded' | 'failed';
+    failureReason?: string | null;
+    processedAt?: string | null;
+    createdAt: string;
+}
+
+export interface ReleaseUsher {
+    talentId: string;
+    fullName: string;
+    photo: string;
+    hasPayoutAccount: boolean;
+    attendanceStatus?: 'present' | 'late';
+    usherAmount?: number;
+    platformFee?: number;
+    grossAmount?: number;
+    /** Not checked in: null until check-in closes, then absent. */
+    status?: 'absent' | null;
+    returnedWage?: number;
+    keptFee?: number;
+}
+
+export interface ReleasePreview {
+    attendanceFinal: boolean;
+    checkInClosesAt: string;
+    releaseDueAt: string | null;
+    releaseAfterEndHours: number;
+    canRelease: boolean;
+    eventCompleted: boolean;
+    blockers: { code: 'underfunded'; shortfall?: number }[];
+    payable: ReleaseUsher[];
+    notCheckedIn: ReleaseUsher[];
+    noShowFee: number;
+    returnAmount: number;
+    surplus: number;
+}
+
+export interface EventFundingSummary {
+    eventId: string;
+    fundingMode: FundingMode;
+    eventStatus: EventStatus;
+    tier: PaymentTierStatus;
+    hiredCount: number;
+    requiredCount: number;
+    perUsherAmount: number;
+    requiredAmount: number;
+    fundedAmount: number;
+    shortfallAmount: number;
+    surplusAmount: number;
+    fullyFunded: boolean;
+    deadline: string | null;
+    deadlineHours: number;
+    overdue: boolean;
+    released: boolean;
+    fundsReleasedAt: string | null;
+    releaseDueAt: string | null;
+    noShowFee: number;
+    protection: PaymentProtection;
+    creditBalance: number;
+    creditToApply: number;
+    pendingCheckout: EventFundingCheckout | null;
+    fundings: EventFundingCheckout[];
+    cancellationPolicy: { tiers: { minHoursBeforeStart: number | null; refundPercent: number }[]; currentRefundPercent: number | null };
+    releasePreview: ReleasePreview | null;
+    settlements: EventSettlement[];
+    refunds: FundingRefund[];
+    payoutSandboxConfigured: boolean;
+    savedCards?: OrganizerCard[];
+}
+
+export type CreditEntryType = 'event_surplus' | 'no_show_refund' | 'cancellation_refund' | 'late_funding_refund'
+    | 'card_refund_failed' | 'funding_applied' | 'chargeback' | 'admin_adjustment';
+
+export interface CreditEntry {
+    _id: string;
+    amount: number;
+    type: CreditEntryType;
+    eventId?: string | null;
+    eventTitle?: string | null;
+    note?: string | null;
+    createdAt: string;
+}
+
+export interface OrganizerCreditOverview {
+    balance: number;
+    tier: PaymentTierStatus;
+    entries: CreditEntry[];
+    refunds: FundingRefund[];
+    organization?: { _id: string; fullName: string };
+}
+
+export interface UnderfundedEvent {
+    event: { _id: string; title: string; eventDate: string; status: EventStatus };
+    organization: { _id: string; fullName: string };
+    requiredAmount: number;
+    fundedAmount: number;
+    shortfallAmount: number;
+    deadline: string | null;
+    overdue: boolean;
+}
+
+export interface AdminPaymentsOverview {
+    underfunded: UnderfundedEvent[];
+    failedRefunds: FundingRefund[];
 }
 
 export interface EventSettlementPreview {

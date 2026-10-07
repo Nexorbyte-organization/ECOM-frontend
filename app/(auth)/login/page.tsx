@@ -10,7 +10,7 @@ import Input from '@/components/ui/Input';
 import { Mail, Lock, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import LanguageDropdown from '@/components/shared/LanguageDropdown';
 import BrandLogo from '@/components/shared/BrandLogo';
-import { redeemReferralInvite } from '@/lib/api';
+import { redeemReferralInvite, resendVerification } from '@/lib/api';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -18,6 +18,22 @@ export default function LoginPage() {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [notice, setNotice] = useState('');
+    const [resending, setResending] = useState(false);
+    const needsVerification = /not verified/i.test(error);
+
+    const handleResendVerification = async () => {
+        if (!email) return;
+        setResending(true);
+        try {
+            const message = await resendVerification(email);
+            setError('');
+            setNotice(message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Could not send the verification email');
+        } finally {
+            setResending(false);
+        }
+    };
     const { login } = useAuth();
     const router = useRouter();
     const { language, t } = useLanguage();
@@ -140,6 +156,14 @@ export default function LoginPage() {
                     {error && (
                         <div className="mb-6 p-3 rounded-xl bg-danger-500/10 border border-danger-500/20 text-danger-400 text-sm font-semibold">
                             {error}
+                            {needsVerification && (
+                                <button type="button" onClick={handleResendVerification} disabled={resending || !email}
+                                    className="mt-2 block font-bold text-primary-500 underline disabled:opacity-60">
+                                    {resending
+                                        ? (isArabic ? 'جارٍ الإرسال…' : 'Sending…')
+                                        : (isEgyptian ? 'ابعتلي لينك تفعيل تاني' : isArabic ? 'إعادة إرسال رابط التفعيل' : 'Resend verification email')}
+                                </button>
+                            )}
                         </div>
                     )}
 
