@@ -121,12 +121,32 @@ export interface ProviderProfile {
     autoAcceptHighRatedTalents: boolean;
 }
 
+/** One day of an event with its own hours. `date` is YYYY-MM-DD; times are HH:mm. */
+export interface EventDay {
+    date: string;
+    startTime: string;
+    endTime: string;
+}
+
+/** One usher's check-in for one event day (0-based dayIndex in date order). */
+export interface EventDayAttendance {
+    dayIndex: number;
+    status: AttendanceStatus;
+    checkInTime: string | null;
+}
+
 export interface Event {
     _id: string;
     providerId: string;
     title: string;
     category: string;
+    /** First event day. eventDate, startTime, and endTime mirror the first entry of `days`. */
     eventDate: string;
+    /** Last event day. */
+    endDate?: string;
+    /** Every day the event runs, in date order. */
+    days?: EventDay[];
+    dayCount?: number;
     applicationDeadline: string;
     startTime: string;
     endTime: string;
@@ -142,6 +162,7 @@ export interface Event {
     malesCount?: number;
     femalesCount?: number;
     genderPreference: GenderPreference;
+    /** Pay per usher for each event day. */
     budget: number;
     dressCode: string;
     notes: string;
@@ -161,6 +182,10 @@ export interface Event {
     fundsReleasedAt?: string | null;
     /** Usher view only: whether the organization already funded the pay for this event. */
     paymentProtection?: PaymentProtection;
+    /** Hired usher view only: their check-ins, one per event day. */
+    attendanceStatus?: AttendanceStatus | null;
+    attendedDays?: number;
+    attendanceDays?: EventDayAttendance[];
 }
 
 export type FundingMode = 'prefund' | 'pay_after';
@@ -229,7 +254,7 @@ export type CheckInMethod = 'qr' | 'code' | 'location';
 
 export interface AttendanceCheckInResult {
     attendance: Attendance;
-    event: Pick<Event, '_id' | 'title' | 'eventDate'>;
+    event: Pick<Event, '_id' | 'title' | 'eventDate' | 'dayCount'>;
     alreadyCheckedIn: boolean;
 }
 
@@ -272,6 +297,10 @@ export interface Attendance {
     _id: string;
     eventId: string;
     talentId: string;
+    /** Event day (0-based, in date order); ushers check in every day of a multi-day event. */
+    dayIndex?: number;
+    /** The day's date (YYYY-MM-DD) in the organization attendance list. */
+    date?: string | null;
     status: AttendanceStatus;
     checkInTime: string | null;
     checkOutTime: string | null;
@@ -346,6 +375,8 @@ export interface SettlementLine {
 }
 
 export interface SettlementPreviewLine extends Omit<SettlementLine, '_id' | 'talent'> {
+    /** Days the usher checked in; pay is the daily pay × these days. */
+    attendedDays?: number;
     talentName: string;
     talentPhoto?: string;
 }
@@ -423,6 +454,9 @@ export interface ReleaseUsher {
     photo: string;
     hasPayoutAccount: boolean;
     attendanceStatus?: 'present' | 'late';
+    /** Days checked in (payable) or missed (not checked in) on a multi-day event. */
+    attendedDays?: number;
+    missedDays?: number;
     usherAmount?: number;
     platformFee?: number;
     grossAmount?: number;
@@ -454,6 +488,10 @@ export interface EventFundingSummary {
     tier: PaymentTierStatus;
     hiredCount: number;
     requiredCount: number;
+    /** Number of event days; each usher is funded for every day. */
+    dayCount?: number;
+    perUsherDayAmount?: number;
+    /** Full pay per usher for all days. */
     perUsherAmount: number;
     requiredAmount: number;
     fundedAmount: number;

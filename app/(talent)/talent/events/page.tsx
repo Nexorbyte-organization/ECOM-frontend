@@ -11,7 +11,7 @@ import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatEventDates } from '@/lib/utils';
 import { CalendarDays, MapPin, Clock, LogOut, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -77,8 +77,8 @@ export default function TalentEventsPage() {
 
     const now = new Date();
     const filtered = applications.filter((a) => {
-        if (tab === 'upcoming') return new Date(a.event.eventDate) >= now;
-        if (tab === 'past') return new Date(a.event.eventDate) < now;
+        if (tab === 'upcoming') return new Date(a.event.endDate || a.event.eventDate) >= now;
+        if (tab === 'past') return new Date(a.event.endDate || a.event.eventDate) < now;
         return true;
     });
 
@@ -137,8 +137,8 @@ export default function TalentEventsPage() {
                         }`}
                     >
                         {getTabLabel(tValue)} ({applications.filter((a) => {
-                            if (tValue === 'upcoming') return new Date(a.event.eventDate) >= now;
-                            if (tValue === 'past') return new Date(a.event.eventDate) < now;
+                            if (tValue === 'upcoming') return new Date(a.event.endDate || a.event.eventDate) >= now;
+                            if (tValue === 'past') return new Date(a.event.endDate || a.event.eventDate) < now;
                             return true;
                         }).length})
                     </button>
@@ -175,7 +175,7 @@ export default function TalentEventsPage() {
                                 <h3 className="text-sm font-bold text-dark-100">{app.event.title}</h3>
                                 <div className="flex items-center gap-4 mt-1.5 font-semibold">
                                     <span className="text-xs text-dark-400 flex items-center gap-1"><MapPin size={12} className="text-primary-500" /> {app.event.location}</span>
-                                    <span className="text-xs text-dark-400 flex items-center gap-1"><Clock size={12} className="text-blue-500" /> {formatDate(app.event.eventDate)}</span>
+                                    <span className="text-xs text-dark-400 flex items-center gap-1"><Clock size={12} className="text-blue-500" /> {formatEventDates(app.event)}</span>
                                 </div>
                             </Link>
                             {/* Excuse & WhatsApp button for accepted events */}

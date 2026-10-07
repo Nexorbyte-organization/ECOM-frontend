@@ -58,7 +58,9 @@ export default function AttendanceCheckInPage() {
                                 {result.alreadyCheckedIn ? 'Already checked in' : 'Attendance confirmed'}
                             </h1>
                             <p className="mt-2 text-sm text-dark-300">
-                                You are marked {result.attendance.status === 'late' ? 'late' : 'present'} for <strong className="text-dark-100">{result.event.title}</strong>.
+                                You are marked {result.attendance.status === 'late' ? 'late' : 'present'}
+                                {(result.event.dayCount ?? 1) > 1 && ` on day ${(result.attendance.dayIndex ?? 0) + 1} of ${result.event.dayCount}`} for <strong className="text-dark-100">{result.event.title}</strong>.
+                                {(result.event.dayCount ?? 1) > 1 && ' Check in again on each event day.'}
                             </p>
                         </div>
                         <div className="mx-auto flex w-fit items-center gap-2 rounded-lg border border-dark-700 bg-dark-900 px-3 py-2 text-sm text-dark-300">

@@ -8,7 +8,7 @@ import { useLanguage } from '@/lib/i18n';
 import { Event, EventFilters } from '@/types';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
-import { formatDate, EVENT_CATEGORIES } from '@/lib/utils';
+import { EVENT_CATEGORIES, formatEventDates, formatEventHours } from '@/lib/utils';
 import { MapPin, Clock, Users, Search, Filter } from 'lucide-react';
 import Link from 'next/link';
 
@@ -122,7 +122,7 @@ export default function BrowseJobsPage() {
                                         </div>
                                         <div className="flex items-center gap-2 text-xs text-dark-400 font-semibold">
                                             <Clock size={13} className="text-blue-500" />
-                                            <span>{formatDate(event.eventDate)} · {event.startTime} - {event.endTime}</span>
+                                            <span>{formatEventDates(event)} · {formatEventHours(event)}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-xs text-dark-400 font-semibold">
                                             <Users size={13} className="text-success-500" />

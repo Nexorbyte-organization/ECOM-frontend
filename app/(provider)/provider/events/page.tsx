@@ -10,7 +10,7 @@ import { Event, EventStatus } from '@/types';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import { formatDate } from '@/lib/utils';
+import { formatEventDates } from '@/lib/utils';
 import { CalendarDays, MapPin, Users, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -115,7 +115,7 @@ export default function ProviderEventsPage() {
                                     <h3 className="text-sm font-bold text-dark-100">{event.title}</h3>
                                     <div className="flex items-center gap-4 mt-1.5 font-semibold">
                                         <span className="text-xs text-dark-400 flex items-center gap-1"><MapPin size={12} className="text-primary-500" /> {event.location}</span>
-                                        <span className="text-xs text-dark-400 flex items-center gap-1"><CalendarDays size={12} className="text-blue-500" /> {formatDate(event.eventDate)}</span>
+                                        <span className="text-xs text-dark-400 flex items-center gap-1"><CalendarDays size={12} className="text-blue-500" /> {formatEventDates(event)}</span>
                                         <span className="text-xs text-dark-400 flex items-center gap-1"><Users size={12} className="text-success-500" /> {event.hiredTalents.length}/{event.requiredCount}</span>
                                     </div>
                                 </div>

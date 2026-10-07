@@ -11,7 +11,7 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Avatar from '@/components/ui/Avatar';
 import Modal from '@/components/ui/Modal';
-import { formatDate, EVENT_CATEGORIES, CITIES } from '@/lib/utils';
+import { EVENT_CATEGORIES, CITIES, formatEventDates } from '@/lib/utils';
 import { Search, MapPin, Star, Shield, Clock, UserPlus, Briefcase, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { useProfileCompletion } from '@/components/shared/ProfileCompletionGate';
@@ -265,7 +265,7 @@ export default function TalentSearchPage() {
                                             }`}
                                     >
                                         <p className="text-sm font-medium text-dark-100">{event.title}</p>
-                                        <p className="text-xs text-dark-400">{formatDate(event.eventDate)} · {event.location}</p>
+                                        <p className="text-xs text-dark-400">{formatEventDates(event)} · {event.location}</p>
                                     </button>
                                 ))}
                             </div>

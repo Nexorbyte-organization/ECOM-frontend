@@ -15,7 +15,7 @@ import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatEventDates } from '@/lib/utils';
 import { Calendar, Search, MapPin, Clock, Users, DollarSign, Trash2, XCircle, CheckCircle, Play, Ban, AlertTriangle, FileWarning } from 'lucide-react';
 
 export default function AdminEventsPage() {
@@ -252,13 +252,13 @@ export default function AdminEventsPage() {
                                                 <MapPin size={12} /> {event.location}
                                             </span>
                                             <span className="text-xs text-dark-400 flex items-center gap-1">
-                                                <Clock size={12} /> {formatDate(event.eventDate)}
+                                                <Clock size={12} /> {formatEventDates(event)}
                                             </span>
                                             <span className="text-xs text-dark-400 flex items-center gap-1">
                                                 <Users size={12} /> {event.hiredTalents.length}/{event.requiredCount} hired
                                             </span>
                                             <span className="text-xs text-dark-400 flex items-center gap-1">
-                                                <DollarSign size={12} /> {event.budget} EGP
+                                                <DollarSign size={12} /> {event.budget} EGP{(event.dayCount ?? 1) > 1 ? ' / day' : ''}
                                             </span>
                                         </div>
                                         <div className="mt-1.5">

@@ -7,7 +7,7 @@ import { getAllUsers, getAllEvents, getAllTalentProfiles } from '@/lib/api';
 import { User, Event, TalentProfile } from '@/types';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
-import { formatDate } from '@/lib/utils';
+import { formatEventDates } from '@/lib/utils';
 import { Users, Calendar, Briefcase, Building2, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -151,7 +151,7 @@ export default function AdminDashboardPage() {
                                 <div className="min-w-0 flex-1">
                                     <p className="text-sm font-medium text-dark-100 truncate">{event.title}</p>
                                     <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-xs text-dark-400">{formatDate(event.eventDate)}</span>
+                                        <span className="text-xs text-dark-400">{formatEventDates(event)}</span>
                                         <span className="text-xs text-dark-500">·</span>
                                         <span className="text-xs text-dark-400">{event.location}</span>
                                     </div>

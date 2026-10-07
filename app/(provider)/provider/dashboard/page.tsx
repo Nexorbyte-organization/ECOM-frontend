@@ -11,7 +11,7 @@ import StatsCard from '@/components/shared/StatsCard';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import { CalendarDays, Users, Clock, PlusCircle, Search, Briefcase } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatEventDates } from '@/lib/utils';
 import Link from 'next/link';
 
 export default function ProviderDashboard() {
@@ -100,7 +100,7 @@ export default function ProviderDashboard() {
                                         <div>
                                             <p className="text-sm font-bold text-dark-100">{event.title}</p>
                                             <p className="text-xs text-dark-400 mt-0.5 font-semibold">
-                                                {formatDate(event.eventDate)} · {event.hiredTalents.length}/{event.requiredCount} {t('hired')}
+                                                {formatEventDates(event)} · {event.hiredTalents.length}/{event.requiredCount} {t('hired')}
                                             </p>
                                         </div>
                                         <Badge variant={statusVariant(event.status)}>{event.status}</Badge>
