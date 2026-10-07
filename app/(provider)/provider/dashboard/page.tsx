@@ -67,7 +67,7 @@ export default function ProviderDashboard() {
             {next ? (
                 <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
                     <NextUp event={next} label={c.next}>
-                        <Link href={`/provider/events/${next._id}`} className="press inline-flex min-h-12 items-center rounded-lg bg-white px-6 font-semibold text-ink hover:bg-bottle-text">{c.open}</Link>
+                        <Link href={`/provider/events/${next._id}`} className="press inline-flex min-h-12 items-center rounded-lg bg-accent-400 px-6 font-semibold text-[#06231F] hover:bg-accent-300">{c.open}</Link>
                         <Link href={`/provider/events/${next._id}/check-in`} className="press inline-flex min-h-12 items-center rounded-lg border border-white/40 px-6 font-semibold text-white hover:bg-white/10">{c.checkin}</Link>
                         <span className="text-sm text-bottle-text">{next.hiredTalents.length}/{next.requiredCount}</span>
                     </NextUp>
@@ -77,7 +77,7 @@ export default function ProviderDashboard() {
                             <ul className="mt-5 space-y-5">
                                 {needs.map((n) => (
                                     <li key={n.key} className="flex items-center gap-4">
-                                        <span className="display grid size-14 shrink-0 place-items-center rounded-full bg-primary-500 text-3xl tabular-nums text-on-primary">{n.value}</span>
+                                        <span className="display grid size-14 shrink-0 place-items-center rounded-full bg-warning-50 text-3xl tabular-nums text-warning-700">{n.value}</span>
                                         <div className="min-w-0 flex-1">
                                             <p className="text-sm font-medium leading-snug">{n.label}</p>
                                             <Link href={n.href} className="mt-1 inline-block text-sm font-bold underline underline-offset-4">{n.action}</Link>

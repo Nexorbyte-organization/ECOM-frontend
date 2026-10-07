@@ -75,7 +75,7 @@ function labelFor(value: string, language: string) {
     return language === 'en' ? humanize(value) : arabicValue[value] || humanize(value);
 }
 function Metric({ label, value, icon, tone }: { label: string; value: string; icon: React.ReactNode; tone?: 'alert' }) {
-    return <div className={`min-w-0 border-t-2 pt-3 ${tone === 'alert' ? 'border-accent-450' : 'border-dark-500'}`}>
+    return <div className={`min-w-0 border-t-2 pt-3 ${tone === 'alert' ? 'border-warning-500' : 'border-dark-500'}`}>
         <p className="flex items-center gap-2 text-sm text-dark-300"><span aria-hidden="true" className="text-dark-400">{icon}</span>{label}</p>
         <p className="display mt-1 break-words text-3xl tabular-nums text-dark-50 sm:text-4xl xl:text-[2.6rem]">{value}</p>
     </div>;

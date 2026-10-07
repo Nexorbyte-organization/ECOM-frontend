@@ -3,14 +3,15 @@
 @variant dark (&:where(.dark, .dark *));
 
 /*
- * Usher design system.
+ * Usher design system: graphite and teal.
  *
- * Colour carries meaning, and there is one big colour field per screen:
- *   primary  Usher Green  actions, links, confirmed / present
- *   accent   Sun          attention: unread, live, needs you
- *   cat-*    six hues, one per event category; used only as small tints and dots
- *   info (sky) information        danger (coral) urgent / problem
- * Neutrals are a cool, slightly green grey so the brand colour never looks pasted on.
+ * Professional and calm; colour does one job each:
+ *   primary  teal        actions, links, brand
+ *   accent   bright teal the one highlight on a graphite field (Check in, live, unread)
+ *   success  green       booked, present, paid
+ *   warning  amber       filling, needs attention
+ *   danger   red         problems
+ * Surfaces are white on a cool graphite-grey page; event categories share one quiet teal tint.
  *
  * Token names are stable (primary, accent, dark-*) so screens follow without edits.
  * dark-* is the neutral scale inverted per theme: dark-50 is always the strongest text,
@@ -18,89 +19,92 @@
  */
 
 @theme {
-  /* Primary: Usher Green */
-  --color-primary-50:  #E8F6F0;
-  --color-primary-100: #CBEBDC;
-  --color-primary-200: #9FD9BD;
-  --color-primary-300: #5FBE92;
-  --color-primary-400: #1FA574;
-  --color-primary-450: #0C9060;
-  --color-primary-500: #087F57;
-  --color-primary-555: #076F4C;
-  --color-primary-600: #066042;
-  --color-primary-700: #054B34;
-  --color-primary-800: #04372A;
-  --color-primary-900: #03261D;
+  /* Primary: teal. Actions, links, brand. */
+  --color-primary-50:  #E8F2F1;
+  --color-primary-100: #CDE6E3;
+  --color-primary-200: #9DD2CB;
+  --color-primary-300: #5FB7AD;
+  --color-primary-400: #14B8A6;
+  --color-primary-450: #11998C;
+  --color-primary-500: #0F766E;
+  --color-primary-555: #0E6A63;
+  --color-primary-600: #0D5F59;
+  --color-primary-700: #0B4D48;
+  --color-primary-800: #093B37;
+  --color-primary-900: #072A27;
   --color-on-primary: #FFFFFF;
 
-  /* Accent: Sun */
-  --color-accent-50:  #FFF7DB;
-  --color-accent-100: #FFEDAB;
-  --color-accent-200: #FFE07A;
-  --color-accent-300: #FFD455;
-  --color-accent-400: #FFC53D;
-  --color-accent-450: #F2B21F;
-  --color-accent-500: #FFC53D;
-  --color-accent-600: #B98400;
-  --color-accent-700: #6E4F00;
-  --color-accent-800: #4C3600;
-  --color-accent-900: #2E2100;
+  /* Accent: bright teal. The one highlight on a graphite field: Check in, live, unread. */
+  --color-accent-50:  #EEF6F5;
+  --color-accent-100: #D5EEEA;
+  --color-accent-200: #A7E3DA;
+  --color-accent-300: #2DD4BF;
+  --color-accent-400: #14B8A6;
+  --color-accent-450: #11A193;
+  --color-accent-500: #14B8A6;
+  --color-accent-600: #0F766E;
+  --color-accent-700: #0B4D48;
+  --color-accent-800: #093B37;
+  --color-accent-900: #072A27;
 
-  /* Deep green field (hero, summary, auth) */
-  --color-bottle: #0A5E45;
-  --color-bottle-deep: #07442F;
-  --color-bottle-lift: #11735A;
-  --color-bottle-line: #2A8A6E;
-  --color-bottle-text: #EAF8F2;
-  --color-bottle-muted: #A5D8C3;
+  /* Graphite field (next-shift panel, hero, summary, auth). */
+  --color-bottle: #1F2933;
+  --color-bottle-deep: #161E26;
+  --color-bottle-lift: #2A3642;
+  --color-bottle-line: #3A4654;
+  --color-bottle-text: #F3F6F8;
+  --color-bottle-muted: #A9B4BF;
 
-  /* Category hues: tints and dots only */
-  --color-cat-coral: #F25F4C;  --color-cat-coral-ink: #B93A28;
-  --color-cat-sky:   #2F9BE8;  --color-cat-sky-ink:   #1C6FB0;
-  --color-cat-sun:   #F5B400;  --color-cat-sun-ink:   #8A6400;
-  --color-cat-teal:  #12B5A5;  --color-cat-teal-ink:  #0B7C71;
-  --color-cat-rose:  #E5568B;  --color-cat-rose-ink:  #B02F63;
-  --color-cat-lime:  #7CB518;  --color-cat-lime-ink:  #4E7A0C;
-  --color-ink: #0F1F1A;
+  /* Categories share one quiet teal tint: colour is kept for meaning, not decoration. */
+  --color-cat-coral: #14B8A6;  --color-cat-coral-ink: #0F766E;
+  --color-cat-sky:   #14B8A6;  --color-cat-sky-ink:   #0F766E;
+  --color-cat-sun:   #14B8A6;  --color-cat-sun-ink:   #0F766E;
+  --color-cat-teal:  #14B8A6;  --color-cat-teal-ink:  #0F766E;
+  --color-cat-rose:  #14B8A6;  --color-cat-rose-ink:  #0F766E;
+  --color-cat-lime:  #14B8A6;  --color-cat-lime-ink:  #0F766E;
+  --color-ink: #1C2430;
+  --color-star: #E0A22E;
 
-  /* Semantic */
-  --color-success-50:  #E8F6F0;
-  --color-success-100: #CBEBDC;
-  --color-success-400: #1FA574;
-  --color-success-500: #0C9060;
-  --color-success-600: #087F57;
+  /* Semantic: green = booked / present / paid, amber = filling / needs attention. */
+  --color-success-50:  #E7F5EE;
+  --color-success-100: #C9E9D8;
+  --color-success-400: #2FA36B;
+  --color-success-500: #1A8754;
+  --color-success-600: #11643F;
 
-  --color-warning-50:  #FFF4D6;
-  --color-warning-400: #FFC53D;
-  --color-warning-500: #D99A00;
+  --color-warning-50:  #FBF1DC;
+  --color-warning-300: #F2C66B;
+  --color-warning-400: #F2C66B;
+  --color-warning-500: #E0A22E;
   --color-warning-600: #B98400;
+  --color-warning-700: #7A5300;
 
-  --color-danger-50:  #FDECEA;
-  --color-danger-400: #EE6B5C;
-  --color-danger-450: #E0503F;
-  --color-danger-500: #D43D2D;
-  --color-danger-600: #B32F21;
+  --color-danger-50:  #FCEBEA;
+  --color-danger-400: #E5675C;
+  --color-danger-450: #D94F43;
+  --color-danger-500: #C93A2E;
+  --color-danger-600: #A82E24;
 
-  --color-info-50: #E6F2FC;
-  --color-info-500: #2F9BE8;
-  --color-info-600: #1C6FB0;
+  --color-info-50: #EAF1F8;
+  --color-info-500: #3B7BBF;
+  --color-info-600: #2B5E94;
 
-  /* Neutrals (light) */
-  --color-dark-50:  #0F1F1A;
-  --color-dark-100: #1B2C26;
-  --color-dark-200: #34463F;
-  --color-dark-300: #53635C;
-  --color-dark-350: #62726B;
-  --color-dark-400: #75857E;
-  --color-dark-450: #93A19B;
-  --color-dark-500: #BAC5C0;
-  --color-dark-600: #DCE3DF;
-  --color-dark-700: #E8EDEA;
-  --color-dark-800: #EEF2F0;
-  --color-dark-850: #F2F5F3;
+  /* Neutrals: graphite (light) */
+  --color-dark-50:  #1C2430;
+  --color-dark-100: #26303C;
+  --color-dark-200: #3A4552;
+  --color-dark-300: #5B6573;
+  --color-dark-350: #6A7480;
+  --color-dark-400: #7C8692;
+  --color-dark-450: #98A1AB;
+  --color-dark-500: #C9D0D6;
+  --color-dark-600: #E3E7EA;
+  --color-dark-700: #EBEEF1;
+  --color-dark-800: #F0F2F4;
+  --color-dark-850: #F4F6F7;
   --color-dark-900: #FFFFFF;
-  --color-dark-950: #F6F8F7;
-  --color-edge: #DCE3DF;
+  --color-dark-950: #F7F8F9;
+  --color-edge: #E3E7EA;
 
   /* Type */
   --font-sans: var(--font-text-latin), var(--font-arabic), ui-sans-serif, system-ui, 'Segoe UI', Tahoma, sans-serif;
@@ -127,48 +131,67 @@
 
 /* Dark */
 html.dark {
-  --color-primary-50:  #0E2E24;
-  --color-primary-100: #123F31;
-  --color-primary-200: #1B6148;
-  --color-primary-300: #4ED8A0;
-  --color-primary-400: #4ED8A0;
-  --color-primary-450: #3FCB92;
-  --color-primary-500: #34D399;
-  --color-primary-555: #2BBE88;
-  --color-primary-600: #25AB79;
-  --color-primary-700: #1F9468;
-  --color-primary-800: #197A56;
-  --color-primary-900: #146245;
-  --color-on-primary: #04251A;
+  --color-primary-50:  #163A37;
+  --color-primary-100: #1B4945;
+  --color-primary-200: #22605A;
+  --color-primary-300: #5EEAD4;
+  --color-primary-400: #5EEAD4;
+  --color-primary-450: #3FDCC6;
+  --color-primary-500: #2DD4BF;
+  --color-primary-555: #26C2AE;
+  --color-primary-600: #22B09E;
+  --color-primary-700: #1D968A;
+  --color-primary-800: #187C72;
+  --color-primary-900: #13625A;
+  --color-on-primary: #06231F;
 
-  --color-cat-coral-ink: #FF9A8B;
-  --color-cat-sky-ink:   #7CC4F7;
-  --color-cat-sun-ink:   #FFD76A;
-  --color-cat-teal-ink:  #5FDDD0;
-  --color-cat-rose-ink:  #FF9CC1;
-  --color-cat-lime-ink:  #B4E066;
+  --color-accent-50:  rgb(45 212 191 / 0.07);
+  --color-accent-300: #5EEAD4;
+  --color-accent-400: #2DD4BF;
+  --color-accent-450: #26C2AE;
+  --color-accent-500: #2DD4BF;
 
-  --color-dark-50:  #EEF5F1;
-  --color-dark-100: #DCE7E1;
-  --color-dark-200: #C2D1C9;
-  --color-dark-300: #A3B5AC;
-  --color-dark-350: #94A89E;
-  --color-dark-400: #829589;
-  --color-dark-450: #6C7F75;
-  --color-dark-500: #4B5E55;
-  --color-dark-600: #2C3F37;
-  --color-dark-700: #22332C;
-  --color-dark-800: #1A2822;
-  --color-dark-850: #16231E;
-  --color-dark-900: #121D18;
-  --color-dark-950: #0C1410;
-  --color-edge: #2C3F37;
+  --color-bottle: #123532;
+  --color-bottle-deep: #0E2A28;
+  --color-bottle-lift: #184541;
+  --color-bottle-line: #22504B;
+  --color-bottle-text: #E6F4F2;
+  --color-bottle-muted: #9FC9C3;
 
-  --color-success-50:  rgb(52 211 153 / 0.12);
-  --color-danger-50:   rgb(238 107 92 / 0.12);
-  --color-warning-50:  rgb(255 197 61 / 0.12);
-  --color-info-50:     rgb(47 155 232 / 0.14);
-  --color-accent-50:   rgb(255 197 61 / 0.07);
+  --color-cat-coral-ink: #5EEAD4;
+  --color-cat-sky-ink:   #5EEAD4;
+  --color-cat-sun-ink:   #5EEAD4;
+  --color-cat-teal-ink:  #5EEAD4;
+  --color-cat-rose-ink:  #5EEAD4;
+  --color-cat-lime-ink:  #5EEAD4;
+  --color-cat-coral: #2DD4BF; --color-cat-sky: #2DD4BF; --color-cat-sun: #2DD4BF;
+  --color-cat-teal: #2DD4BF;  --color-cat-rose: #2DD4BF; --color-cat-lime: #2DD4BF;
+  --color-star: #E9B44C;
+
+  --color-dark-50:  #E6EBF0;
+  --color-dark-100: #D3DAE1;
+  --color-dark-200: #B8C2CC;
+  --color-dark-300: #9AA6B2;
+  --color-dark-350: #8A96A2;
+  --color-dark-400: #788491;
+  --color-dark-450: #64707C;
+  --color-dark-500: #47525E;
+  --color-dark-600: #36424E;
+  --color-dark-700: #26303A;
+  --color-dark-800: #1D252E;
+  --color-dark-850: #1A222A;
+  --color-dark-900: #161D24;
+  --color-dark-950: #0F1419;
+  --color-edge: #26303A;
+
+  --color-success-50:  #173B2C;
+  --color-success-500: #4CC38A;
+  --color-success-600: #7EE2B0;
+  --color-warning-50:  #3A2F14;
+  --color-warning-500: #E9B44C;
+  --color-warning-700: #F2C66B;
+  --color-danger-50:   rgb(229 103 92 / 0.14);
+  --color-info-50:     rgb(59 123 191 / 0.16);
 
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
   --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5);
@@ -193,7 +216,7 @@ html { overflow-x: clip; scroll-behavior: smooth; }
 /* Arabic joins letters; tracking would break the shapes. */
 [dir="rtl"] *, :lang(ar) * { letter-spacing: 0 !important; }
 
-::selection { background: var(--color-accent-400); color: #0F1F1A; }
+::selection { background: var(--color-primary-200); color: #1C2430; }
 
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
@@ -264,7 +287,7 @@ svg.lucide { stroke-width: 1.75; }
 @keyframes scale-in { from { opacity: 0; transform: scale(.98) translateY(4px); } to { opacity: 1; transform: none; } }
 @keyframes slide-in-right { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: none; } }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@keyframes live-pulse { 0% { box-shadow: 0 0 0 0 rgb(255 197 61 / .65); } 70%, 100% { box-shadow: 0 0 0 8px rgb(255 197 61 / 0); } }
+@keyframes live-pulse { 0% { box-shadow: 0 0 0 0 rgb(45 212 191 / .6); } 70%, 100% { box-shadow: 0 0 0 8px rgb(45 212 191 / 0); } }
 
 .animate-fade-in { animation: fade-in .16s ease-out both; }
 .animate-scale-in { animation: scale-in .16s ease-out both; }
