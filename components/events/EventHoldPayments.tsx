@@ -205,7 +205,7 @@ export default function EventHoldPayments({ event, isOwner, refreshKey = 0, onEv
             )}
 
             {active && (
-                <p className="mt-4 text-xs text-dark-500">
+                <p className="mt-4 text-xs leading-relaxed text-dark-300">
                     If the booking fee or the first day’s hold is missing 24 hours before the event starts, the event is cancelled automatically. If OO-Ushers cancels the event close to a day, ushers receive compensation from that day’s hold (none 72h+ before, half 24–72h before, full under 24h); the booking fee is kept.
                 </p>
             )}
