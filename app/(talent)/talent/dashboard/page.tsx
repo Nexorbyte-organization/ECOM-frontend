@@ -14,7 +14,7 @@ import Button from '@/components/ui/Button';
 import { useProfileCompletion } from '@/components/shared/ProfileCompletionGate';
 import Avatar from '@/components/ui/Avatar';
 import { Shield, Star, CalendarDays, Clock, Briefcase, TrendingUp, UserPlus, Check, X, MapPin } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatEventDates, formatEventHours } from '@/lib/utils';
 import Link from 'next/link';
 
 export default function TalentDashboard() {
@@ -118,7 +118,7 @@ export default function TalentDashboard() {
                                         <p className="text-sm font-black text-dark-50 mt-0.5">{ref.event.title}</p>
                                         <div className="flex items-center gap-3 mt-1">
                                             <span className="text-xs text-dark-400 flex items-center gap-1"><MapPin size={11} /> {ref.event.location}</span>
-                                            <span className="text-xs text-dark-400 flex items-center gap-1"><CalendarDays size={11} /> {formatDate(ref.event.eventDate)}</span>
+                                            <span className="text-xs text-dark-400 flex items-center gap-1"><CalendarDays size={11} /> {formatEventDates(ref.event)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -216,7 +216,7 @@ export default function TalentDashboard() {
                                     <div>
                                         <p className="text-sm font-bold text-dark-100">{event.title}</p>
                                         <p className="text-xs text-dark-400 mt-0.5">
-                                            {formatDate(event.eventDate)} · {event.startTime} - {event.endTime}
+                                            {formatEventDates(event)} · {formatEventHours(event)}
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-2">

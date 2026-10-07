@@ -4,15 +4,16 @@ import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { createEvent, getProviderProfileByUserId } from '@/lib/api';
-import { GenderPreference } from '@/types';
+import { EventDay, GenderPreference } from '@/types';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
-import { EVENT_CATEGORIES, cn, maxStandbyCount } from '@/lib/utils';
+import { EVENT_CATEGORIES, cn, formatCurrency, maxStandbyCount, validateEventDays } from '@/lib/utils';
 import { CalendarPlus, ArrowLeft, Camera, Trash2, Upload, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useProfileCompletion } from '@/components/shared/ProfileCompletionGate';
 import VenuePinField, { MIN_PAY_PER_DAY_EGP, VenuePin } from '@/components/events/VenuePinField';
+import EventDaysField from '@/components/events/EventDaysField';
 
 export default function CreateEventPage() {
     const { user } = useAuth();
@@ -23,10 +24,8 @@ export default function CreateEventPage() {
 
     const [title, setTitle] = useState('');
     const [category, setCategory] = useState('');
-    const [eventDate, setEventDate] = useState('');
+    const [days, setDays] = useState<EventDay[]>([{ date: '', startTime: '', endTime: '' }]);
     const [applicationDeadline, setApplicationDeadline] = useState('');
-    const [startTime, setStartTime] = useState('');
-    const [endTime, setEndTime] = useState('');
     const [location, setLocation] = useState('');
     const [gatheringLocation, setGatheringLocation] = useState('');
     const [venuePin, setVenuePin] = useState<VenuePin | null>(null);
@@ -95,15 +94,23 @@ export default function CreateEventPage() {
             return;
         }
 
+        const scheduleError = validateEventDays(days);
+        if (scheduleError) {
+            setError(scheduleError);
+            return;
+        }
+        const sortedDays = [...days].sort((a, b) => a.date.localeCompare(b.date));
+        const firstDay = sortedDays[0];
+
         const now = new Date();
         const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-        if (eventDate < todayStr) {
+        if (firstDay.date < todayStr) {
             setError('Event date cannot be in the past');
             return;
         }
 
-        if (applicationDeadline >= eventDate) {
-            setError('Application deadline must be before the event date');
+        if (applicationDeadline >= firstDay.date) {
+            setError('Application deadline must be before the first event day');
             return;
         }
 
@@ -134,10 +141,11 @@ export default function CreateEventPage() {
                 providerId: profile._id,
                 title,
                 category,
-                eventDate,
+                days: sortedDays,
+                eventDate: firstDay.date,
                 applicationDeadline,
-                startTime,
-                endTime,
+                startTime: firstDay.startTime,
+                endTime: firstDay.endTime,
                 location,
                 gatheringLocation: gatheringLocation || undefined,
                 ...(venuePin ? { venueLatitude: venuePin.latitude, venueLongitude: venuePin.longitude } : {}),
@@ -261,14 +269,10 @@ export default function CreateEventPage() {
                 {/* Schedule */}
                 <Card>
                     <h3 className="text-sm font-semibold text-dark-300 uppercase tracking-wider mb-4">Schedule</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <Input label="Event Date" type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} required />
+                    <div className="mb-4 md:w-1/2">
                         <Input label="Application Deadline" type="date" value={applicationDeadline} onChange={(e) => setApplicationDeadline(e.target.value)} required />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input label="Start Time" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} required />
-                        <Input label="End Time" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} required />
-                    </div>
+                    <EventDaysField days={days} onChange={setDays} />
                 </Card>
 
                 {/* Requirements */}
@@ -300,7 +304,7 @@ export default function CreateEventPage() {
                             </div>
                             <div className="space-y-1">
                                 <Input 
-                                    label="Pay per usher (EGP)" 
+                                    label="Pay per usher per day (EGP)" 
                                     type="number" 
                                     min={MIN_PAY_PER_DAY_EGP}
                                     value={budget} 
@@ -310,8 +314,19 @@ export default function CreateEventPage() {
                                 />
                                 {budget && !isNaN(Number(budget)) && Number(budget) > 0 && (
                                     <p className="text-[11px] text-dark-400 leading-normal mt-1 bg-dark-900/20 border border-dark-800 rounded-xl p-2.5">
-                                        Usher receives: <strong className="text-success-400">{Number(budget) * 0.95} EGP</strong> (95%) <br/>
-                                        Platform commission: <strong className="text-dark-300">{Number(budget) * 0.05} EGP</strong> (5%)
+                                        Usher receives: <strong className="text-success-400">{Number(budget) * 0.95} EGP</strong> a day (95%) <br/>
+                                        Platform commission: <strong className="text-dark-300">{Number(budget) * 0.05} EGP</strong> a day (5%)
+                                        {days.length > 1 && (
+                                            <>
+                                                <br />Per usher for {days.length} days: <strong className="text-dark-200">{formatCurrency(Number(budget) * days.length)}</strong>
+                                            </>
+                                        )}
+                                        {Number(requiredCount) > 0 && (
+                                            <>
+                                                <br />You fund in advance: <strong className="text-dark-200">{formatCurrency(Number(budget) * days.length * Number(requiredCount))}</strong>
+                                                {' '}({formatCurrency(Number(budget))} × {days.length} {days.length === 1 ? 'day' : 'days'} × {Number(requiredCount)} ushers)
+                                            </>
+                                        )}
                                     </p>
                                 )}
                             </div>

@@ -945,7 +945,7 @@ export default function HomePage() {
                 © {new Date().getFullYear()} OO-Ushers.{' '}
                 {isArabic ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}
               </p>
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
                 <a href="/terms" className="text-xs text-dark-400 hover:text-primary-500 transition-colors">
                   {isArabic ? 'الشروط' : 'Terms'}
                 </a>
@@ -954,6 +954,15 @@ export default function HomePage() {
                 </a>
                 <a href="/cookies" className="text-xs text-dark-400 hover:text-primary-500 transition-colors">
                   {isArabic ? 'ملفات تعريف الارتباط' : 'Cookies'}
+                </a>
+                <a href="/policies/ushers" className="text-xs text-dark-400 hover:text-primary-500 transition-colors">
+                  {isArabic ? 'سياسة المضيفين' : 'Usher Policy'}
+                </a>
+                <a href="/policies/organizations" className="text-xs text-dark-400 hover:text-primary-500 transition-colors">
+                  {isArabic ? 'سياسة المؤسسات' : 'Organization Policy'}
+                </a>
+                <a href="/policies/payments" className="text-xs text-dark-400 hover:text-primary-500 transition-colors">
+                  {isArabic ? 'المدفوعات والرسوم' : 'Payments & Fees'}
                 </a>
               </div>
             </div>

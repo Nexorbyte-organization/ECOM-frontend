@@ -26,7 +26,7 @@ import Avatar from '@/components/ui/Avatar';
 import Modal from '@/components/ui/Modal';
 import Select from '@/components/ui/Select';
 import Input from '@/components/ui/Input';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatDayDate, formatEventDates, formatEventHours, getEventDays } from '@/lib/utils';
 import {
     MapPin, Clock, Users, Shirt, FileText, ArrowLeft, Check, X,
     UserCheck, Star, CalendarX, Search, Plus, Minus, Send, Phone, MessageCircle, CreditCard,
@@ -36,6 +36,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import EditEventModal, { canEditEvent } from '@/components/events/EditEventModal';
 import EventFundingCard from '@/components/events/EventFundingCard';
+import { EventScheduleList } from '@/components/events/EventDaysField';
 import { lineStatus } from '@/components/payments/paymentLabels';
 
 const hasActiveCheckout = (settlement: EventSettlement | null) => Boolean(
@@ -44,6 +45,16 @@ const hasActiveCheckout = (settlement: EventSettlement | null) => Boolean(
     && settlement.expiresAt
     && Date.parse(settlement.expiresAt) > Date.now()
 );
+
+const isPayable = (record?: Attendance) => record?.status === AttendanceStatus.PRESENT || record?.status === AttendanceStatus.LATE;
+
+// The event day to show first on the attendance tab: today, else the latest day that has started.
+const defaultAttendanceDay = (event: Event) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const days = getEventDays(event);
+    const started = days.filter((day) => day.date <= today).length;
+    return Math.max(0, started - 1);
+};
 
 const selfCheckIn = (record?: Attendance) => ['qr', 'code', 'location'].includes(record?.checkInMethod || '');
 const checkInMethodLabel = (method?: Attendance['checkInMethod']) => ({
@@ -80,6 +91,8 @@ export default function EventDetailPage() {
     const [supervisors, setSupervisors] = useState<Omit<User, 'password'>[]>([]);
     const [applicationBusy, setApplicationBusy] = useState<string | null>(null);
     const [attendanceBusy, setAttendanceBusy] = useState<string | null>(null);
+    // Multi-day events: attendance is recorded per day.
+    const [attendanceDay, setAttendanceDay] = useState<number | null>(null);
     const [reviewBusy, setReviewBusy] = useState(false);
     const [assigning, setAssigning] = useState(false);
 
@@ -294,7 +307,9 @@ export default function EventDetailPage() {
         setAttendanceBusy(talentId);
         setError('');
         try {
-            await staffCheckIn(event._id, talentId, status, await tryGetCurrentLocation());
+            const multiDay = getEventDays(event).length > 1;
+            const day = attendanceDay ?? defaultAttendanceDay(event);
+            await staffCheckIn(event._id, talentId, status, await tryGetCurrentLocation(), multiDay ? day : undefined);
             await fetchData();
             setFundingRefreshKey((key) => key + 1);
         } catch (err) {
@@ -457,14 +472,21 @@ export default function EventDetailPage() {
     const paymobCharge = lockedSettlement?.collectionAmount ?? Math.round(paymentLines.reduce((total, line) => total + line.collectionAmount * 100, 0)) / 100;
     const cashDue = lockedSettlement?.cashDueAmount ?? Math.round(paymentLines.reduce((total, line) => total + (line.payoutMethodType === 'cash' ? line.usherAmount * 100 : 0), 0)) / 100;
     // The backend moves standby ushers in earliest first.
+    const eventDays = getEventDays(event);
+    const selectedDay = attendanceDay ?? defaultAttendanceDay(event);
     const standbyQueue = applicants
         .filter((app) => app.status === 'standby')
         .sort((a, b) => Date.parse(a.standbySince || a.appliedAt) - Date.parse(b.standbySince || b.appliedAt));
-    // Absent and unmarked ushers are never part of an event payment.
+    // Absent and unmarked ushers are never part of an event payment; on a multi-day event an usher
+    // is paid for the days they checked in.
     const notPayable = applicants
         .filter((app) => app.status === ApplicationStatus.ACCEPTED)
-        .map((app) => ({ app, status: attendanceRecords.find((record) => record.talentId === app.talentId)?.status }))
-        .filter(({ status }) => status !== AttendanceStatus.PRESENT && status !== AttendanceStatus.LATE);
+        .map((app) => {
+            const records = attendanceRecords.filter((record) => record.talentId === app.talentId);
+            if (records.some(isPayable)) return { app, status: AttendanceStatus.PRESENT };
+            return { app, status: records.some((record) => record.status === AttendanceStatus.ABSENT) ? AttendanceStatus.ABSENT : undefined };
+        })
+        .filter(({ status }) => status !== AttendanceStatus.PRESENT);
     const automaticPayoutsUnavailable = settlementPreview && !settlementPreview.payoutSandboxConfigured
         && paymentLines.some((line) => line.payoutMethodType !== 'cash');
 
@@ -501,7 +523,7 @@ export default function EventDetailPage() {
                                 {event.gatheringLocation && (
                                     <span className="flex items-center gap-1" title="Gathering Location"><MapPin size={12} className="text-primary-400" /> Gathering: {event.gatheringLocation}</span>
                                 )}
-                                <span className="flex items-center gap-1"><Clock size={12} /> {formatDate(event.eventDate)} · {event.startTime}-{event.endTime}</span>
+                                <span className="flex items-center gap-1"><Clock size={12} /> {formatEventDates(event)} · {formatEventHours(event)}</span>
                                 <span className="flex items-center gap-1"><Users size={12} /> {event.hiredTalents.length}/{event.requiredCount}</span>
                                 {Boolean(event.standbyCount) && (
                                     <span className="flex items-center gap-1" title="Unpaid on-call ushers who fill spots that open before the start">
@@ -535,7 +557,7 @@ export default function EventDetailPage() {
                         {/* Completion unlocks usher payments; the backend checks that the event has ended. */}
                         {user?.role === UserRole.PROVIDER
                             && (event.status === EventStatus.OPEN || event.status === EventStatus.CONFIRMED)
-                            && new Date(event.eventDate).toISOString().slice(0, 10) <= new Date().toISOString().slice(0, 10) && (
+                            && new Date(event.endDate || event.eventDate).toISOString().slice(0, 10) <= new Date().toISOString().slice(0, 10) && (
                             <Button variant="success" size="sm" icon={<Check size={15} />} isLoading={completing} onClick={handleCompleteEvent}>
                                 Mark completed
                             </Button>
@@ -606,6 +628,13 @@ export default function EventDetailPage() {
             {activeTab === 'details' && (
                 <Card>
                     <div className="space-y-4">
+                        {eventDays.length > 1 && (
+                            <div>
+                                <div className="flex items-center gap-2 mb-1"><Clock size={14} className="text-dark-400" /><p className="text-xs font-semibold text-dark-300 uppercase tracking-wider">Schedule · {eventDays.length} days</p></div>
+                                <EventScheduleList event={event} className="max-w-xl" />
+                                <p className="mt-2 text-xs text-dark-400">Pay: {event.budget} EGP per usher per day ({event.budget * eventDays.length} EGP per usher for all days).</p>
+                            </div>
+                        )}
                         {event.dressCode && (
                             <div>
                                 <div className="flex items-center gap-2 mb-1"><Shirt size={14} className="text-dark-400" /><p className="text-xs font-semibold text-dark-300 uppercase tracking-wider">Dress Code</p></div>
@@ -845,6 +874,20 @@ export default function EventDetailPage() {
 
             {activeTab === 'attendance' && (
                 <div className="space-y-3">
+                    {eventDays.length > 1 && (
+                        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Event day">
+                            {eventDays.map((day, index) => {
+                                const checkedIn = attendanceRecords.filter((record) => (record.dayIndex ?? 0) === index && isPayable(record)).length;
+                                return (
+                                    <button key={day.date} type="button" role="tab" aria-selected={selectedDay === index} onClick={() => setAttendanceDay(index)}
+                                        className={`rounded-xl border px-3 py-2 text-left text-xs transition-colors ${selectedDay === index ? 'border-primary-500 bg-primary-500/10 text-dark-50' : 'border-dark-700 text-dark-300 hover:border-dark-500'}`}>
+                                        <span className="block font-semibold">Day {index + 1} · {formatDayDate(day.date)}</span>
+                                        <span className="block text-dark-400">{day.startTime} – {day.endTime} · {checkedIn}/{event.hiredTalents.length} checked in</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
                     {event.status === EventStatus.COMPLETED && user?.role === UserRole.PROVIDER && event.fundingMode === 'pay_after' && (
                         <Card className="border-primary-500/30 bg-gradient-to-br from-primary-500/10 to-transparent">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -883,12 +926,16 @@ export default function EventDetailPage() {
                     ) : (
                         applicants.filter((a) => a.status === 'accepted').map((app) => {
                             const showPaymentStatus = event.status === EventStatus.COMPLETED && user?.role === UserRole.PROVIDER;
-                            const record = attendanceRecords.find((att) => att.talentId === app.talentId);
+                            const talentRecords = attendanceRecords.filter((att) => att.talentId === app.talentId);
+                            // The selected day's check-in (the only day on a one-day event).
+                            const record = talentRecords.find((att) => (att.dayIndex ?? 0) === selectedDay);
+                            const attendedDays = new Set(talentRecords.filter(isPayable).map((att) => att.dayIndex ?? 0)).size;
                             const attVariant = record?.status === 'present' ? 'success' as const : record?.status === 'late' ? 'warning' as const : record?.status === 'absent' ? 'danger' as const : 'default' as const;
                             const payment = individualSettlements.find((item) => item.targetTalentId === app.talentId) || settlement;
                             const paymentLine = payment?.lines.find((line) => line.talentId === app.talentId);
-                            const attended = record?.status === 'present' || record?.status === 'late';
-                            // Only present/late ushers are paid; absent or unmarked ushers are left out.
+                            const attended = attendedDays > 0;
+                            const dayAttended = isPayable(record);
+                            // Only present/late ushers are paid (for the days they checked in); absent or unmarked ushers are left out.
                             const prefunded = event.fundingMode !== 'pay_after';
                             const prefundLine = fundingSummary?.settlements.flatMap((item) => item.lines).find((line) => line.talentId === app.talentId);
                             const releaseDue = fundingSummary?.releasePreview?.releaseDueAt || fundingSummary?.releaseDueAt;
@@ -896,11 +943,11 @@ export default function EventDetailPage() {
                                 if (prefundLine) { const status = lineStatus(prefundLine); return { label: status.label, variant: status.tone }; }
                                 if (event.fundsReleasedAt) return { label: 'No-show · wage returned to you', variant: 'default' };
                                 if (attended) return { label: releaseDue ? `Paid automatically ${formatDate(releaseDue)}` : 'Paid automatically after the event', variant: 'default' };
-                                return record?.status === 'absent' ? { label: 'No-show · not paid', variant: 'danger' } : { label: 'Not checked in yet', variant: 'default' };
+                                return talentRecords.some((att) => att.status === 'absent') ? { label: 'No-show · not paid', variant: 'danger' } : { label: 'Not checked in yet', variant: 'default' };
                             };
                             const paymentStatus: { label: string; variant: 'success' | 'danger' | 'warning' | 'default' | 'info' | 'primary' } | null = !showPaymentStatus && !(prefunded && user?.role === UserRole.PROVIDER) ? null
                                 : prefunded ? prefundStatus()
-                                : !attended ? { label: record?.status === 'absent' ? 'No-show · not paid' : 'Not checked in', variant: 'default' }
+                                : !attended ? { label: talentRecords.some((att) => att.status === 'absent') ? 'No-show · not paid' : 'Not checked in', variant: 'default' }
                                     : !paymentLine || !payment || payment.collectionStatus === 'not_started' ? { label: 'Not paid yet', variant: 'default' }
                                         : payment.collectionStatus === 'failed' ? { label: 'Payment error', variant: 'danger' }
                                             : payment.collectionStatus === 'pending' ? { label: 'Payment pending', variant: 'warning' }
@@ -918,6 +965,7 @@ export default function EventDetailPage() {
                                             <p className="text-sm font-semibold text-dark-100">{app.talent.fullName}</p>
                                             <div className="flex items-center gap-2.5 mt-1 flex-wrap">
                                                  {record && <Badge variant={attVariant}>{record.status}</Badge>}
+                                                 {eventDays.length > 1 && <Badge variant="default">{attendedDays}/{eventDays.length} days</Badge>}
                                                  {record && <Badge variant="info">{checkInMethodLabel(record.checkInMethod)}</Badge>}
                                                  {paymentStatus && <Badge variant={paymentStatus.variant}>{paymentStatus.label}</Badge>}
                                                  {app.talent.phoneNumber && (
@@ -947,7 +995,7 @@ export default function EventDetailPage() {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         {/* Staff can only check someone in, never mark absent or override the usher's own check-in. */}
-                                        {!event.fundsReleasedAt && event.status !== EventStatus.CANCELLED && !(attended && selfCheckIn(record)) && record?.status !== 'present' && (
+                                        {!event.fundsReleasedAt && event.status !== EventStatus.CANCELLED && !(dayAttended && selfCheckIn(record)) && record?.status !== 'present' && (
                                             <>
                                                 <Button size="sm" variant="secondary" disabled={Boolean(attendanceBusy)} isLoading={attendanceBusy === app.talentId} title="Use when the usher’s phone cannot check in" onClick={() => handleStaffCheckIn(app.talentId, 'present')}>
                                                     Check in
@@ -1203,6 +1251,9 @@ export default function EventDetailPage() {
                                                         <div className="flex flex-wrap items-center gap-2">
                                                             <p className="text-sm font-bold text-dark-50">{name}</p>
                                                             <Badge variant={line.attendanceStatus === 'late' ? 'warning' : 'success'}>{line.attendanceStatus}</Badge>
+                                                            {eventDays.length > 1 && 'attendedDays' in line && line.attendedDays !== undefined && (
+                                                                <Badge variant="default">{line.attendedDays}/{eventDays.length} days</Badge>
+                                                            )}
                                                             {isCash && <Badge variant="warning">CASH</Badge>}
                                                             {!savedLine && <Badge variant="default">Not paid yet</Badge>}
                                                         </div>

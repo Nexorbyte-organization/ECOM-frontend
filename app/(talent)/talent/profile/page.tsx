@@ -19,7 +19,7 @@ import ProfileOptionPicker from '@/components/ui/ProfileOptionPicker';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Avatar from '@/components/ui/Avatar';
-import { EVENT_CATEGORIES, CITIES, LANGUAGES, formatDate } from '@/lib/utils';
+import { EVENT_CATEGORIES, CITIES, LANGUAGES, formatEventDates } from '@/lib/utils';
 import { Save, Plus, X, CalendarDays, Clock, MapPin, Camera } from 'lucide-react';
 import { announceProfileUpdated } from '@/lib/profile-completion';
 import { formatEgyptianMobile, isEgyptianMobile, internationalMobile } from '@/lib/phone';
@@ -604,7 +604,7 @@ export default function TalentProfilePage() {
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-bold text-dark-100 truncate">{item.event.title}</p>
                                     <div className="flex items-center gap-3 text-xs text-dark-400 mt-1 font-semibold">
-                                        <span className="flex items-center gap-1"><Clock size={10} /> {formatDate(item.event.eventDate)}</span>
+                                        <span className="flex items-center gap-1"><Clock size={10} /> {formatEventDates(item.event)}</span>
                                         <span className="flex items-center gap-1"><MapPin size={10} /> {item.event.location}</span>
                                     </div>
                                     <div className="flex items-center gap-2 mt-2">

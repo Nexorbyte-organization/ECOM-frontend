@@ -14,7 +14,8 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Avatar from '@/components/ui/Avatar';
 import Modal from '@/components/ui/Modal';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatEventDates, formatEventHours, getEventDays } from '@/lib/utils';
+import { EventScheduleList } from '@/components/events/EventDaysField';
 import { MapPin, Clock, Users, Shirt, FileText, ArrowLeft, Send, CheckCircle, UserPlus, Search, CalendarX, Copy, Check, MessageCircle, Hourglass } from 'lucide-react';
 import Link from 'next/link';
 import { useProfileCompletion } from '@/components/shared/ProfileCompletionGate';
@@ -256,8 +257,15 @@ export default function JobDetailPage() {
                         <div className="p-2 rounded-lg bg-primary-500/10 text-primary-400"><Clock size={16} /></div>
                         <div>
                             <p className="text-xs text-dark-500">Date & Time</p>
-                            <p className="text-sm text-dark-100">{formatDate(event.eventDate)}</p>
-                            <p className="text-xs text-dark-400">{event.startTime} - {event.endTime}</p>
+                            <p className="text-sm text-dark-100">{formatEventDates(event)}</p>
+                            {getEventDays(event).length > 1 ? (
+                                <>
+                                    <EventScheduleList event={event} className="mt-2" />
+                                    <p className="mt-2 text-xs text-dark-400">Check in every day; you are paid for each day you check in.</p>
+                                </>
+                            ) : (
+                                <p className="text-xs text-dark-400">{formatEventHours(event)}</p>
+                            )}
                         </div>
                     </div>
                     <div className="flex items-start gap-3">

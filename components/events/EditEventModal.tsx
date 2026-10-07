@@ -6,14 +6,15 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import { updateEvent } from '@/lib/api';
-import { EVENT_CATEGORIES, maxStandbyCount } from '@/lib/utils';
-import { Event, EventStatus, GenderPreference } from '@/types';
+import { EVENT_CATEGORIES, formatCurrency, getEventDays, maxStandbyCount, validateEventDays } from '@/lib/utils';
+import { Event, EventDay, EventStatus, GenderPreference } from '@/types';
 import { Lock } from 'lucide-react';
 import VenuePinField, { MIN_PAY_PER_DAY_EGP, VenuePin } from '@/components/events/VenuePinField';
+import EventDaysField from '@/components/events/EventDaysField';
 
 type EventForm = {
-    title: string; category: string; eventDate: string; applicationDeadline: string;
-    startTime: string; endTime: string; location: string; gatheringLocation: string;
+    title: string; category: string; applicationDeadline: string;
+    location: string; gatheringLocation: string;
     requiredCount: string; standbyCount: string; budget: string; specifyGenders: boolean; malesCount: string;
     femalesCount: string; genderPreference: GenderPreference; dressCode: string; notes: string;
 };
@@ -22,7 +23,9 @@ type Field = keyof EventForm;
 // Mirrors the backend rules: staffing and pay are fixed once applications close, and only
 // on-site information can change after the event starts. Standby is unpaid, so its size stays
 // editable until the start.
-const CONFIRMED_FIELDS: Field[] = ['title', 'eventDate', 'startTime', 'endTime', 'location', 'gatheringLocation', 'dressCode', 'notes', 'standbyCount'];
+// The schedule (days) is edited separately: dates and times stay editable until the start, but the
+// number of days only while the event is open, and days cannot be removed once ushers are hired.
+const CONFIRMED_FIELDS: Field[] = ['title', 'location', 'gatheringLocation', 'dressCode', 'notes', 'standbyCount'];
 const STARTED_FIELDS: Field[] = ['notes'];
 const NUMBER_FIELDS: Field[] = ['requiredCount', 'standbyCount', 'budget', 'malesCount', 'femalesCount'];
 
@@ -46,10 +49,7 @@ const editableFields = (event: Event): Field[] | 'all' => {
 const toForm = (event: Event): EventForm => ({
     title: event.title,
     category: EVENT_CATEGORIES.find((c) => categoryKey(c) === categoryKey(event.category)) || event.category,
-    eventDate: event.eventDate.slice(0, 10),
     applicationDeadline: event.applicationDeadline.slice(0, 10),
-    startTime: event.startTime,
-    endTime: event.endTime,
     location: event.location,
     gatheringLocation: event.gatheringLocation || '',
     requiredCount: String(event.requiredCount),
@@ -77,6 +77,9 @@ export default function EditEventModal({ event, onClose, onSaved }: EditEventMod
         ? { latitude: event.venueLatitude, longitude: event.venueLongitude } : null;
     const [venuePin, setVenuePin] = useState<VenuePin | null>(initialPin);
     const pinChanged = venuePin?.latitude !== initialPin?.latitude || venuePin?.longitude !== initialPin?.longitude;
+    const [initialDays] = useState(() => getEventDays(event));
+    const [days, setDays] = useState<EventDay[]>(initialDays);
+    const daysChanged = JSON.stringify(days) !== JSON.stringify(initialDays);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
 
@@ -85,12 +88,19 @@ export default function EditEventModal({ event, onClose, onSaved }: EditEventMod
     const set = <K extends Field>(field: K, value: EventForm[K]) => setForm((current) => ({ ...current, [field]: value }));
     const hired = event.hiredTalents.length;
     const changed = (Object.keys(form) as Field[]).filter((field) => form[field] !== initial[field]);
+    const canEditDays = editable !== STARTED_FIELDS;
+    const nothingChanged = changed.length === 0 && !pinChanged && !daysChanged;
 
     const handleSave = async () => {
         setError('');
-        if (changed.length === 0 && !pinChanged) { onClose(); return; }
-        if (form.eventDate && form.applicationDeadline && form.applicationDeadline >= form.eventDate) {
-            setError('Application deadline must be before the event date.');
+        if (nothingChanged) { onClose(); return; }
+        const sortedDays = [...days].sort((a, b) => a.date.localeCompare(b.date));
+        if (daysChanged) {
+            const scheduleError = validateEventDays(sortedDays);
+            if (scheduleError) { setError(scheduleError); return; }
+        }
+        if (sortedDays[0]?.date && form.applicationDeadline && form.applicationDeadline >= sortedDays[0].date) {
+            setError('Application deadline must be before the first event day.');
             return;
         }
         if (Number(form.requiredCount) < hired) {
@@ -128,6 +138,7 @@ export default function EditEventModal({ event, onClose, onSaved }: EditEventMod
         if (pinChanged) {
             Object.assign(payload, { venueLatitude: venuePin?.latitude ?? null, venueLongitude: venuePin?.longitude ?? null });
         }
+        if (daysChanged) payload.days = sortedDays;
         setSaving(true);
         try {
             onSaved(await updateEvent(event._id, payload as Partial<Event>));
@@ -143,7 +154,7 @@ export default function EditEventModal({ event, onClose, onSaved }: EditEventMod
         ? hired > 0 ? 'Pay can be raised but not lowered now that ushers are hired.' : null
         : editable === STARTED_FIELDS
             ? 'The event has started, so only the notes can change.'
-            : 'Applications are closed, so staffing, pay, category, and deadline are locked. Standby can still change until the start.';
+            : 'Applications are closed, so staffing, pay, the number of days, category, and deadline are locked. Dates, times, and standby can still change until the start.';
 
     return (
         <Modal isOpen onClose={onClose} title="Edit event">
@@ -156,18 +167,20 @@ export default function EditEventModal({ event, onClose, onSaved }: EditEventMod
                 <Input label="Event title" value={form.title} onChange={(e) => set('title', e.target.value)} disabled={!can('title')} maxLength={100} />
                 <Select label="Category" value={form.category} onChange={(e) => set('category', e.target.value)} disabled={!can('category')}
                     options={EVENT_CATEGORIES.map((c) => ({ value: c, label: c }))} />
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <Input label="Event date" type="date" value={form.eventDate} onChange={(e) => set('eventDate', e.target.value)} disabled={!can('eventDate')} />
-                    <Input label="Application deadline" type="date" value={form.applicationDeadline} onChange={(e) => set('applicationDeadline', e.target.value)} disabled={!can('applicationDeadline')} />
-                    <Input label="Start time" type="time" value={form.startTime} onChange={(e) => set('startTime', e.target.value)} disabled={!can('startTime')} />
-                    <Input label="End time" type="time" value={form.endTime} onChange={(e) => set('endTime', e.target.value)} disabled={!can('endTime')} />
-                </div>
+                <Input label="Application deadline" type="date" value={form.applicationDeadline} onChange={(e) => set('applicationDeadline', e.target.value)} disabled={!can('applicationDeadline')} />
+                <EventDaysField days={days} onChange={setDays} disabled={!canEditDays}
+                    fixedCount={event.status !== EventStatus.OPEN} minCount={hired > 0 ? initialDays.length : 1} />
                 <Input label="Location" value={form.location} onChange={(e) => set('location', e.target.value)} disabled={!can('location')} />
                 <Input label="Gathering location" value={form.gatheringLocation} onChange={(e) => set('gatheringLocation', e.target.value)} disabled={!can('gatheringLocation')} />
                 <VenuePinField value={venuePin} onChange={setVenuePin} disabled={!can('location')} />
                 <div className="grid gap-4 sm:grid-cols-2">
                     <Input label="Required staff" type="number" min={Math.max(1, hired)} value={form.requiredCount} onChange={(e) => set('requiredCount', e.target.value)} disabled={!can('requiredCount')} />
-                    <Input label="Pay per usher (EGP)" type="number" min={hired > 0 ? event.budget : 1} value={form.budget} onChange={(e) => set('budget', e.target.value)} disabled={!can('budget')} />
+                    <div className="space-y-1">
+                        <Input label="Pay per usher per day (EGP)" type="number" min={hired > 0 ? event.budget : MIN_PAY_PER_DAY_EGP} value={form.budget} onChange={(e) => set('budget', e.target.value)} disabled={!can('budget')} />
+                        {days.length > 1 && Number(form.budget) > 0 && (
+                            <p className="text-xs text-dark-400">{formatCurrency(Number(form.budget) * days.length)} per usher for {days.length} days</p>
+                        )}
+                    </div>
                     <Input label={`Standby ushers (up to ${maxStandbyCount(Number(form.requiredCount))})`} type="number" min={0} max={maxStandbyCount(Number(form.requiredCount))}
                         value={form.standbyCount} onChange={(e) => set('standbyCount', e.target.value)} disabled={!can('standbyCount')} />
                 </div>
@@ -199,11 +212,11 @@ export default function EditEventModal({ event, onClose, onSaved }: EditEventMod
                         className="w-full bg-dark-950 border-2 border-dark-50 rounded-xl px-4 py-2.5 text-sm text-dark-100 placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all resize-none"
                     />
                 </div>
-                {hired > 0 && <p className="text-xs text-dark-400">Hired ushers are notified when the date, times, location, meeting point, pay, or dress code change.</p>}
+                {hired > 0 && <p className="text-xs text-dark-400">Hired ushers are notified when the dates, times, location, meeting point, pay, or dress code change.</p>}
                 {error && <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}
                 <div className="flex justify-end gap-3 border-t border-dark-700 pt-4">
                     <Button variant="secondary" onClick={onClose}>Cancel</Button>
-                    <Button onClick={handleSave} isLoading={saving} disabled={changed.length === 0 && !pinChanged}>Save changes</Button>
+                    <Button onClick={handleSave} isLoading={saving} disabled={nothingChanged}>Save changes</Button>
                 </div>
             </div>
         </Modal>

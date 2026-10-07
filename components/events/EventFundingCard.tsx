@@ -157,7 +157,7 @@ export default function EventFundingCard({ event, isOwner, refreshKey = 0, onEve
                         <Badge variant="warning">TEST MODE</Badge>
                     </div>
                     <p className="mt-1 max-w-2xl text-sm text-dark-400">
-                        You fund the hired team in advance. OO-Ushers holds the money and pays it automatically {summary.releaseDueAt ? formatDateTime(summary.releaseDueAt) : 'a day after the event'}: ushers who checked in receive 95% and 5% is the booking fee. For booked ushers who did not check in, the booking fee is kept and their wage is refunded to your card.
+                        You fund the hired team in advance. OO-Ushers holds the money and pays it automatically {summary.releaseDueAt ? formatDateTime(summary.releaseDueAt) : 'a day after the event'}: ushers who checked in receive 95% and 5% is the booking fee. For booked ushers who did not check in, the booking fee is kept and their wage is refunded to your card.{(summary.dayCount ?? 1) > 1 && ` This event runs on ${summary.dayCount} days, so each usher is funded for every day and paid for the days they check in.`}
                     </p>
                 </div>
                 <Button variant="ghost" size="sm" icon={<RefreshCw size={14} />} onClick={() => run('refresh', load)} isLoading={busy === 'refresh'} disabled={Boolean(busy)} className="shrink-0">
@@ -166,7 +166,12 @@ export default function EventFundingCard({ event, isOwner, refreshKey = 0, onEve
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <Stat label={`Required (${summary.hiredCount} × ${egp(summary.perUsherAmount)})`} value={egp(summary.requiredAmount)} />
+                <Stat
+                    label={(summary.dayCount ?? 1) > 1
+                        ? `Required (${summary.hiredCount} × ${egp(summary.perUsherDayAmount ?? 0)} × ${summary.dayCount} days)`
+                        : `Required (${summary.hiredCount} × ${egp(summary.perUsherAmount)})`}
+                    value={egp(summary.requiredAmount)}
+                />
                 <Stat label="Funded" value={egp(summary.fundedAmount)} tone={summary.fullyFunded ? 'success' : undefined} />
                 <Stat label="Due now" value={egp(summary.shortfallAmount)} tone={summary.shortfallAmount > 0 ? (summary.overdue ? 'danger' : 'warning') : undefined} />
                 <Stat label="Your credit" value={egp(summary.creditBalance)} />
@@ -282,7 +287,9 @@ export default function EventFundingCard({ event, isOwner, refreshKey = 0, onEve
                             <li key={usher.talentId} className="flex items-center justify-between gap-3 text-sm">
                                 <span className="flex items-center gap-2 text-dark-200"><Avatar src={usher.photo} name={usher.fullName} size="sm" />{usher.fullName}</span>
                                 <span className="text-right text-xs text-dark-300">
-                                    {egp(usher.usherAmount || 0)} {usher.hasPayoutAccount ? '' : <span className="text-warning-500">· sent once they add a payout account</span>}
+                                    {egp(usher.usherAmount || 0)}
+                                    {(summary.dayCount ?? 1) > 1 && ` · ${usher.attendedDays ?? 0}/${summary.dayCount} days`}
+                                    {' '}{usher.hasPayoutAccount ? '' : <span className="text-warning-500">· sent once they add a payout account</span>}
                                 </span>
                             </li>
                         ))}
@@ -290,7 +297,9 @@ export default function EventFundingCard({ event, isOwner, refreshKey = 0, onEve
                             <li key={usher.talentId} className="flex items-center justify-between gap-3 text-sm">
                                 <span className="flex items-center gap-2 text-dark-200"><Avatar src={usher.photo} name={usher.fullName} size="sm" />{usher.fullName}</span>
                                 <Badge variant={usher.status === 'absent' ? 'danger' : 'default'}>
-                                    {usher.status === 'absent' ? `No-show · ${egp(usher.returnedWage || 0)} refunded` : 'Not checked in yet'}
+                                    {(summary.dayCount ?? 1) > 1
+                                        ? `${usher.missedDays ?? 0} day(s) not checked in${usher.status === 'absent' ? ` · ${egp(usher.returnedWage || 0)} refunded` : ''}`
+                                        : usher.status === 'absent' ? `No-show · ${egp(usher.returnedWage || 0)} refunded` : 'Not checked in yet'}
                                 </Badge>
                             </li>
                         ))}

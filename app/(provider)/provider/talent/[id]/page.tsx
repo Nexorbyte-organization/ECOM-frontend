@@ -9,7 +9,7 @@ import { TalentProfile, Event, Application, Attendance, Review } from '@/types';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Avatar from '@/components/ui/Avatar';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatEventDates } from '@/lib/utils';
 import { ArrowLeft, MapPin, Star, Briefcase, CalendarDays, Clock, Phone, MessageCircle } from 'lucide-react';
 
 type HistoryItem = {
@@ -178,7 +178,7 @@ export default function TalentDetailPage() {
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-dark-100 truncate">{item.event.title}</p>
                                     <div className="flex items-center gap-3 text-xs text-dark-400 mt-1">
-                                        <span className="flex items-center gap-1"><Clock size={10} /> {formatDate(item.event.eventDate)}</span>
+                                        <span className="flex items-center gap-1"><Clock size={10} /> {formatEventDates(item.event)}</span>
                                         <span className="flex items-center gap-1"><MapPin size={10} /> {item.event.location}</span>
                                     </div>
                                     <div className="flex items-center gap-2 mt-2">

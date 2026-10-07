@@ -12,6 +12,7 @@ import {
     UserRole,
 } from '@/types';
 import { isProviderProfileComplete, isTalentProfileComplete } from '@/lib/profile-completion';
+import { getEventDays } from '@/lib/utils';
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || '/api').replace(/\/$/, '');
 type RequestOptions = Omit<RequestInit, 'body'> & { body?: unknown };
@@ -150,8 +151,10 @@ function normalizeProvider(value: any): ProviderProfile {
 }
 
 function normalizeEvent(value: any): Event {
+    const days = getEventDays(value);
     return {
         ...value, _id: String(value?._id || value?.id || ''),
+        days, dayCount: days.length || 1, endDate: value?.endDate || value?.eventDate,
         providerId: String(value?.providerId || value?.organizerId || ''),
         photo: typeof value?.photo === 'object' ? value.photo?.secure_url || value.photo?.url || '' : value?.photo || '',
         hiredTalents: value?.hiredTalents || [], supervisorIds: value?.supervisorIds || (value?.supervisorId ? [value.supervisorId] : []),
@@ -172,6 +175,7 @@ function normalizeAttendance(value: any): Attendance {
     return {
         _id: String(value?._id || value?.id || ''), eventId: String(value?.eventId || ''),
         talentId: String(value?.talentId || ''), status: value?.status,
+        dayIndex: Number(value?.dayIndex || 0), date: value?.date || null,
         checkInTime: value?.checkInTime || null, checkOutTime: value?.checkOutTime || null,
         checkInMethod: value?.checkInMethod || undefined,
     };
@@ -480,9 +484,10 @@ export async function getEventAttendance(eventId: string): Promise<(Attendance &
     return (payload.data || []).map((value: any) => ({ ...normalizeAttendance(value), talent: normalizeTalent(value.talent) }));
 }
 // Staff can only check an usher in (present or late); missed check-ins become absent automatically.
-async function staffCheckInAction(eventId: string, talentId: string, status: 'present' | 'late', location?: GeoLocation | null): Promise<Attendance> {
+// dayIndex picks the event day; without it the backend uses the current (or latest started) day.
+async function staffCheckInAction(eventId: string, talentId: string, status: 'present' | 'late', location?: GeoLocation | null, dayIndex?: number): Promise<Attendance> {
     const payload = await apiRequest(`/provider/events/${eventId}/attendance`, {
-        method: 'POST', body: { talentId, status, ...(location ? { location } : {}) },
+        method: 'POST', body: { talentId, status, ...(location ? { location } : {}), ...(dayIndex !== undefined ? { dayIndex } : {}) },
     });
     return normalizeAttendance(payload.data);
 }
