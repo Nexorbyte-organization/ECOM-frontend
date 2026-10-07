@@ -24,7 +24,7 @@ export default function EventMapCanvas({ imageUrl, pins, onPlace, onSelect, sele
         {onPlace && <button type="button" onClick={handlePlace} aria-label="Place a pin on the map" className="absolute inset-0 z-10 h-full w-full cursor-crosshair focus-visible:outline-2 focus-visible:outline-primary-400" />}
         {pins.map((pin) => <button key={pin.id} type="button" onClick={() => onSelect?.(pin.id)}
             aria-label={`Location: ${pin.name}`} title={pin.name}
-            className={`absolute z-20 rounded-full border-2 px-2 py-1 text-xs font-bold shadow-lg focus-visible:outline-2 focus-visible:outline-white ${pin.x < 15 ? '' : pin.x > 85 ? '-translate-x-full' : '-translate-x-1/2'} ${pin.y < 10 ? '' : '-translate-y-full'} ${pin.id === selectedId ? 'border-white bg-primary-500 text-white' : 'border-white bg-dark-950 text-white'}`}
+            className={`absolute z-20 rounded-full border-2 px-2 py-1 text-xs font-bold shadow-lg focus-visible:outline-2 focus-visible:outline-white ${pin.x < 15 ? '' : pin.x > 85 ? '-translate-x-full' : '-translate-x-1/2'} ${pin.y < 10 ? '' : '-translate-y-full'} ${pin.id === selectedId ? 'border-white bg-primary-500 text-on-primary' : 'border-white bg-dark-950 text-on-primary'}`}
             style={{ left: `${pin.x}%`, top: `${pin.y}%` }}>
             <span aria-hidden="true">●</span><span className="ms-1">{pin.name}</span>
         </button>)}

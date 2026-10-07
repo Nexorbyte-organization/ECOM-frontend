@@ -177,7 +177,7 @@ export default function TalentSearchPage() {
                     <p className="text-dark-400">{favoritesOnly ? 'No favorite ushers yet' : 'No talent found matching your criteria'}</p>
                 </Card>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {shownTalents.map((talent) => (
                         <Card key={talent._id} className="flex flex-col">
                             <div className="flex items-center gap-3 mb-4">

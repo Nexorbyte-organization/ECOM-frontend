@@ -9,24 +9,26 @@ interface BadgeProps {
     className?: string;
 }
 
-const variantStyles: Record<BadgeVariant, string> = {
-    default: 'bg-dark-800 text-dark-300 border-dark-700',
-    primary: 'bg-primary-50 text-primary-700 border-primary-200',
-    success: 'bg-emerald-50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30',
-    warning: 'bg-amber-50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30',
-    danger: 'bg-red-50 text-red-700 dark:text-red-300 border-red-200 dark:border-red-500/30',
-    info: 'bg-blue-50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-500/30',
+// Status reads like a punched ticket: a hollow hole means not yet, a filled one means done.
+// Tungsten is attention (late, waiting on you); red is a problem.
+const markerStyles: Record<BadgeVariant, string> = {
+    default: 'border-dark-400',
+    info: 'border-primary-500',
+    primary: 'border-primary-500 bg-primary-500',
+    success: 'border-success-500 bg-success-500',
+    warning: 'border-accent-400 bg-accent-400',
+    danger: 'border-danger-500 bg-danger-500',
 };
 
 export default function Badge({ children, variant = 'default', className }: BadgeProps) {
     return (
         <span
             className={cn(
-                'inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-medium border',
-                variantStyles[variant],
+                'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border border-dark-600 text-dark-100',
                 className
             )}
         >
+            <span aria-hidden="true" className={cn('size-2 shrink-0 rounded-full border-[1.5px]', markerStyles[variant])} />
             {children}
         </span>
     );

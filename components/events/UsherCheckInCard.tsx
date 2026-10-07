@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CheckCircle2, KeyRound, MapPin } from 'lucide-react';
+import { KeyRound, MapPin } from 'lucide-react';
 import Card from '@/components/ui/Card';
+import PunchConfirm from '@/components/ui/PunchConfirm';
 import Button from '@/components/ui/Button';
 import { checkIn } from '@/lib/api';
 import { getCurrentLocation } from '@/lib/geolocation';
@@ -58,14 +59,14 @@ export default function UsherCheckInCard({ event }: { event: Event }) {
 
     if (done) {
         return (
-            <Card className="flex items-center gap-2 border-success-500/30 text-sm font-semibold text-success-500">
-                <CheckCircle2 size={18} /> {done}
+            <Card className="flex items-center gap-3 text-sm font-semibold text-dark-50">
+                <PunchConfirm size={32} className="text-success-500" /> {done}
             </Card>
         );
     }
 
     return (
-        <Card className="space-y-3 border-primary-500/25">
+        <Card className="space-y-3">
             <div>
                 <h2 className="font-bold text-dark-50">{ar ? 'تسجيل الحضور' : 'Check in'}</h2>
                 <p className="mt-1 text-xs text-dark-400">
@@ -87,7 +88,7 @@ export default function UsherCheckInCard({ event }: { event: Event }) {
                     inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="123456"
                     aria-label={ar ? 'كود الحضور' : 'Check-in code'}
                     value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="w-32 rounded-lg border border-dark-600 bg-dark-900 px-3 py-2 font-mono text-lg tracking-widest text-dark-50"
+                    className="w-32 rounded-lg border border-dark-600 bg-dark-900 px-3 py-2 text-lg tabular-nums tracking-[0.25em] text-dark-50"
                 />
                 <Button size="sm" icon={<KeyRound size={14} />} disabled={code.length !== 6 || Boolean(busy)} isLoading={busy === 'code'} onClick={() => submit('code')}>
                     {ar ? 'تأكيد الكود' : 'Check in with code'}

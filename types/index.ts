@@ -188,8 +188,8 @@ export interface Event {
     attendanceDays?: EventDayAttendance[];
 }
 
-export type FundingMode = 'prefund' | 'pay_after';
-export type PaymentProtection = 'secured' | 'awaiting_funding' | 'released' | 'pay_after';
+export type FundingMode = 'prefund' | 'pay_after' | 'preauth';
+export type PaymentProtection = 'secured' | 'awaiting_funding' | 'released' | 'pay_after' | 'hold_pending';
 
 export interface LastTeam {
     eventId: string;
@@ -340,7 +340,7 @@ export interface RegistrationResponse {
     verificationRequired: true;
 }
 
-export type SettlementCollectionStatus = 'not_started' | 'pending' | 'paid' | 'failed' | 'refunded';
+export type SettlementCollectionStatus = 'not_started' | 'pending' | 'paid' | 'failed' | 'refunded' | 'authorized' | 'closing' | 'voided';
 export type SettlementPayoutStatus = 'not_started' | 'queued' | 'processing' | 'partially_paid' | 'paid' | 'failed';
 export type SettlementLinePayoutStatus = 'cash_due' | 'queued' | 'processing' | 'paid' | 'failed' | 'awaiting_method';
 
@@ -434,6 +434,9 @@ export interface EventFundingCheckout {
     collectedAt?: string | null;
     createdAt: string;
     active?: boolean;
+    /** Card-hold events: the booking fee or the hold for one event day. */
+    kind?: 'advance' | 'fee' | 'day_hold';
+    dayIndex?: number;
 }
 
 export interface FundingRefund {
@@ -515,6 +518,43 @@ export interface EventFundingSummary {
     settlements: EventSettlement[];
     refunds: FundingRefund[];
     payoutSandboxConfigured: boolean;
+    savedCards?: OrganizerCard[];
+}
+
+/** Where one event day stands in a card-hold (preauth) event. */
+export type HoldDayState = 'scheduled' | 'awaiting_hold' | 'pending' | 'authorized' | 'captured' | 'voided' | 'unsecured';
+
+export interface HoldDay {
+    dayIndex: number;
+    date: string;
+    state: HoldDayState;
+    holdAmount: number;
+    /** What was charged from the hold once the day was settled. */
+    capturedAmount: number | null;
+    opensAt: string;
+    deadline: string;
+    captureDueAt: string;
+    funding: EventFundingCheckout | null;
+    pendingCheckout: EventFundingCheckout | null;
+}
+
+/** Funding summary of an event paid by a non-refundable fee plus a card hold for each day. */
+export interface PreauthFundingSummary {
+    eventId: string;
+    fundingMode: 'preauth';
+    eventStatus: EventStatus;
+    protection: PaymentProtection;
+    requiredCount: number;
+    dayCount: number;
+    perUsherDayAmount: number;
+    perUsherDayWage: number;
+    perUsherDayFee: number;
+    fee: { amount: number; paid: boolean; refundable: boolean; funding: EventFundingCheckout | null; pendingCheckout: EventFundingCheckout | null };
+    days: HoldDay[];
+    holdLeadDays: number;
+    captureAfterHours: number;
+    fundsReleasedAt: string | null;
+    fundings: EventFundingCheckout[];
     savedCards?: OrganizerCard[];
 }
 

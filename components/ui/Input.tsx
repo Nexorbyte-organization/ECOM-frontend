@@ -24,7 +24,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         return (
             <div className="space-y-1.5">
                 {label && (
-                    <label htmlFor={inputId} className="block text-sm font-medium text-dark-300">
+                    <label htmlFor={inputId} className="block text-sm font-medium text-dark-200">
                         {label}
                     </label>
                 )}
@@ -38,13 +38,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                         ref={ref}
                         id={inputId}
                         className={cn(
-                            'w-full min-h-11 bg-dark-900 border border-dark-600 rounded-xl px-4 py-2.5 text-sm text-dark-100 shadow-sm',
+                            'w-full min-h-11 bg-dark-900 border border-dark-500 rounded-lg px-4 py-2.5 text-sm text-dark-50',
                             'placeholder:text-dark-400',
-                            'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500',
-                            'transition-all duration-200',
+                            'focus:border-primary-500 transition-colors duration-150',
                             !!icon && 'pl-10',
                             isPassword && 'pe-12',
-                            error && 'border-danger-500 focus:ring-danger-500/20',
+                            error && 'border-danger-500 focus:border-danger-500',
                             className
                         )}
                         {...props}
@@ -55,7 +54,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                     {isPassword && (
                         <button
                             type="button"
-                            className="absolute inset-y-0 end-2 flex min-w-9 items-center justify-center rounded-lg text-dark-400 hover:text-dark-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
+                            className="absolute inset-y-0 end-2 flex min-w-9 items-center justify-center rounded-md text-dark-400 hover:text-dark-100"
                             onClick={() => setPasswordVisible((visible) => !visible)}
                             aria-label={toggleLabel}
                             aria-controls={inputId}

@@ -26,7 +26,7 @@ export default function Avatar({ src, name, size = 'md', className }: AvatarProp
                 alt={name}
                 onError={() => setFailedSrc(src)}
                 className={cn(
-                    'rounded-full object-cover ring-2 ring-white shadow-sm',
+                    'rounded-full object-cover',
                     sizeStyles[size],
                     className
                 )}
@@ -38,7 +38,7 @@ export default function Avatar({ src, name, size = 'md', className }: AvatarProp
         <div
             className={cn(
                 'rounded-full flex items-center justify-center font-semibold',
-                'bg-gradient-to-br from-primary-500 to-accent-500 text-white ring-2 ring-white shadow-sm',
+                'bg-primary-500 text-on-primary',
                 sizeStyles[size],
                 className
             )}

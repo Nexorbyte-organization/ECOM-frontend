@@ -36,6 +36,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import EditEventModal, { canEditEvent } from '@/components/events/EditEventModal';
 import EventFundingCard from '@/components/events/EventFundingCard';
+import EventHoldPayments from '@/components/events/EventHoldPayments';
 import { EventScheduleList } from '@/components/events/EventDaysField';
 import { lineStatus } from '@/components/payments/paymentLabels';
 
@@ -573,13 +574,22 @@ export default function EventDetailPage() {
                 </div>
             </Card>
 
-            <EventFundingCard
-                event={event}
-                isOwner={user?.role === UserRole.PROVIDER}
-                refreshKey={fundingRefreshKey}
-                onEventChange={(updated) => setEvent((current) => current ? { ...current, ...updated } : updated)}
-                onSummary={setFundingSummary}
-            />
+            {event.fundingMode === 'preauth' ? (
+                <EventHoldPayments
+                    event={event}
+                    isOwner={user?.role === UserRole.PROVIDER}
+                    refreshKey={fundingRefreshKey}
+                    onEventChange={(updated) => setEvent((current) => current ? { ...current, ...updated } : updated)}
+                />
+            ) : (
+                <EventFundingCard
+                    event={event}
+                    isOwner={user?.role === UserRole.PROVIDER}
+                    refreshKey={fundingRefreshKey}
+                    onEventChange={(updated) => setEvent((current) => current ? { ...current, ...updated } : updated)}
+                    onSummary={setFundingSummary}
+                />
+            )}
 
             {/* Any organization staff member can open a check-in point on their phone. */}
             {event.status !== EventStatus.CANCELLED && !event.fundsReleasedAt && (
@@ -630,31 +640,31 @@ export default function EventDetailPage() {
                     <div className="space-y-4">
                         {eventDays.length > 1 && (
                             <div>
-                                <div className="flex items-center gap-2 mb-1"><Clock size={14} className="text-dark-400" /><p className="text-xs font-semibold text-dark-300 uppercase tracking-wider">Schedule · {eventDays.length} days</p></div>
+                                <div className="flex items-center gap-2 mb-1"><Clock size={14} className="text-dark-400" /><p className="text-xs font-semibold text-dark-300 ">Schedule · {eventDays.length} days</p></div>
                                 <EventScheduleList event={event} className="max-w-xl" />
                                 <p className="mt-2 text-xs text-dark-400">Pay: {event.budget} EGP per usher per day ({event.budget * eventDays.length} EGP per usher for all days).</p>
                             </div>
                         )}
                         {event.dressCode && (
                             <div>
-                                <div className="flex items-center gap-2 mb-1"><Shirt size={14} className="text-dark-400" /><p className="text-xs font-semibold text-dark-300 uppercase tracking-wider">Dress Code</p></div>
+                                <div className="flex items-center gap-2 mb-1"><Shirt size={14} className="text-dark-400" /><p className="text-xs font-semibold text-dark-300 ">Dress Code</p></div>
                                 <p className="text-sm text-dark-200">{event.dressCode}</p>
                             </div>
                         )}
                         {event.notes && (
                             <div>
-                                <div className="flex items-center gap-2 mb-1"><FileText size={14} className="text-dark-400" /><p className="text-xs font-semibold text-dark-300 uppercase tracking-wider">Notes</p></div>
+                                <div className="flex items-center gap-2 mb-1"><FileText size={14} className="text-dark-400" /><p className="text-xs font-semibold text-dark-300 ">Notes</p></div>
                                 <p className="text-sm text-dark-200">{event.notes}</p>
                             </div>
                         )}
                         {event.gatheringLocation && (
                             <div>
-                                <p className="text-xs font-semibold text-dark-300 uppercase tracking-wider mb-1">Gathering Location</p>
+                                <p className="text-xs font-semibold text-dark-300 mb-1">Gathering Location</p>
                                 <p className="text-sm text-dark-200">{event.gatheringLocation}</p>
                             </div>
                         )}
                         <div>
-                            <p className="text-xs font-semibold text-dark-300 uppercase tracking-wider mb-1">Gender Requirement</p>
+                            <p className="text-xs font-semibold text-dark-300 mb-1">Gender Requirement</p>
                             {event.specifyGenders ? (
                                 <p className="text-sm text-dark-200 font-medium">
                                     {event.malesCount} Male{event.malesCount !== 1 ? 's' : ''} · {event.femalesCount} Female{event.femalesCount !== 1 ? 's' : ''}
@@ -667,8 +677,8 @@ export default function EventDetailPage() {
                         {/* WhatsApp Group Link */}
                         {user?.role === UserRole.PROVIDER && (
                             <div className="border-t border-dark-700/50 pt-4 mt-2">
-                                <label className="block text-xs font-semibold text-dark-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                    <MessageCircle size={14} className="text-emerald-555" />
+                                <label className="block text-xs font-semibold text-dark-300 mb-2 flex items-center gap-1.5">
+                                    <MessageCircle size={14} className="text-success-500" />
                                     WhatsApp Group Link
                                 </label>
                                 <div className="flex flex-col sm:flex-row gap-2 max-w-xl">
@@ -683,7 +693,7 @@ export default function EventDetailPage() {
                                         size="sm"
                                         isLoading={waLinkSaving}
                                         onClick={handleSaveWhatsAppLink}
-                                        className="bg-emerald-600 hover:bg-emerald-700 border-emerald-700 text-white font-bold h-[38px] px-4 rounded-xl shrink-0"
+                                        className="bg-success-500 hover:bg-success-600 border-success-600 text-white font-bold h-[38px] px-4 rounded-xl shrink-0"
                                     >
                                         Save Link
                                     </Button>
@@ -697,8 +707,8 @@ export default function EventDetailPage() {
                         {/* WhatsApp Group Link (View-only for supervisors/non-providers) */}
                         {user?.role !== UserRole.PROVIDER && event.whatsappGroupLink && (
                             <div className="border-t border-dark-700/50 pt-4 mt-2">
-                                <p className="text-xs font-semibold text-dark-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                                    <MessageCircle size={14} className="text-emerald-555" />
+                                <p className="text-xs font-semibold text-dark-300 mb-1.5 flex items-center gap-1.5">
+                                    <MessageCircle size={14} className="text-success-500" />
                                     WhatsApp Group Link
                                 </p>
                                 <a
@@ -715,7 +725,7 @@ export default function EventDetailPage() {
                         {/* Supervisor Assignment */}
                         {user?.role === UserRole.PROVIDER ? (
                             <div className="border-t border-dark-700/50 pt-4 mt-2">
-                                <label className="block text-xs font-semibold text-dark-300 uppercase tracking-wider mb-2">Event Supervisors</label>
+                                <label className="block text-xs font-semibold text-dark-300 mb-2">Event Supervisors</label>
                                 {supervisors.length === 0 ? (
                                     <p className="text-xs text-dark-500 italic">No supervisors in your team yet. Invite a supervisor from the Staff page.</p>
                                 ) : (
@@ -750,7 +760,7 @@ export default function EventDetailPage() {
                         ) : (
                             (event.supervisorIds ?? []).length > 0 && (
                                 <div className="border-t border-dark-700/50 pt-4 mt-2">
-                                    <p className="text-xs font-semibold text-dark-300 uppercase tracking-wider mb-2">Assigned Supervisors</p>
+                                    <p className="text-xs font-semibold text-dark-300 mb-2">Assigned Supervisors</p>
                                     <div className="flex flex-wrap gap-2">
                                         {(event.supervisorIds ?? []).map((sid) => {
                                             const s = supervisors.find(sv => sv._id === sid);
@@ -770,7 +780,7 @@ export default function EventDetailPage() {
             )}
 
             {activeTab === 'applicants' && (
-                <div className="space-y-3 stagger-children">
+                <div className="space-y-3">
                     {applicants.length === 0 ? (
                         <Card className="text-center py-8">
                             <Users size={32} className="mx-auto text-dark-600 mb-2" />
@@ -793,8 +803,8 @@ export default function EventDetailPage() {
                                             )}
                                             {app.talent.whatsappNumber && (
                                                 <span className="flex items-center gap-1">
-                                                    <MessageCircle size={11} className="text-emerald-500" />
-                                                    <a href={`https://wa.me/${app.talent.whatsappNumber.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 text-emerald-500 font-semibold transition-colors">
+                                                    <MessageCircle size={11} className="text-success-500" />
+                                                    <a href={`https://wa.me/${app.talent.whatsappNumber.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:text-success-600 text-success-500 font-semibold transition-colors">
                                                         WhatsApp
                                                     </a>
                                                 </span>
@@ -889,7 +899,7 @@ export default function EventDetailPage() {
                         </div>
                     )}
                     {event.status === EventStatus.COMPLETED && user?.role === UserRole.PROVIDER && event.fundingMode === 'pay_after' && (
-                        <Card className="border-primary-500/30 bg-gradient-to-br from-primary-500/10 to-transparent">
+                        <Card className="border-primary-500/30">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <div className="flex items-center gap-2">
@@ -976,8 +986,8 @@ export default function EventDetailPage() {
                                                  )}
                                                  {app.talent.whatsappNumber && (
                                                      <span className="text-xs text-dark-300 font-medium flex items-center gap-1">
-                                                         <MessageCircle size={11} className="text-emerald-500" />
-                                                         <a href={`https://wa.me/${app.talent.whatsappNumber.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 text-emerald-500 font-semibold transition-colors">
+                                                         <MessageCircle size={11} className="text-success-500" />
+                                                         <a href={`https://wa.me/${app.talent.whatsappNumber.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:text-success-600 text-success-500 font-semibold transition-colors">
                                                              WhatsApp
                                                          </a>
                                                      </span>
@@ -1088,7 +1098,7 @@ export default function EventDetailPage() {
 
                         {searchQuery.trim() !== '' && (
                             <div className="space-y-1.5">
-                                <p className="text-xs font-semibold text-dark-400 uppercase">Search Results</p>
+                                <p className="text-xs font-semibold text-dark-400 ">Search Results</p>
                                 <div className="max-h-36 overflow-y-auto divide-y divide-dark-800 border border-dark-800 rounded-xl p-2 bg-dark-900/10 space-y-1.5">
                                     {allTalents
                                         .filter((t) =>
@@ -1124,7 +1134,7 @@ export default function EventDetailPage() {
 
                         <div className="space-y-2">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                <p className="text-xs font-semibold text-dark-400 uppercase tracking-wider">
+                                <p className="text-xs font-semibold text-dark-400 ">
                                     Selected Talents to Re-book ({selectedTalents.length})
                                 </p>
                                 {selectedTalents.length > 0 && (
@@ -1205,25 +1215,25 @@ export default function EventDetailPage() {
                         <>
                             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                                 <div className="rounded-xl border border-dark-700 bg-dark-900/20 p-3">
-                                    <p className="text-[11px] font-semibold uppercase text-dark-400">Event total</p>
+                                    <p className="text-xs font-semibold text-dark-400">Event total</p>
                                     <p className="mt-1 font-bold text-dark-50">{settlementPreview.grossAmount} EGP</p>
                                 </div>
                                 <div className="rounded-xl border border-primary-500/25 bg-primary-500/5 p-3">
-                                    <p className="text-[11px] font-semibold uppercase text-dark-400">{individualSettlements.length ? 'Estimated Paymob total' : 'Paymob charge'}</p>
+                                    <p className="text-xs font-semibold text-dark-400">{individualSettlements.length ? 'Estimated Paymob total' : 'Paymob charge'}</p>
                                     <p className="mt-1 font-bold text-primary-500">{paymobCharge} EGP</p>
                                 </div>
                                 <div className="rounded-xl border border-success-500/25 bg-success-500/5 p-3">
-                                    <p className="text-[11px] font-semibold uppercase text-dark-400">Usher payouts</p>
+                                    <p className="text-xs font-semibold text-dark-400">Usher payouts</p>
                                     <p className="mt-1 font-bold text-success-500">{settlementPreview.usherAmount} EGP</p>
                                 </div>
                                 <div className="rounded-xl border border-warning-500/25 bg-warning-500/5 p-3">
-                                    <p className="text-[11px] font-semibold uppercase text-dark-400">Cash due</p>
+                                    <p className="text-xs font-semibold text-dark-400">Cash due</p>
                                     <p className="mt-1 font-bold text-warning-500">{cashDue} EGP</p>
                                 </div>
                             </div>
 
                             <div>
-                                <p className="mb-2 text-xs font-bold uppercase tracking-wider text-dark-400">Payment breakdown</p>
+                                <p className="mb-2 text-xs font-bold text-dark-400">Payment breakdown</p>
                                 {individualSettlements.length > 0 && <p className="mb-2 text-xs text-warning-500">Individual checkout has started for this event. Complete remaining ushers individually.</p>}
                                 <p className="mb-2 text-xs text-dark-400">After Paymob confirms your checkout, automatic payouts start for every usher with a supported payout account. Cash is used only for the ushers shown below.</p>
                                 {!lockedSettlement && <p className="mb-2 text-xs text-dark-400">Select Pay in cash instead for any usher you want to pay directly, even if they have a payout account.</p>}

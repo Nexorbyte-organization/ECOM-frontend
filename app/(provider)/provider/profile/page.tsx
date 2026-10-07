@@ -259,7 +259,7 @@ export default function ProviderProfilePage() {
 
             {/* Form */}
             <Card>
-                <h3 className="text-sm font-semibold text-dark-300 uppercase tracking-wider mb-4">Company Details</h3>
+                <h3 className="text-sm font-semibold text-dark-300 mb-4">Company Details</h3>
                 <div className="space-y-4">
                     <Input label="Company Name" minLength={2} maxLength={100} value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Your company name" />
                     <div className="space-y-1.5">
@@ -304,7 +304,7 @@ export default function ProviderProfilePage() {
             <Card>
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-start gap-3">
-                        <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-500/10 text-amber-400">
+                        <div className="grid size-10 shrink-0 place-items-center text-accent-600 dark:text-accent-400">
                             <Star size={18} />
                         </div>
                         <div>
@@ -335,7 +335,7 @@ export default function ProviderProfilePage() {
             <Card>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h3 className="text-sm font-semibold uppercase tracking-wider text-dark-300">Saved test cards</h3>
+                        <h3 className="text-sm font-semibold text-dark-300">Saved test cards</h3>
                         <p className="mt-1 text-xs text-dark-400">Paymob holds the card details. Your organization can reuse a saved card at event checkout.</p>
                     </div>
                     <Button type="button" onClick={handleAddCard} isLoading={cardBusy} icon={<CreditCard size={16} />}>

@@ -83,7 +83,7 @@ export default function ProviderEventsPage() {
                         onClick={() => { setTab(tItem.value as '' | EventStatus); setLoading(true); }}
                         className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer whitespace-nowrap ${
                           tab === tItem.value 
-                            ? 'bg-primary-500 text-white border-dark-50 shadow-[2px_2px_0_0_var(--color-dark-50)]' 
+                            ? 'bg-primary-500 text-on-primary border-primary-500' 
                             : 'bg-dark-900 text-dark-200 border-dark-50 hover:bg-dark-800'
                         }`}
                     >
@@ -103,7 +103,7 @@ export default function ProviderEventsPage() {
                     )}
                 </Card>
             ) : (
-                <div className="space-y-3 stagger-children">
+                <div className="space-y-3">
                     {events.map((event) => (
                         <Link key={event._id} href={`/provider/events/${event._id}`}>
                             <Card hover className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -115,7 +115,7 @@ export default function ProviderEventsPage() {
                                     <h3 className="text-sm font-bold text-dark-100">{event.title}</h3>
                                     <div className="flex items-center gap-4 mt-1.5 font-semibold">
                                         <span className="text-xs text-dark-400 flex items-center gap-1"><MapPin size={12} className="text-primary-500" /> {event.location}</span>
-                                        <span className="text-xs text-dark-400 flex items-center gap-1"><CalendarDays size={12} className="text-blue-500" /> {formatEventDates(event)}</span>
+                                        <span className="text-xs text-dark-400 flex items-center gap-1"><CalendarDays size={12} className="text-dark-300" /> {formatEventDates(event)}</span>
                                         <span className="text-xs text-dark-400 flex items-center gap-1"><Users size={12} className="text-success-500" /> {event.hiredTalents.length}/{event.requiredCount}</span>
                                     </div>
                                 </div>

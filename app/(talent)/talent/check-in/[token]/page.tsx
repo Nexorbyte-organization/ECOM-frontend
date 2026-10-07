@@ -5,7 +5,8 @@ import ContentSkeleton from '@/components/ui/Skeleton';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { CalendarDays, CheckCircle2, XCircle } from 'lucide-react';
+import { CalendarDays, XCircle } from 'lucide-react';
+import PunchConfirm from '@/components/ui/PunchConfirm';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { checkIn } from '@/lib/api';
@@ -52,9 +53,9 @@ export default function AttendanceCheckInPage() {
 
                 {result && (
                     <div className="space-y-5 py-5">
-                        <CheckCircle2 size={56} className="mx-auto text-success-500" />
+                        <PunchConfirm size={80} className="mx-auto text-success-500" />
                         <div>
-                            <h1 className="text-2xl font-bold text-dark-50">
+                            <h1 className="display-sm text-3xl text-dark-50">
                                 {result.alreadyCheckedIn ? 'Already checked in' : 'Attendance confirmed'}
                             </h1>
                             <p className="mt-2 text-sm text-dark-300">

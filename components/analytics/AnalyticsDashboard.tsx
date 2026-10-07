@@ -77,7 +77,7 @@ function labelFor(value: string, language: string) {
 function Metric({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
     return <Card className="min-w-0">
         <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wide text-dark-400">{label}</p>
+            <div className="min-w-0"><p className="text-xs font-semibold text-dark-400">{label}</p>
                 <p className="mt-2 break-words text-2xl font-bold tabular-nums text-dark-50">{value}</p></div>
             <span className="rounded-xl bg-primary-500/10 p-2.5 text-primary-400" aria-hidden="true">{icon}</span>
         </div>
@@ -168,12 +168,12 @@ export default function AnalyticsDashboard({ scope }: { scope: Scope }) {
                     <Rows values={[[copy.bookedValue, events.bookedValueEgp]]} format={egp} empty={copy.empty} /></div>
             </Section>
             <Section title={copy.staffing}>
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-dark-400">{copy.applications}</h3>
+                <h3 className="mb-2 text-xs font-semibold text-dark-400">{copy.applications}</h3>
                 <Rows values={applicationStatuses.map((key) => [key, staffing.applications[key] || 0])} format={count} empty={copy.empty} />
                 <div className="mt-3 border-t border-dark-700 pt-3"><Rows values={[[copy.direct, staffing.directInvitations], [copy.qr, staffing.qrCheckIns], [copy.reviews, staffing.reviews.count], [copy.average, staffing.reviews.average]]} format={count} empty={copy.empty} /></div>
-                <h3 className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-dark-400">{copy.attendance}</h3>
+                <h3 className="mb-2 mt-4 text-xs font-semibold text-dark-400">{copy.attendance}</h3>
                 <Rows values={attendanceStatuses.map((key) => [key, staffing.attendance[key] || 0])} format={count} empty={copy.empty} />
-                <h3 className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-dark-400">{copy.referrals}</h3>
+                <h3 className="mb-2 mt-4 text-xs font-semibold text-dark-400">{copy.referrals}</h3>
                 <Rows values={Object.entries(staffing.referrals)} format={count} empty={copy.empty} />
             </Section>
         </div>
@@ -192,7 +192,7 @@ export default function AnalyticsDashboard({ scope }: { scope: Scope }) {
         </Section>
         <div className="grid gap-6 xl:grid-cols-2">
             <Section title={copy.people}>
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-dark-400">{scope === 'platform' ? copy.users : copy.staff}</h3>
+                <h3 className="mb-2 text-xs font-semibold text-dark-400">{scope === 'platform' ? copy.users : copy.staff}</h3>
                 <Rows values={Object.entries(scope === 'platform' ? people.usersByRole || {} : people.staffByRole || {})} format={count} empty={copy.empty} />
                 <div className="mt-3 border-t border-dark-700 pt-3"><Rows values={scope === 'platform'
                     ? [[copy.blocked, people.blocked || 0], [copy.verified, people.verified || 0], [copy.favorites, people.favorites]]

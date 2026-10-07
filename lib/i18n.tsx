@@ -117,7 +117,7 @@ const translations: Record<Language, Record<string, string>> = {
         faq_q3: "Can I assign operational check-in tasks to other staff?",
         faq_a3: "Yes, organizations can create custom 'Provider Member' credentials. These members can view applicant lists and check ushers in/out at gates, but cannot modify budgets or view confidential company profiles.",
         faq_q4: "How is billing handled?",
-        faq_a4: "Usher processes gig escrow directly on the platform. Funds are held and released to the ushers after your operational coordinators successfully approve the shift check-outs.",
+        faq_a4: "Organizers pay through the platform: a booking fee, plus the ushers' pay secured before the event. Only ushers who check in are paid, and the pay for anyone who doesn't is returned to you. The booking fee is not refundable.",
 
         // Footer Banner
         banner_title: "Let's Make Event Management Bulletproof.",
@@ -258,7 +258,18 @@ const translations: Record<Language, Record<string, string>> = {
         nav_search_talent: "Search Talent",
         nav_users: "Users",
         nav_events: "Events",
-        nav_payments: "Payments"
+        nav_payments: "Payments",
+
+        // Landing (rebrand)
+        lp_hero_title: "The right people, at the door, on time.",
+        lp_hero_sub: "Book ushers for your event, and read each one's attendance, ratings and late-excuse record before you decide.",
+        lp_hero_photo_alt: "Ushers welcoming guests at the entrance of an evening event",
+        lp_fact_1: "Check-in by QR code, 6-digit code or location",
+        lp_fact_2: "Only ushers who check in are paid",
+        lp_fact_3: "Late excuses stay on the record",
+        lp_paths_title: "Hire a team, or join one.",
+        lp_why_title: "What you can check before you book",
+        lp_cta_title: "Put the right team at the door."
     },
     ar: {
         // Navigation & General
@@ -362,7 +373,7 @@ const translations: Record<Language, Record<string, string>> = {
         faq_q3: "هل يمكنني إسناد مهام التحقق من الحضور لموظفين آخرين؟",
         faq_a3: "نعم، يمكن للشركات إنشاء حسابات للمشرفين والمنسقين. يستطيعون مراجعة طلبات التقديم وتسجيل الحضور والانصراف، ولكن لا يمكنهم تعديل الميزانيات أو تعديل ملف الشركة.",
         faq_q4: "كيف تتم إدارة الدفعات المالية والرواتب؟",
-        faq_a4: "تتم تسوية دفعات المنظمين مباشرة عبر المنصة، حيث تحتفظ المنصة بالرواتب بأمان وتصدرها للمنظمين فور اعتماد المشرفين لانصرافهم والتزامهم بالوردية.",
+        faq_a4: "يدفع المنظّم عبر المنصة: رسوم حجز، بالإضافة إلى أجور المنظمين التي تُؤمَّن قبل الفعالية. يُدفع فقط لمن سجّل حضوره، ويُعاد إليك أجر من لم يحضر. رسوم الحجز غير قابلة للاسترداد.",
 
         // Footer Banner
         banner_title: "اجعل إدارة وتشغيل فعاليتك خالية من الأخطاء.",
@@ -503,7 +514,18 @@ const translations: Record<Language, Record<string, string>> = {
         nav_search_talent: "البحث عن منظمين",
         nav_users: "المستخدمون",
         nav_events: "الفعاليات",
-        nav_payments: "المدفوعات"
+        nav_payments: "المدفوعات",
+
+        // Landing (rebrand)
+        lp_hero_title: "الأشخاص المناسبون عند الباب، في الموعد.",
+        lp_hero_sub: "احجز منظمين لفعاليتك، واطّلع على سجل حضور كل منهم وتقييماته واعتذاراته المتأخرة قبل أن تقرر.",
+        lp_hero_photo_alt: "منظمون يستقبلون الضيوف عند مدخل فعالية مسائية",
+        lp_fact_1: "تسجيل الحضور برمز QR أو برمز من 6 أرقام أو بالموقع",
+        lp_fact_2: "يُدفع فقط للمنظمين الذين سجّلوا حضورهم",
+        lp_fact_3: "الاعتذارات المتأخرة تبقى في السجل",
+        lp_paths_title: "وظّف فريقًا، أو انضم إلى فريق.",
+        lp_why_title: "ما يمكنك التحقق منه قبل الحجز",
+        lp_cta_title: "ضع الفريق المناسب عند الباب."
     },
         'ar-eg': {
         // Navigation & General
@@ -607,7 +629,7 @@ const translations: Record<Language, Record<string, string>> = {
     faq_q3: "ينفع أخلي حد تاني يسجّل حضور الستاف؟",
     faq_a3: "أيوه، الشركة تقدر تضيف مشرفين بصلاحيات معينة. يقدروا يشوفوا طلبات التقديم ويسجّلوا الحضور والانصراف، بس مش هيقدروا يعدّلوا الميزانية أو يشوفوا بيانات حساسة.",
     faq_q4: "الدفع بيتم إزاي؟",
-    faq_a4: "المبلغ بيتحجز بأمان على المنصة، وبعد ما المنسّق يعتمد انصراف الشيفت، المستحقات بتتحوّل للأشرز.",
+    faq_a4: "المنظّم بيدفع من خلال المنصة: رسوم حجز، وأجور الأشرز بتتأمّن قبل الإيفينت. الدفع بيتم بس للي سجّل حضوره، وأجر اللي ماحضرش بيرجعلك. رسوم الحجز مش بتترد.",
 
     // Footer Banner
     banner_title: "خلّي إدارة الإيفينت بتاعك أضمن وأسهل.",
@@ -748,7 +770,18 @@ const translations: Record<Language, Record<string, string>> = {
     nav_search_talent: "دور على تالنت",
     nav_users: "اليوزرز",
     nav_events: "الإيفينتس",
-    nav_payments: "الفلوس"
+    nav_payments: "الفلوس",
+
+        // Landing (rebrand)
+        lp_hero_title: "الناس الصح عند الباب، في ميعادهم.",
+        lp_hero_sub: "احجز أشرز لإيفينتك، وشوف سجل حضور كل واحد وتقييماته واعتذاراته المتأخرة قبل ما تقرر.",
+        lp_hero_photo_alt: "أشرز بيستقبلوا الضيوف على مدخل إيفينت بالليل",
+        lp_fact_1: "تسجيل الحضور بكود QR أو كود من 6 أرقام أو بالموقع",
+        lp_fact_2: "الدفع بيتم بس للأشرز اللي سجّلوا حضورهم",
+        lp_fact_3: "الاعتذارات المتأخرة بتفضل في السجل",
+        lp_paths_title: "كوّن فريق، أو انضم لفريق.",
+        lp_why_title: "اللي تقدر تتأكد منه قبل ما تحجز",
+        lp_cta_title: "حط الفريق المظبوط على الباب."
     }
 };
 

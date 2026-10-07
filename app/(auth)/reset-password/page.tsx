@@ -30,8 +30,8 @@ export default function ResetPasswordPage() {
         finally { setLoading(false); }
     };
     return <main className="min-h-screen flex items-center justify-center px-5 py-16"><div className="w-full max-w-md">
-        <div className="flex justify-center mb-8"><BrandLogo /></div><div className="glass rounded-2xl p-6 sm:p-8">
-            <h1 className="text-3xl font-black text-dark-50">Choose a new password</h1>
+        <div className="flex justify-center mb-8"><BrandLogo /></div><div className="glass rounded-xl p-6 sm:p-8">
+            <h1 className="display text-4xl text-dark-50">Choose a new password</h1>
             <p className="mt-2 mb-6 text-dark-400">Your reset token is short-lived and can only be used for this password change.</p>
             {error && <p className="mb-4 rounded-xl bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}
             <form onSubmit={submit} className="space-y-5"><Input label="New password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} icon={<Lock size={16} />} required />

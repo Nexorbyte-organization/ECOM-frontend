@@ -3,7 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Skeleton, SkeletonGroup } from '@/components/ui/Skeleton';
-import { AlertTriangle, ArrowRight } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { useLanguage } from '@/lib/i18n';
 import { getProviderProfileByUserId, getTalentProfileByUserId } from '@/lib/api';
@@ -100,20 +100,19 @@ export default function ProfileCompletionGate({
             {isChecking && <SkeletonGroup className="border-b border-dark-700 px-4 py-3"><Skeleton className="h-4 w-64 max-w-full" /></SkeletonGroup>}
             {error && <div role="alert" className="flex items-center justify-center gap-3 bg-danger-500/10 p-3 text-sm text-danger-400">{error}<button type="button" onClick={() => void refresh()} className="font-semibold underline">Retry</button></div>}
             {!isChecking && !isComplete && !error && (
-                <div className="sticky top-0 z-30 border-b border-amber-500/30 bg-amber-50/95 px-4 py-3 shadow-sm backdrop-blur dark:bg-amber-950/90" role="alert">
+                <div className="sticky top-0 z-30 border-b border-dark-600 border-s-4 border-s-accent-400 bg-dark-900 px-4 py-3" role="alert">
                     <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-start gap-3 text-start">
-                            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-300">
-                                <AlertTriangle size={19} />
+                            <span className="mt-0.5 shrink-0 text-accent-600 dark:text-accent-400">
+                                <AlertTriangle size={20} />
                             </span>
                             <div>
-                                <p className="font-black text-amber-950 dark:text-amber-100">{title}</p>
-                                <p className="mt-0.5 text-sm font-medium text-amber-800 dark:text-amber-200">{description}</p>
+                                <p className="font-semibold text-dark-50">{title}</p>
+                                <p className="mt-0.5 text-sm text-dark-300">{description}</p>
                             </div>
                         </div>
-                        <Link href={profilePath} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-amber-700">
+                        <Link href={profilePath} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-600">
                             {actionLabel}
-                            <ArrowRight size={16} className={isArabic ? 'rotate-180' : ''} />
                         </Link>
                     </div>
                 </div>

@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useId } from 'react';
 import { cn } from '@/lib/utils';
 
 interface BrandLogoProps {
@@ -8,28 +11,34 @@ interface BrandLogoProps {
     className?: string;
 }
 
-function Mark({ inverted = false }: { inverted?: boolean }) {
+// Two O's punched out of a ticket stub, with the tear notches top and bottom.
+function Mark({ inverted = false, className }: { inverted?: boolean; className?: string }) {
+    const maskId = useId();
     return (
-        <span className="brand-mark" aria-hidden="true">
-            <span className={cn('brand-mark-letter', inverted && 'text-white')}>O</span>
-            <span className={cn('brand-mark-letter brand-mark-letter-accent', inverted && 'text-white')}>O</span>
-            <span className="brand-mark-dot" />
-        </span>
+        <svg viewBox="0 0 48 28" aria-hidden="true" className={cn('h-[26px] w-[44px] shrink-0', inverted ? 'text-bottle-text' : 'text-primary-500', className)}>
+            <defs>
+                <mask id={maskId}>
+                    <rect width="48" height="28" fill="#fff" />
+                    <circle cx="14" cy="14" r="6.5" fill="#000" />
+                    <circle cx="34" cy="14" r="6.5" fill="#000" />
+                    <circle cx="24" cy="0" r="2.6" fill="#000" />
+                    <circle cx="24" cy="28" r="2.6" fill="#000" />
+                </mask>
+            </defs>
+            <rect width="48" height="28" rx="4" fill="currentColor" mask={`url(#${maskId})`} />
+        </svg>
     );
 }
 
+export { Mark as BrandMark };
+
 export default function BrandLogo({ compact = false, inverted = false, href, className }: BrandLogoProps) {
     const content = (
-        <span className={cn('inline-flex items-center gap-3 select-none', className)}>
+        <span className={cn('inline-flex items-center gap-2.5 select-none', className)}>
             <Mark inverted={inverted} />
             {!compact && (
-                <span className="flex flex-col text-start leading-none">
-                    <span className={cn('text-[15px] font-black tracking-[-0.03em]', inverted ? 'text-white' : 'text-dark-50')}>
-                        OO<span className="text-primary-500">—</span>USHERS
-                    </span>
-                    <span className={cn('mt-1 text-[8px] font-bold uppercase tracking-[0.2em]', inverted ? 'text-white/55' : 'text-dark-400')}>
-                        People make the moment
-                    </span>
+                <span dir="ltr" className={cn('display text-[22px] leading-none', inverted ? 'text-bottle-text' : 'text-dark-50')}>
+                    ushers
                 </span>
             )}
         </span>

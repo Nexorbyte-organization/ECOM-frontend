@@ -88,7 +88,7 @@ export default function TalentDashboard() {
             <div>
                 <div className="flex items-center gap-2">
                     <h1 className="text-2xl font-black text-dark-50">
-                        {t('welcome_back_name')}, <span className="gradient-text">{profile?.fullName || 'Talent'}</span>
+                        {t('welcome_back_name')}, {profile?.fullName || 'Talent'}
                     </h1>
                     {profile && isVerifiedTalent(profile) && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-success-500/15 border border-success-500/30 text-success-600 text-xs font-black">
@@ -102,7 +102,7 @@ export default function TalentDashboard() {
             {/* Pending Referrals */}
             {pendingReferrals.length > 0 && (
                 <div className="space-y-3">
-                    <h3 className="text-xs font-black text-dark-300 uppercase tracking-wider flex items-center gap-2">
+                    <h3 className="text-xs font-black text-dark-300 flex items-center gap-2">
                         <UserPlus size={14} className="text-primary-400" />
                         {t('pending_referrals_count')} ({pendingReferrals.length})
                     </h3>
@@ -153,7 +153,7 @@ export default function TalentDashboard() {
             )}
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatsCard
                     label={t('stat_reliability')}
                     value={`${stats?.reliabilityScore ?? 0}%`}
@@ -180,7 +180,7 @@ export default function TalentDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Quick Actions */}
                 <Card className="lg:col-span-1">
-                  <h3 className="text-xs font-black text-dark-300 uppercase tracking-wider mb-4">{t('quick_actions')}</h3>
+                  <h3 className="text-xs font-black text-dark-300 mb-4">{t('quick_actions')}</h3>
                     <div className="space-y-2">
                         <Link
                             href="/talent/jobs"
@@ -208,7 +208,7 @@ export default function TalentDashboard() {
 
                 {/* Upcoming Events */}
                 <Card className="lg:col-span-2">
-                    <h3 className="text-xs font-black text-dark-300 uppercase tracking-wider mb-4">{t('stat_upcoming')}</h3>
+                    <h3 className="text-xs font-black text-dark-300 mb-4">{t('stat_upcoming')}</h3>
                     {stats?.upcomingEvents && stats.upcomingEvents.length > 0 ? (
                         <div className="space-y-3">
                             {stats.upcomingEvents.map((event) => (
