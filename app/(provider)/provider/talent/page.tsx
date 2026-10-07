@@ -6,15 +6,27 @@ import React, { useEffect, useState } from 'react';
 import { searchTalents, getFavoriteTalents, addFavoriteTalent, removeFavoriteTalent, getProviderProfileByUserId, getProviderEvents, directBookTalent, isVerifiedTalent } from '@/lib/api';
 import { TalentProfile, Event, TalentSearchFilters } from '@/types';
 import { useAuth } from '@/lib/auth';
-import Card from '@/components/ui/Card';
-import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import Avatar from '@/components/ui/Avatar';
+import Select from '@/components/ui/Select';
 import Modal from '@/components/ui/Modal';
 import { EVENT_CATEGORIES, CITIES, formatEventDates } from '@/lib/utils';
-import { Search, MapPin, Star, Shield, Clock, UserPlus, Briefcase, Heart } from 'lucide-react';
+import { Search, MapPin, Star, Shield, UserPlus, Briefcase, Heart, BadgeCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useProfileCompletion } from '@/components/shared/ProfileCompletionGate';
+
+const INITIAL_TINTS = ['bg-cat-coral/15 text-cat-coral-ink', 'bg-cat-sky/15 text-cat-sky-ink', 'bg-cat-teal/15 text-cat-teal-ink', 'bg-cat-rose/15 text-cat-rose-ink', 'bg-cat-sun/20 text-cat-sun-ink', 'bg-cat-lime/20 text-cat-lime-ink'];
+
+/** The usher's photo fills the card. With no photo (or a broken link) it falls back to big initials on a soft tint. */
+function TalentPhoto({ talent }: { talent: TalentProfile }) {
+    const [failed, setFailed] = useState(false);
+    const tint = INITIAL_TINTS[(talent.fullName.charCodeAt(0) || 0) % INITIAL_TINTS.length];
+    const initials = talent.fullName.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+    if (talent.photo && !failed) {
+        // eslint-disable-next-line @next/next/no-img-element
+        return <img src={talent.photo} alt={talent.fullName} onError={() => setFailed(true)} className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />;
+    }
+    return <div className={`grid size-full place-items-center ${tint}`} role="img" aria-label={talent.fullName}><span className="display text-6xl">{initials}</span></div>;
+}
 
 export default function TalentSearchPage() {
     const { user } = useAuth();
@@ -127,98 +139,75 @@ export default function TalentSearchPage() {
     };
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-8">
             {error && <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}
-            <div>
-                <h1 className="display text-3xl sm:text-4xl">Search Talent</h1>
-                <p className="text-dark-400 mt-1">Find and book the perfect talent for your events</p>
+            <header className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                    <h1 className="display text-3xl sm:text-4xl">Search Talent</h1>
+                    <p className="mt-1 text-dark-300">Find and book the perfect talent for your events</p>
+                </div>
                 <button type="button" onClick={() => setFavoritesOnly((value) => !value)}
                     aria-pressed={favoritesOnly}
-                    className="mt-3 inline-flex items-center gap-2 rounded-xl border border-dark-700 px-3 py-2 text-sm text-dark-200 hover:border-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-500">
-                    <Heart size={15} fill={favoritesOnly ? 'currentColor' : 'none'} />
+                    className={`press inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-semibold ${favoritesOnly ? 'border-primary-500 bg-primary-50 text-primary-600 dark:text-primary-400' : 'border-dark-500 text-dark-100 hover:bg-dark-850'}`}>
+                    <Heart size={16} fill={favoritesOnly ? 'currentColor' : 'none'} />
                     {favoritesOnly ? 'Show all talent' : 'Favorites (' + favorites.length + ')'}
                 </button>
+            </header>
+
+            {/* Filters: two plain selects, no box around them */}
+            <div className="grid max-w-xl grid-cols-2 gap-3">
+                <Select label="City" value={searchCity} onChange={(e) => setSearchCity(e.target.value)} placeholder="All cities"
+                    options={CITIES.map((c) => ({ value: c, label: c }))} />
+                <Select label="Category" value={searchCategory} onChange={(e) => setSearchCategory(e.target.value)} placeholder="All categories"
+                    options={EVENT_CATEGORIES.map((c) => ({ value: c, label: c }))} />
             </div>
 
-            {/* Filters */}
-            <Card>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                        <label className="block text-sm font-medium text-dark-300">City</label>
-                        <select
-                            value={searchCity}
-                            onChange={(e) => setSearchCity(e.target.value)}
-                            className="w-full bg-dark-950 border-2 border-dark-50 rounded-xl px-4 py-2.5 text-sm text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all appearance-none cursor-pointer"
-                        >
-                            <option value="" className="bg-dark-900 text-dark-100">All cities</option>
-                            {CITIES.map((c) => <option key={c} value={c} className="bg-dark-900 text-dark-100">{c}</option>)}
-                        </select>
-                    </div>
-                    <div className="space-y-1.5">
-                        <label className="block text-sm font-medium text-dark-300">Category</label>
-                        <select
-                            value={searchCategory}
-                            onChange={(e) => setSearchCategory(e.target.value)}
-                            className="w-full bg-dark-950 border-2 border-dark-50 rounded-xl px-4 py-2.5 text-sm text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all appearance-none cursor-pointer"
-                        >
-                            <option value="" className="bg-dark-900 text-dark-100">All categories</option>
-                            {EVENT_CATEGORIES.map((c) => <option key={c} value={c} className="bg-dark-900 text-dark-100">{c}</option>)}
-                        </select>
-                    </div>
-                </div>
-            </Card>
-
-            {/* Results */}
+            {/* Results: the photo is the card */}
             {loading && !favoritesOnly ? (
                 <ContentSkeleton variant="cards" />
             ) : shownTalents.length === 0 ? (
-                <Card className="text-center py-12">
-                    <Search size={32} className="mx-auto text-dark-600 mb-3" />
-                    <p className="text-dark-400">{favoritesOnly ? 'No favorite ushers yet' : 'No talent found matching your criteria'}</p>
-                </Card>
+                <div className="rounded-2xl border border-dashed border-dark-500 p-12 text-center">
+                    <Search size={28} className="mx-auto mb-3 text-dark-400" />
+                    <p className="display-sm text-xl">{favoritesOnly ? 'No favorite ushers yet' : 'No talent found'}</p>
+                    {!favoritesOnly && <p className="mt-1 text-sm text-dark-300">Try another city or category.</p>}
+                </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {shownTalents.map((talent) => (
-                        <Card key={talent._id} className="flex flex-col">
-                            <div className="flex items-center gap-3 mb-4">
-                                <button type="button" onClick={() => toggleFavorite(talent)}
-                                    disabled={favoriteBusy === talent._id}
-                                    aria-label={favorites.some((item) => item._id === talent._id) ? 'Remove ' + talent.fullName + ' from favorites' : 'Add ' + talent.fullName + ' to favorites'}
-                                    aria-pressed={favorites.some((item) => item._id === talent._id)}
-                                    className="rounded-lg p-2 text-primary-400 hover:bg-dark-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-500 disabled:opacity-50">
-                                    <Heart size={18} fill={favorites.some((item) => item._id === talent._id) ? 'currentColor' : 'none'} />
-                                </button>
-                                <Avatar src={talent.photo} name={talent.fullName} size="lg" />
-                                <div>
-                                    <div className="flex items-center gap-1.5">
-                                        <Link href={`/provider/talent/${talent._id}`} className="text-sm font-semibold text-dark-100 hover:text-primary-500 transition-colors">{talent.fullName}</Link>
-                                        {isVerifiedTalent(talent) && <span className="text-xs text-success-400">✅</span>}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 xl:grid-cols-4">
+                    {shownTalents.map((talent) => {
+                        const saved = favorites.some((item) => item._id === talent._id);
+                        return (
+                            <article key={talent._id} className="group min-w-0">
+                                <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-dark-800">
+                                    <Link href={`/provider/talent/${talent._id}`} className="absolute inset-0" aria-label={`Open ${talent.fullName}'s profile`}>
+                                        <TalentPhoto talent={talent} />
+                                    </Link>
+                                    <button type="button" onClick={() => toggleFavorite(talent)}
+                                        disabled={favoriteBusy === talent._id}
+                                        aria-label={saved ? 'Remove ' + talent.fullName + ' from favorites' : 'Add ' + talent.fullName + ' to favorites'}
+                                        aria-pressed={saved}
+                                        className={`press absolute end-3 top-3 grid size-10 place-items-center rounded-full bg-white shadow-md disabled:opacity-50 ${saved ? 'text-danger-500' : 'text-ink'}`}>
+                                        <Heart size={18} fill={saved ? 'currentColor' : 'none'} />
+                                    </button>
+                                    <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent px-4 pb-3.5 pt-12 text-white">
+                                        <p className="flex items-center gap-1.5 text-base font-semibold leading-tight">
+                                            <span className="truncate">{talent.fullName}</span>
+                                            {isVerifiedTalent(talent) && <BadgeCheck size={16} className="shrink-0 text-accent-400" aria-label="Verified" />}
+                                        </p>
+                                        <p className="mt-0.5 flex items-center gap-1 text-xs text-white/80"><MapPin size={12} aria-hidden="true" />{talent.city}</p>
                                     </div>
-                                    <p className="text-xs text-dark-400 flex items-center gap-1"><MapPin size={11} /> {talent.city}</p>
                                 </div>
-                            </div>
-                            <div className="flex items-center gap-2 mb-3 flex-wrap">
-                                <Badge variant="primary"><Shield size={10} className="inline mr-1" />{talent.reliabilityScore}%</Badge>
-                                <Badge variant="warning"><Star size={10} className="inline mr-1" />{talent.ratingAverage}</Badge>
-                                <Badge variant="default"><Clock size={10} className="inline mr-1" />{talent.experienceYears}yr</Badge>
-                            </div>
-                            <div className="flex flex-wrap gap-1 mb-3">
-                                {talent.categories.map((cat) => (
-                                    <span key={cat} className="text-[10px] px-2 py-0.5 rounded-md bg-dark-800 text-dark-400 border border-dark-700">{cat}</span>
-                                ))}
-                            </div>
-                            <div className="flex flex-wrap gap-1 mb-4">
-                                {talent.languages.map((lang) => (
-                                    <span key={lang} className="text-[10px] px-2 py-0.5 rounded-md bg-dark-800/50 text-dark-500">{lang}</span>
-                                ))}
-                            </div>
-                            <div className="mt-auto pt-3 border-t border-dark-700/50">
-                                <Button size="sm" icon={<UserPlus size={14} />} disabled={isCheckingProfile || !isProfileComplete} onClick={() => openBookingModal(talent)} className="w-full">
-                                    {isProfileComplete ? 'Direct Book' : 'Complete Profile'}
-                                </Button>
-                            </div>
-                        </Card>
-                    ))}
+                                <div className="mt-3 flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+                                    <p className="flex items-center gap-3 text-sm font-medium text-dark-200">
+                                        <span className="inline-flex items-center gap-1"><Star size={14} className="text-cat-sun" fill="currentColor" aria-hidden="true" />{talent.ratingAverage}</span>
+                                        <span className="inline-flex items-center gap-1"><Shield size={14} className="text-primary-500" aria-hidden="true" />{talent.reliabilityScore}%</span>
+                                    </p>
+                                    <Button size="sm" variant="secondary" icon={<UserPlus size={14} />} disabled={isCheckingProfile || !isProfileComplete} onClick={() => openBookingModal(talent)} className="w-full lg:w-auto">
+                                        {isProfileComplete ? 'Book' : 'Complete profile'}
+                                    </Button>
+                                </div>
+                            </article>
+                        );
+                    })}
                 </div>
             )}
 
