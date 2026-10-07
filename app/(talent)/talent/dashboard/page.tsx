@@ -91,8 +91,8 @@ export default function TalentDashboard() {
     const freshGigs = fresh.filter((e) => !bookedIds.has(e._id) && e.hiredTalents.length < e.requiredCount).slice(0, 3);
     const record = [
         { value: `${stats?.reliabilityScore ?? 0}%`, label: c.reliable, hue: 'text-primary-600 dark:text-primary-400' },
-        { value: `${stats?.ratingAverage ?? 0}`, label: `${c.rating} (${stats?.totalRatings ?? 0})`, hue: 'text-cat-sun-ink' },
-        { value: String(stats?.completedEventsCount ?? 0), label: c.done, hue: 'text-cat-sky-ink' },
+        { value: `${stats?.ratingAverage ?? 0}`, label: `${c.rating} (${stats?.totalRatings ?? 0})`, hue: 'text-dark-50' },
+        { value: String(stats?.completedEventsCount ?? 0), label: c.done, hue: 'text-dark-50' },
     ];
 
     return (
@@ -119,7 +119,7 @@ export default function TalentDashboard() {
 
             {next ? (
                 <NextUp event={next} label={c.next}>
-                    <Link href={`/talent/jobs/${next._id}`} className="press inline-flex min-h-12 items-center rounded-lg bg-white px-6 text-base font-semibold text-ink hover:bg-bottle-text">{c.checkin}</Link>
+                    <Link href={`/talent/jobs/${next._id}`} className="press inline-flex min-h-12 items-center rounded-lg bg-accent-400 px-6 text-base font-semibold text-[#06231F] hover:bg-accent-300">{c.checkin}</Link>
                     <Link href={`/talent/jobs/${next._id}`} className="press inline-flex min-h-12 items-center rounded-lg border border-white/40 px-6 text-base font-semibold text-white hover:bg-white/10">{c.open}</Link>
                 </NextUp>
             ) : (

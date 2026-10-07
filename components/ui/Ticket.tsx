@@ -14,13 +14,13 @@ export function DateBlock({ date, tone, className }: { date: string; tone: Ticke
     );
 }
 
-/** Staffing as a quiet bar and a count. Green when full, sun when it is filling, neutral when empty. */
+/** Staffing as a quiet bar and a count. Teal when full, amber while it fills, neutral when empty. */
 export function FillBar({ filled, total, className }: { filled: number; total: number; className?: string }) {
     const pct = total ? Math.min(100, Math.round((filled / total) * 100)) : 0;
     return (
         <span className={cn('inline-flex items-center gap-2.5', className)} role="img" aria-label={`${filled}/${total}`}>
             <span className="h-1.5 w-16 overflow-hidden rounded-full bg-dark-700" aria-hidden="true">
-                <span className={cn('block h-full rounded-full', pct >= 100 ? 'bg-primary-500' : 'bg-accent-450')} style={{ width: `${pct}%` }} />
+                <span className={cn('block h-full rounded-full', pct >= 100 ? 'bg-primary-500' : 'bg-warning-500')} style={{ width: `${pct}%` }} />
             </span>
             <span className="text-xs font-semibold tabular-nums text-dark-300">{filled}/{total}</span>
         </span>

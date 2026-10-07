@@ -100,10 +100,10 @@ export default function ProfileCompletionGate({
             {isChecking && <SkeletonGroup className="border-b border-dark-700 px-4 py-3"><Skeleton className="h-4 w-64 max-w-full" /></SkeletonGroup>}
             {error && <div role="alert" className="flex items-center justify-center gap-3 bg-danger-500/10 p-3 text-sm text-danger-400">{error}<button type="button" onClick={() => void refresh()} className="font-semibold underline">Retry</button></div>}
             {!isChecking && !isComplete && !error && (
-                <div className="sticky top-0 z-30 border-b border-dark-600 border-s-4 border-s-accent-400 bg-dark-900 px-4 py-3" role="alert">
+                <div className="sticky top-0 z-30 border-b border-dark-600 border-s-4 border-s-warning-500 bg-dark-900 px-4 py-3" role="alert">
                     <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-start gap-3 text-start">
-                            <span className="mt-0.5 shrink-0 text-accent-600 dark:text-accent-400">
+                            <span className="mt-0.5 shrink-0 text-warning-600 dark:text-warning-500">
                                 <AlertTriangle size={20} />
                             </span>
                             <div>

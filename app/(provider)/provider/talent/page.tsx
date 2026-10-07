@@ -205,7 +205,7 @@ export default function TalentSearchPage() {
                                 </div>
                                 <div className="mt-3 flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
                                     <p className="flex items-center gap-3 text-sm font-medium text-dark-200">
-                                        <span className="inline-flex items-center gap-1"><Star size={14} className="text-cat-sun" fill="currentColor" aria-hidden="true" />{talent.ratingAverage}</span>
+                                        <span className="inline-flex items-center gap-1"><Star size={14} className="text-star" fill="currentColor" aria-hidden="true" />{talent.ratingAverage}</span>
                                         <span className="inline-flex items-center gap-1"><Shield size={14} className="text-primary-500" aria-hidden="true" />{talent.reliabilityScore}%</span>
                                     </p>
                                     <Button size="sm" variant="secondary" icon={<UserPlus size={14} />} disabled={isCheckingProfile || !isProfileComplete} onClick={() => openBookingModal(talent)} className="w-full lg:w-auto">
@@ -235,7 +235,7 @@ export default function TalentSearchPage() {
                             </p>
                             <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-dark-300">
                                 <span className="inline-flex items-center gap-1"><MapPin size={14} aria-hidden="true" />{viewer.talent.city}</span>
-                                <span className="inline-flex items-center gap-1"><Star size={14} className="text-cat-sun" fill="currentColor" aria-hidden="true" />{viewer.talent.ratingAverage}</span>
+                                <span className="inline-flex items-center gap-1"><Star size={14} className="text-star" fill="currentColor" aria-hidden="true" />{viewer.talent.ratingAverage}</span>
                                 <span className="inline-flex items-center gap-1"><Shield size={14} className="text-primary-500" aria-hidden="true" />{viewer.talent.reliabilityScore}%</span>
                             </p>
                         </div>

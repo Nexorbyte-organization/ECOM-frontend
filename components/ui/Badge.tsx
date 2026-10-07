@@ -9,15 +9,15 @@ interface BadgeProps {
     className?: string;
 }
 
-// Status chips: a soft tint of the meaning colour with a dot. Green = good / done, sun = needs
-// attention, coral = a problem, sky = information, grey = neutral.
+// Status chips: a soft tint of the meaning colour with a dot. Green = booked / done, amber =
+// filling / needs attention, red = a problem, blue = information, teal = brand, grey = neutral.
 const styles: Record<BadgeVariant, { chip: string; dot: string }> = {
     default: { chip: 'bg-dark-800 text-dark-200', dot: 'bg-dark-400' },
     primary: { chip: 'bg-primary-50 text-primary-600 dark:text-primary-300', dot: 'bg-primary-500' },
-    success: { chip: 'bg-success-50 text-primary-600 dark:text-primary-300', dot: 'bg-success-500' },
-    warning: { chip: 'bg-warning-50 text-accent-700 dark:text-accent-300', dot: 'bg-accent-450' },
+    success: { chip: 'bg-success-50 text-success-600', dot: 'bg-success-500' },
+    warning: { chip: 'bg-warning-50 text-warning-700', dot: 'bg-warning-500' },
     danger: { chip: 'bg-danger-50 text-danger-600 dark:text-danger-400', dot: 'bg-danger-500' },
-    info: { chip: 'bg-info-50 text-info-600 dark:text-cat-sky-ink', dot: 'bg-info-500' },
+    info: { chip: 'bg-info-50 text-info-600 dark:text-[#8DB8E6]', dot: 'bg-info-500' },
 };
 
 export default function Badge({ children, variant = 'default', className }: BadgeProps) {
