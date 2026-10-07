@@ -1,6 +1,6 @@
 // The punch: little discs pop out of the thing you just pressed. Fired from click handlers on
 // accept / apply / check-in / hire, never on a timer.
-const COLOURS = ['#FFB23E', '#7DE3B8', '#FF7A6B', '#CFF27E', '#8ED1FF', '#FFA6D1'];
+const COLOURS = ['#14B8A6', '#2DD4BF', '#0F766E', '#1A8754', '#E0A22E', '#5EEAD4'];
 
 export function burstAt(element: Element | null, count = 14) {
     if (!element || typeof document === 'undefined') return;
