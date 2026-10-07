@@ -14,7 +14,7 @@ export default function ProviderDashboard() {
         <div><p className="text-sm font-semibold text-dark-400">{t('welcome_name')}, {user?.fullName}</p></div>
         <AnalyticsDashboard scope="organization" />
         <Card>
-            <h2 className="mb-4 text-xs font-black uppercase tracking-wider text-dark-300">{t('quick_actions')}</h2>
+            <h2 className="mb-4 text-xs font-black text-dark-300">{t('quick_actions')}</h2>
             <div className="grid gap-2 sm:grid-cols-3">
                 {isOrganizer && <Link href="/provider/events/new" className="flex items-center gap-3 rounded-xl p-3 text-sm font-bold text-dark-300 hover:bg-dark-900 hover:text-dark-100 focus-visible:ring-2 focus-visible:ring-primary-400">
                     <PlusCircle size={18} className="text-primary-400" aria-hidden="true" />{t('action_create_event')}

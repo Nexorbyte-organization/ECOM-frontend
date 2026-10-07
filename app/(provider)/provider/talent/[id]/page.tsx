@@ -86,8 +86,8 @@ export default function TalentDetailPage() {
                             )}
                             {profile.whatsappNumber && (
                                 <span className="flex items-center gap-1">
-                                    <MessageCircle size={14} className="text-emerald-500" />
-                                    <a href={`https://wa.me/${profile.whatsappNumber.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 text-emerald-500 font-semibold transition-colors">
+                                    <MessageCircle size={14} className="text-success-500" />
+                                    <a href={`https://wa.me/${profile.whatsappNumber.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:text-success-600 text-success-500 font-semibold transition-colors">
                                         WhatsApp
                                     </a>
                                 </span>
@@ -108,7 +108,7 @@ export default function TalentDetailPage() {
             {/* Skills & Categories */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card>
-                    <h3 className="text-sm font-semibold text-dark-300 uppercase tracking-wider mb-3">Languages</h3>
+                    <h3 className="text-sm font-semibold text-dark-300 mb-3">Languages</h3>
                     <div className="flex flex-wrap gap-2">
                         {profile.languages.map((lang) => (
                             <Badge key={lang} variant="default">{lang}</Badge>
@@ -116,7 +116,7 @@ export default function TalentDetailPage() {
                     </div>
                 </Card>
                 <Card>
-                    <h3 className="text-sm font-semibold text-dark-300 uppercase tracking-wider mb-3">Event Categories</h3>
+                    <h3 className="text-sm font-semibold text-dark-300 mb-3">Event Categories</h3>
                     <div className="flex flex-wrap gap-2">
                         {profile.categories.map((cat) => (
                             <Badge key={cat} variant="primary">{cat}</Badge>
@@ -128,7 +128,7 @@ export default function TalentDetailPage() {
             {/* Portfolio */}
             {profile.portfolioImages.length > 0 && (
                 <Card>
-                    <h3 className="text-sm font-semibold text-dark-300 uppercase tracking-wider mb-3">Portfolio</h3>
+                    <h3 className="text-sm font-semibold text-dark-300 mb-3">Portfolio</h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {profile.portfolioImages.map((img, i) => (
                             <div key={i} className="rounded-xl overflow-hidden aspect-video">
@@ -141,7 +141,7 @@ export default function TalentDetailPage() {
 
             {/* Payment Methods */}
             <Card>
-                <h3 className="text-sm font-semibold text-dark-300 uppercase tracking-wider mb-4">Payment Accounts</h3>
+                <h3 className="text-sm font-semibold text-dark-300 mb-4">Payment Accounts</h3>
                 {!profile.paymentMethods || profile.paymentMethods.length === 0 ? (
                     <p className="text-sm text-dark-500 italic">No payment accounts provided by this talent.</p>
                 ) : (
@@ -149,7 +149,7 @@ export default function TalentDetailPage() {
                         {profile.paymentMethods.map((m) => (
                             <div key={m._id} className={`p-3 rounded-xl border flex items-center justify-between ${m.isDefault ? 'bg-primary-500/5 border-primary-500/25' : 'bg-dark-900/10 border-dark-800'}`}>
                                 <div className="min-w-0">
-                                    <p className="text-xs text-dark-400 font-semibold uppercase">{m.provider}</p>
+                                    <p className="text-xs text-dark-400 font-semibold ">{m.provider}</p>
                                     {m.numberOrDetail && <p className="text-sm font-bold text-dark-100 truncate mt-0.5">{m.numberOrDetail}</p>}
                                 </div>
                                 {m.isDefault && (
@@ -163,7 +163,7 @@ export default function TalentDetailPage() {
 
             {/* Event History */}
             <Card>
-                <h3 className="text-sm font-semibold text-dark-300 uppercase tracking-wider mb-4">
+                <h3 className="text-sm font-semibold text-dark-300 mb-4">
                     Event History ({history.length})
                 </h3>
                 {history.length === 0 ? (
@@ -205,7 +205,7 @@ export default function TalentDetailPage() {
             {/* Reviews */}
             {talentReviews.length > 0 && (
                 <Card>
-                    <h3 className="text-sm font-semibold text-dark-300 uppercase tracking-wider mb-4">
+                    <h3 className="text-sm font-semibold text-dark-300 mb-4">
                         Reviews ({talentReviews.length})
                     </h3>
                     <div className="space-y-3">

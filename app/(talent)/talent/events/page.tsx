@@ -132,7 +132,7 @@ export default function TalentEventsPage() {
                         onClick={() => setTab(tValue)}
                         className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer capitalize ${
                           tab === tValue 
-                            ? 'bg-primary-500 text-white border-dark-50 shadow-[2px_2px_0_0_var(--color-dark-50)]' 
+                            ? 'bg-primary-500 text-on-primary border-primary-500' 
                             : 'bg-dark-900 text-dark-200 border-dark-50 hover:bg-dark-800'
                         }`}
                     >
@@ -150,11 +150,11 @@ export default function TalentEventsPage() {
                     <CalendarDays size={32} className="mx-auto text-dark-600 mb-3" />
                     <p className="text-dark-450 font-bold">{isArabic ? 'لم يتم العثور على فعاليات' : 'No events found'}</p>
                     <Link href="/talent/jobs" className="text-xs text-primary-555 hover:text-primary-450 mt-2 inline-block font-bold">
-                        {isArabic ? 'تصفح الوظائف المتاحة ←' : 'Browse jobs →'}
+                        {isArabic ? 'تصفح الوظائف المتاحة' : 'Browse jobs'}
                     </Link>
                 </Card>
             ) : (
-                <div className="space-y-3 stagger-children">
+                <div className="space-y-3">
                     {filtered.map((app) => (
                         <Card key={app._id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-dark-950">
                             <Link href={`/talent/jobs/${app.event._id}`} className="flex-1">
@@ -175,7 +175,7 @@ export default function TalentEventsPage() {
                                 <h3 className="text-sm font-bold text-dark-100">{app.event.title}</h3>
                                 <div className="flex items-center gap-4 mt-1.5 font-semibold">
                                     <span className="text-xs text-dark-400 flex items-center gap-1"><MapPin size={12} className="text-primary-500" /> {app.event.location}</span>
-                                    <span className="text-xs text-dark-400 flex items-center gap-1"><Clock size={12} className="text-blue-500" /> {formatEventDates(app.event)}</span>
+                                    <span className="text-xs text-dark-400 flex items-center gap-1"><Clock size={12} className="text-dark-300" /> {formatEventDates(app.event)}</span>
                                 </div>
                             </Link>
                             {/* Excuse & WhatsApp button for accepted events */}
@@ -186,7 +186,7 @@ export default function TalentEventsPage() {
                                             href={app.event.whatsappGroupLink}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white transition-all cursor-pointer border border-emerald-600 shadow-[1px_1px_0_0_rgba(0,0,0,0.15)] flex-shrink-0"
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-success-500 hover:bg-success-600 text-white transition-all cursor-pointer border border-success-600 flex-shrink-0"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                             }}

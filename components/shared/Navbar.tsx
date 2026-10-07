@@ -131,22 +131,22 @@ export default function Navbar({ onMenuClick, title }: NavbarProps) {
     };
 
     const getThemeIcon = () => {
-        if (theme === 'light') return <Sun size={14} className="text-primary-500" />;
-        if (theme === 'dark') return <Moon size={14} className="text-primary-500" />;
-        return <Monitor size={14} className="text-primary-500" />;
+        if (theme === 'light') return <Sun size={14} className="text-dark-200" />;
+        if (theme === 'dark') return <Moon size={14} className="text-dark-200" />;
+        return <Monitor size={14} className="text-dark-200" />;
     };
 
     return (
-        <header className="sticky top-0 z-30 h-[76px] bg-dark-950/80 backdrop-blur-xl border-b border-dark-700 px-3 sm:px-6 flex items-center justify-between gap-3">
+        <header className="sticky top-0 z-30 h-[76px] bg-dark-950 border-b border-dark-600 px-3 sm:px-6 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
                 <button
                     onClick={onMenuClick}
                     aria-label="Open navigation"
-                    className="lg:hidden p-2 rounded-xl hover:bg-dark-800 text-dark-300 hover:text-dark-100 transition-colors cursor-pointer"
+                    className="lg:hidden p-2 rounded-md hover:bg-dark-800 text-dark-300 hover:text-dark-100 transition-colors cursor-pointer"
                 >
                     <Menu size={20} />
                 </button>
-                {title && <h1 className="text-base sm:text-lg font-semibold text-dark-50">{getTranslatedTitle(title)}</h1>}
+                {title && <h1 className="display-sm text-xl text-dark-50">{getTranslatedTitle(title)}</h1>}
             </div>
 
             <div className="flex items-center gap-2">
@@ -156,7 +156,7 @@ export default function Navbar({ onMenuClick, title }: NavbarProps) {
                         onClick={() => setThemeOpen(!themeOpen)}
                         aria-label={`Select theme. Current theme: ${theme}`}
                         aria-expanded={themeOpen}
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-dark-600 bg-dark-800 hover:bg-dark-700 text-xs font-medium text-dark-200 transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-dark-500 bg-transparent hover:bg-dark-850 text-xs font-medium text-dark-200 transition-all cursor-pointer"
                         title={`Theme: ${theme}`}
                     >
                         {getThemeIcon()}
@@ -187,11 +187,11 @@ export default function Navbar({ onMenuClick, title }: NavbarProps) {
                                             }}
                                             className={`flex items-center gap-2 w-full px-2.5 py-1.5 text-xs rounded-lg text-start font-medium cursor-pointer transition-colors ${
                                                 isActive
-                                                    ? 'bg-primary-500 text-white'
+                                                    ? 'bg-primary-500 text-on-primary'
                                                     : 'text-dark-200 hover:bg-dark-700'
                                             }`}
                                         >
-                                            <Icon size={13} className={isActive ? 'text-white' : 'text-primary-500'} />
+                                            <Icon size={13} className={isActive ? 'text-on-primary' : 'text-dark-300'} />
                                             <span>{item.label}</span>
                                         </button>
                                     );
@@ -208,12 +208,12 @@ export default function Navbar({ onMenuClick, title }: NavbarProps) {
                             onClick={() => setNotifOpen(!notifOpen)}
                             aria-label={`${unreadCount} unread notifications`}
                             aria-expanded={notifOpen}
-                            className="relative flex items-center justify-center p-2 rounded-lg border border-dark-600 bg-dark-800 hover:bg-dark-700 text-dark-200 transition-all cursor-pointer"
+                            className="relative flex items-center justify-center p-2 rounded-lg border border-dark-500 bg-transparent hover:bg-dark-850 text-dark-200 transition-all cursor-pointer"
                             title="Notifications"
                         >
-                            <Bell size={14} className="text-primary-500" />
+                            <Bell size={14} className="text-dark-200" />
                             {unreadCount > 0 && (
-                                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-danger-500 text-[9px] font-bold text-white ring-2 ring-dark-950 animate-pulse animate-duration-1000">
+                                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent-400 text-[10px] font-bold text-[#0B1F1B] ring-2 ring-dark-950">
                                     {unreadCount}
                                 </span>
                             )}
@@ -226,7 +226,7 @@ export default function Navbar({ onMenuClick, title }: NavbarProps) {
                                     {/* Header */}
                                     <div className="flex items-center justify-between px-4 py-3 border-b border-dark-700">
                                         <h3 className="text-xs font-bold text-dark-50 flex items-center gap-1.5">
-                                            <Bell size={13} className="text-primary-500" />
+                                            <Bell size={13} className="text-dark-300" />
                                             {isArabic ? 'التنبيهات' : 'Notifications'}
                                         </h3>
                                         <div className="flex gap-2">

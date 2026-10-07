@@ -258,7 +258,7 @@ export default function StaffManagementPage() {
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="border-b border-dark-700 text-xs text-dark-400 uppercase tracking-wider">
+                                <tr className="border-b border-dark-700 text-xs text-dark-400 ">
                                     <th className="py-4 px-6 font-medium">Name</th>
                                     <th className="py-4 px-6 font-medium">Email</th>
                                     <th className="py-4 px-6 font-medium">Role</th>

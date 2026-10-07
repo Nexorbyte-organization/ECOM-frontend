@@ -235,7 +235,7 @@ export default function JobDetailPage() {
 
             {/* Details */}
             <Card>
-                <h3 className="text-sm font-semibold text-dark-300 uppercase tracking-wider mb-4">Event Details</h3>
+                <h3 className="text-sm font-semibold text-dark-300 mb-4">Event Details</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex items-start gap-3">
                         <div className="p-2 rounded-lg bg-primary-500/10 text-primary-400"><MapPin size={16} /></div>
@@ -316,7 +316,7 @@ export default function JobDetailPage() {
                         <div className="mb-4">
                             <div className="flex items-center gap-2 mb-1.5">
                                 <Shirt size={14} className="text-dark-400" />
-                                <p className="text-xs font-semibold text-dark-300 uppercase tracking-wider">Dress Code</p>
+                                <p className="text-xs font-semibold text-dark-300 ">Dress Code</p>
                             </div>
                             <p className="text-sm text-dark-200">{event.dressCode}</p>
                         </div>
@@ -325,7 +325,7 @@ export default function JobDetailPage() {
                         <div>
                             <div className="flex items-center gap-2 mb-1.5">
                                 <FileText size={14} className="text-dark-400" />
-                                <p className="text-xs font-semibold text-dark-300 uppercase tracking-wider">Notes</p>
+                                <p className="text-xs font-semibold text-dark-300 ">Notes</p>
                             </div>
                             <p className="text-sm text-dark-200">{event.notes}</p>
                         </div>
@@ -388,8 +388,8 @@ export default function JobDetailPage() {
                         {/* WhatsApp Group Link — visible only to accepted ushers */}
                         {existingApp.status === 'accepted' && event.whatsappGroupLink && (
                             <div className="mt-3 pt-3 border-t border-dark-700/50 flex flex-col gap-2">
-                                <p className="text-xs font-semibold text-emerald-555 uppercase tracking-wider flex items-center gap-1.5">
-                                    <MessageCircle size={14} className="text-emerald-555" /> WhatsApp Group Chat
+                                <p className="text-xs font-semibold text-success-500 flex items-center gap-1.5">
+                                    <MessageCircle size={14} className="text-success-500" /> WhatsApp Group Chat
                                 </p>
                                 <p className="text-xs text-dark-300">
                                     You have been accepted to this event! Click below to join the WhatsApp group chat.
@@ -398,7 +398,7 @@ export default function JobDetailPage() {
                                     href={event.whatsappGroupLink}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center justify-center gap-2 w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-xs transition-colors"
+                                    className="flex items-center justify-center gap-2 w-full py-2.5 bg-success-500 hover:bg-success-600 text-white rounded-xl font-bold text-xs transition-colors"
                                 >
                                     Join WhatsApp Group
                                 </a>
@@ -503,7 +503,7 @@ export default function JobDetailPage() {
 
                     {/* Invite unregistered friend */}
                     <div className="border-t border-dark-700/50 pt-4 mt-2 space-y-3">
-                        <h4 className="text-xs font-semibold text-dark-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <h4 className="text-xs font-semibold text-dark-300 flex items-center gap-1.5">
                             <UserPlus size={14} className="text-primary-400" />
                             Invite an Unregistered Friend
                         </h4>

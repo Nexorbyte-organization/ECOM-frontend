@@ -37,7 +37,7 @@ export default function EventDaysField({ days, onChange, disabled = false, fixed
             {days.map((day, index) => (
                 <div key={index} className="rounded-xl border border-dark-700 bg-dark-900/20 p-3">
                     <div className="mb-2 flex items-center justify-between gap-2">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-dark-400">
+                        <p className="text-xs font-semibold text-dark-400">
                             {days.length > 1 ? `Day ${index + 1}` : 'Event day'}
                             {day.date && <span className="ms-2 font-normal normal-case tracking-normal text-dark-500">{formatDayDate(day.date)}</span>}
                         </p>

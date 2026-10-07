@@ -19,21 +19,21 @@ export default function LegalPage({ title, intro, sections, path }: {
 }) {
     return <main className="min-h-screen px-5 py-12"><article className="mx-auto max-w-3xl">
         <Link href="/" className="inline-block mb-10"><BrandLogo /></Link>
-        <p className="section-tag mb-3">LEGAL</p><h1 className="text-4xl font-black text-dark-50">{title}</h1>
+        <h1 className="display text-5xl text-dark-50">{title}</h1>
         <p className="mt-3 text-sm text-dark-500">Effective {LEGAL_EFFECTIVE_DATE}</p>
-        <nav aria-label="Policies" className="mt-6 flex flex-wrap gap-2">
+        <nav aria-label="Policies" className="mt-6 flex flex-wrap gap-x-5 gap-y-2">
             {LEGAL_PAGES.map((page) => (
                 <Link key={page.href} href={page.href} aria-current={page.href === path ? 'page' : undefined}
-                    className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${page.href === path
-                        ? 'border-primary-500 bg-primary-500/10 text-primary-500'
-                        : 'border-dark-700 text-dark-400 hover:border-primary-300 hover:text-primary-500'}`}>
+                    className={`border-b-2 py-1 text-sm font-semibold transition-colors ${page.href === path
+                        ? 'border-accent-400 text-dark-50'
+                        : 'border-transparent text-dark-300 hover:text-dark-50'}`}>
                     {page.label}
                 </Link>
             ))}
         </nav>
         <p className="mt-8 text-lg text-dark-300 leading-8">{intro}</p>
         <div className="mt-10 space-y-8">{sections.map((section) => <section key={section.title}>
-            <h2 className="text-xl font-black text-dark-100">{section.title}</h2>
+            <h2 className="display-sm text-2xl text-dark-50">{section.title}</h2>
             {section.body && <p className="mt-2 text-dark-400 leading-7 whitespace-pre-line">{section.body}</p>}
             {section.points && <ul className="mt-3 list-disc space-y-2 ps-5 text-dark-400 leading-7">
                 {section.points.map((point) => <li key={point}>{point}</li>)}

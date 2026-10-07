@@ -30,7 +30,7 @@ export default function TalentEventMapPage() {
             {map?.imageUrl && <button type="button" onClick={() => mapRef.current?.requestFullscreen()} className="rounded-xl border border-dark-600 px-4 py-2 text-sm text-dark-100 focus-visible:outline-2 focus-visible:outline-primary-400"><Expand size={16} className="me-2 inline" />Full screen</button>}
         </div>
         {error && <p role="alert" className="rounded-xl border border-danger-500/40 bg-danger-500/10 p-4 text-sm text-danger-400">{error}</p>}
-        {map && <div ref={mapRef} className="flex min-h-[460px] items-center justify-center rounded-[22px] border border-dark-700 bg-dark-900 p-3 sm:p-6 fullscreen:h-screen fullscreen:overflow-auto">
+        {map && <div ref={mapRef} className="flex min-h-[460px] items-center justify-center rounded-xl border border-dark-700 bg-dark-900 p-3 sm:p-6 fullscreen:h-screen fullscreen:overflow-auto">
             {map.imageUrl ? <EventMapCanvas imageUrl={map.imageUrl} pins={map.pins} /> : <div className="text-center text-dark-400"><MapPin className="mx-auto mb-3" /><p>The organization has not uploaded a map yet.</p></div>}
         </div>}
     </div>;

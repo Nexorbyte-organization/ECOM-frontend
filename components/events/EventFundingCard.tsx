@@ -26,7 +26,7 @@ interface EventFundingCardProps {
 
 const Stat = ({ label, value, tone }: { label: string; value: string; tone?: 'success' | 'warning' | 'danger' }) => (
     <div className="rounded-xl border border-dark-700 p-3">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-dark-400">{label}</p>
+        <p className="text-xs font-semibold text-dark-400">{label}</p>
         <p className={`mt-1 font-bold ${tone === 'success' ? 'text-success-500' : tone === 'warning' ? 'text-warning-500' : tone === 'danger' ? 'text-danger-400' : 'text-dark-50'}`}>{value}</p>
     </div>
 );
@@ -212,7 +212,7 @@ export default function EventFundingCard({ event, isOwner, refreshKey = 0, onEve
                     )}
                     {cardPart > 0 && (
                         <fieldset className="space-y-2">
-                            <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-dark-400">Pay {egp(cardPart)} with</legend>
+                            <legend className="mb-1 text-xs font-semibold text-dark-400">Pay {egp(cardPart)} with</legend>
                             <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dark-700 p-2.5 text-sm text-dark-200">
                                 <input type="radio" name={`funding-card-${event._id}`} checked={!selectedCardId} onChange={() => setSelectedCardId('')} />
                                 Paymob checkout (enter a card or wallet)
@@ -242,7 +242,7 @@ export default function EventFundingCard({ event, isOwner, refreshKey = 0, onEve
                 && summary.hiredCount < summary.requiredCount && (
                 <div className="mt-4 flex flex-wrap items-end gap-3 rounded-xl border border-dark-700 p-4">
                     <label className="text-sm text-dark-200">
-                        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-dark-400">Fund spots for more ushers</span>
+                        <span className="mb-1 block text-xs font-semibold text-dark-400">Fund spots for more ushers</span>
                         <input
                             type="number" min={1} max={summary.requiredCount - summary.hiredCount} value={extraSeats || ''}
                             onChange={(e) => setExtraSeats(Math.max(0, Math.min(summary.requiredCount - summary.hiredCount, Number(e.target.value) || 0)))}
@@ -379,7 +379,7 @@ export default function EventFundingCard({ event, isOwner, refreshKey = 0, onEve
             {summary.released && (
                 <p className="mt-4 flex items-center gap-1 text-xs text-success-500"><CheckCircle2 size={13} /> Released {formatDateTime(summary.fundsReleasedAt)}.</p>
             )}
-            {isOwner && <Link href="/provider/payments" className="mt-3 inline-block text-xs font-semibold text-primary-500 hover:underline">Refunds, credit, and payment history →</Link>}
+            {isOwner && <Link href="/provider/payments" className="mt-3 inline-block text-xs font-semibold text-primary-500 underline underline-offset-4">Refunds, credit, and payment history</Link>}
             {error && <p role="alert" className="mt-3 text-sm text-danger-400">{error}</p>}
         </Card>
     );

@@ -188,7 +188,7 @@ export default function CreateEventPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Event Photo */}
                 <Card>
-                    <h3 className="text-sm font-semibold text-dark-300 uppercase tracking-wider mb-4">Event Photo (Optional)</h3>
+                    <h3 className="text-sm font-semibold text-dark-300 mb-4">Event Photo (Optional)</h3>
                     <div className="flex items-center gap-6">
                         <input
                             type="file"
@@ -208,7 +208,7 @@ export default function CreateEventPage() {
                                     <button
                                         type="button"
                                         onClick={() => fileInputRef.current?.click()}
-                                        className="p-2.5 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white transition-all cursor-pointer"
+                                        className="p-2.5 rounded-xl bg-black/40 hover:bg-black/55 text-white transition-all cursor-pointer"
                                         title="Change photo"
                                     >
                                         <Camera size={18} />
@@ -243,7 +243,7 @@ export default function CreateEventPage() {
 
                 {/* Basic Info */}
                 <Card>
-                    <h3 className="text-sm font-semibold text-dark-300 uppercase tracking-wider mb-4">Event Information</h3>
+                    <h3 className="text-sm font-semibold text-dark-300 mb-4">Event Information</h3>
                     <div className="space-y-4">
                         <Input label="Event Title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Tech Summit 2026 - Staff Needed" required />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -268,7 +268,7 @@ export default function CreateEventPage() {
 
                 {/* Schedule */}
                 <Card>
-                    <h3 className="text-sm font-semibold text-dark-300 uppercase tracking-wider mb-4">Schedule</h3>
+                    <h3 className="text-sm font-semibold text-dark-300 mb-4">Schedule</h3>
                     <div className="mb-4 md:w-1/2">
                         <Input label="Application Deadline" type="date" value={applicationDeadline} onChange={(e) => setApplicationDeadline(e.target.value)} required />
                     </div>
@@ -277,7 +277,7 @@ export default function CreateEventPage() {
 
                 {/* Requirements */}
                 <Card>
-                    <h3 className="text-sm font-semibold text-dark-300 uppercase tracking-wider mb-4">Requirements</h3>
+                    <h3 className="text-sm font-semibold text-dark-300 mb-4">Requirements</h3>
                     <div className="space-y-5">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Input 
@@ -403,7 +403,7 @@ export default function CreateEventPage() {
 
                 {/* Additional */}
                 <Card>
-                    <h3 className="text-sm font-semibold text-dark-300 uppercase tracking-wider mb-4">Additional Details</h3>
+                    <h3 className="text-sm font-semibold text-dark-300 mb-4">Additional Details</h3>
                     <div className="space-y-4">
                         <Input label="Dress Code" value={dressCode} onChange={(e) => setDressCode(e.target.value)} placeholder="e.g., Business formal — black suit" />
                         <div className="space-y-1.5">
@@ -418,7 +418,7 @@ export default function CreateEventPage() {
                         </div>
                         <div className="space-y-1.5 border-t border-dark-700/40 pt-4">
                             <label className="block text-sm font-medium text-dark-300 flex items-center gap-2">
-                                <MessageCircle size={15} className="text-emerald-600" />
+                                <MessageCircle size={15} className="text-success-500" />
                                 WhatsApp Group Link <span className="text-dark-500 font-normal">(Optional)</span>
                             </label>
                             <Input

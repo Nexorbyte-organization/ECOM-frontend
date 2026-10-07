@@ -113,7 +113,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             {/* Mobile overlay */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-dark-50/20 backdrop-blur-sm z-40 lg:hidden"
+                    className="fixed inset-0 bg-[#041512]/60 z-40 lg:hidden"
                     onClick={onClose}
                 />
             )}
@@ -122,9 +122,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <aside
                 className={cn(
                     'fixed inset-y-0 start-0 h-dvh w-[280px] z-50 flex flex-col',
-                    'bg-dark-900/95 backdrop-blur-xl border-e border-dark-700',
-                    'shadow-[20px_0_50px_rgba(15,23,42,.08)]',
-                    'transition-transform duration-300 ease-out',
+                    'bg-bottle text-bottle-text border-e border-bottle-line',
+                    'transition-transform duration-200 ease-out',
                     'lg:sticky lg:top-0 lg:h-dvh lg:self-start lg:translate-x-0 lg:z-20',
                     isOpen
                         ? 'translate-x-0'
@@ -132,18 +131,19 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 )}
             >
                 {/* Logo area */}
-                <div className="h-[76px] px-5 flex items-center relative border-b border-dark-700">
-                    <BrandLogo href="/" />
+                <div className="h-[76px] px-5 flex items-center relative border-b border-bottle-line">
+                    <BrandLogo href="/" inverted />
                     <button
                         onClick={onClose}
-                        className="absolute top-4 end-4 lg:hidden p-1.5 rounded-lg hover:bg-dark-800 text-dark-400 hover:text-dark-200 transition-colors cursor-pointer"
+                        aria-label="Close navigation"
+                        className="absolute top-4 end-4 lg:hidden p-1.5 rounded-md hover:bg-bottle-lift text-bottle-muted hover:text-bottle-text transition-colors cursor-pointer"
                     >
                         <X size={16} />
                     </button>
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto" aria-label="Primary navigation">
+                <nav className="flex-1 px-3 py-5 space-y-0.5 overflow-y-auto" aria-label="Primary navigation">
                     {links.map((link) => {
                         const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(`${link.href}/`));
                         return (
@@ -151,14 +151,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                                 key={link.href}
                                 href={link.href}
                                 onClick={onClose}
+                                aria-current={isActive ? 'page' : undefined}
                                 className={cn(
-                                    'flex min-h-11 items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition-all duration-200',
+                                    'relative flex min-h-11 items-center gap-3 px-3.5 py-2.5 rounded-md text-sm transition-colors duration-150',
                                     isActive
-                                        ? 'bg-primary-500 text-white font-bold shadow-[0_8px_20px_rgba(249,115,22,.22)]'
-                                        : 'text-dark-300 hover:text-dark-50 hover:bg-dark-800 font-medium'
+                                        ? 'bg-bottle-lift text-white font-semibold'
+                                        : 'text-bottle-muted hover:text-white hover:bg-bottle-lift/60 font-medium'
                                 )}
                             >
-                                <link.icon size={17} className={isActive ? 'text-white' : 'text-dark-400'} />
+                                {isActive && <span aria-hidden="true" className="absolute inset-y-2 start-0 w-[3px] rounded-full bg-accent-400" />}
+                                <link.icon size={17} className={isActive ? 'text-accent-400' : 'text-bottle-muted'} />
                                 {getLinkLabel(link.label)}
                             </Link>
                         );
@@ -166,23 +168,23 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </nav>
 
                 {/* User Info */}
-                <div className="p-4 border-t border-dark-700">
-                    <div className="flex items-center gap-3 px-2 py-2 rounded-xl bg-dark-900">
+                <div className="p-4 border-t border-bottle-line">
+                    <div className="flex items-center gap-3 px-2 py-2">
                         {(isTalent || isOrganizer) && !currentIdentity ? (
                             <SkeletonGroup className="shrink-0"><Skeleton className="h-8 w-8 rounded-full" /></SkeletonGroup>
                         ) : (
                             <Avatar src={currentIdentity?.photo} name={currentIdentity?.name || user?.fullName || user?.email || ''} size="sm" className="shrink-0" />
                         )}
                         <div className="flex-1 min-w-0 text-start">
-                            <p className="text-xs font-medium text-dark-100 truncate">{user?.email}</p>
-                            <p className="text-[10px] text-dark-400 capitalize mt-0.5">{user?.role}</p>
+                            <p className="text-xs font-medium text-bottle-text truncate">{user?.email}</p>
+                            <p className="text-xs text-bottle-muted capitalize mt-0.5">{user?.role}</p>
                         </div>
                     </div>
                 </div>
             </aside>
 
             {/* Mobile Bottom Navigation */}
-            <nav className="fixed bottom-0 left-0 right-0 z-40 bg-dark-900/95 backdrop-blur-xl border-t border-dark-700 lg:hidden" aria-label="Mobile navigation">
+            <nav className="fixed bottom-0 left-0 right-0 z-40 bg-dark-900 border-t border-dark-600 lg:hidden" aria-label="Mobile navigation">
                 <div className="flex items-center justify-around pt-2 pb-[max(.5rem,env(safe-area-inset-bottom))]">
                     {links.slice(0, 5).map((link) => {
                         const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`);
@@ -190,15 +192,17 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                             <Link
                                 key={link.href}
                                 href={link.href}
+                                aria-current={isActive ? 'page' : undefined}
                                 className={cn(
-                                    'flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors min-w-[56px]',
+                                    'relative flex flex-col items-center gap-0.5 px-3 py-1.5 transition-colors min-w-[56px]',
                                     isActive
-                                        ? 'text-primary-500'
+                                        ? 'text-dark-50 font-semibold'
                                         : 'text-dark-400'
                                 )}
                             >
+                                {isActive && <span aria-hidden="true" className="absolute -top-2 inset-x-3 h-[3px] bg-accent-400" />}
                                 <link.icon size={20} />
-                                <span className="text-[9px] font-medium">
+                                <span className="text-[10px]">
                                     {link.label.replace('Company ', '').replace('Search ', '').replace('Browse ', '')}
                                 </span>
                             </Link>
