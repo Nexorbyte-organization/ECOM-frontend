@@ -94,7 +94,7 @@ function RegisterForm() {
                     <div className="mb-8 flex items-center justify-start">
                         <BrandLogo inverted />
                     </div>
-                    <h1 className={`display text-white mb-5 ${isArabic ? 'text-5xl' : 'text-7xl'}`}>
+                    <h1 className={`display text-white mb-5 ${isArabic ? 'text-4xl' : 'text-5xl'}`}>
                         {t('join_network')}
                     </h1>
                     <p className="text-lg text-bottle-muted max-w-md leading-relaxed">

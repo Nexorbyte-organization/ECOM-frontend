@@ -8,7 +8,8 @@ import { useLanguage } from '@/lib/i18n';
 import { getTalentProfileByUserId, getTalentApplications, getTalentProfile, excuseFromEvent } from '@/lib/api';
 import { Application, Event, TalentProfile } from '@/types';
 import Tabs from '@/components/ui/Tabs';
-import GigTicket from '@/components/events/GigTicket';
+import EventRow from '@/components/events/EventRow';
+import { RowList } from '@/components/ui/Ticket';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
@@ -113,7 +114,7 @@ export default function TalentEventsPage() {
         <div className="space-y-8 text-start">
             {error && <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}
             <header>
-                <h1 className="display text-5xl sm:text-6xl">{t('nav_my_events')}</h1>
+                <h1 className="display text-3xl sm:text-4xl">{t('nav_my_events')}</h1>
                 <p className="mt-2 max-w-[52ch] text-dark-300">
                     {isArabic
                         ? 'يوم الفعالية سجّل حضورك من هاتفك: امسح رمز المشرف أو اكتب الكود أو اضغط "أنا هنا". من لا يسجل حضوره يُعتبر غائبًا ولا يحصل على أجر.'
@@ -134,16 +135,16 @@ export default function TalentEventsPage() {
                 items={(['all', 'upcoming', 'past'] as const).map((value) => ({ value, label: getTabLabel(value), count: countFor(value) }))} />
 
             {filtered.length === 0 ? (
-                <section className="rounded-2xl border-2 border-dashed border-dark-500 p-10 text-center">
+                <section className="rounded-2xl border border-dashed border-dark-500 p-10 text-center">
                     <p className="display text-4xl">{isArabic ? 'مفيش حاجة هنا' : 'Nothing here yet'}</p>
-                    <Link href="/talent/jobs" className="press mt-5 inline-flex min-h-11 items-center rounded-xl border-2 border-edge bg-accent-400 px-6 font-bold text-ticket-ink">
+                    <Link href="/talent/jobs" className="press mt-5 inline-flex min-h-11 items-center rounded-xl bg-primary-500 px-6 font-bold text-on-primary">
                         {isArabic ? 'تصفح الوظائف المتاحة' : 'Browse jobs'}
                     </Link>
                 </section>
             ) : (
-                <div className="space-y-4">
+                <RowList>
                     {filtered.map((app) => (
-                        <GigTicket key={app._id} event={app.event} href={`/talent/jobs/${app.event._id}`}
+                        <EventRow key={app._id} event={app.event} href={`/talent/jobs/${app.event._id}`}
                             aside={<Badge variant={statusVariant(app.status)}>{app.status}</Badge>}
                             footer={(
                                 <div className="flex flex-wrap items-center gap-2">
@@ -156,7 +157,7 @@ export default function TalentEventsPage() {
                                         <>
                                             {app.event.whatsappGroupLink && (
                                                 <a href={app.event.whatsappGroupLink} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-                                                    className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border-2 border-edge bg-ticket-mint px-3 text-xs font-bold text-ticket-ink">
+                                                    className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-edge bg-cat-teal px-3 text-xs font-bold text-ink">
                                                     <MessageCircle size={14} />{isArabic ? 'مجموعة واتساب' : 'WhatsApp'}
                                                 </a>
                                             )}
@@ -170,7 +171,7 @@ export default function TalentEventsPage() {
                                 </div>
                             )} />
                     ))}
-                </div>
+                </RowList>
             )}
 
             {/* Excuse Confirmation Modal */}

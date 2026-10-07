@@ -55,7 +55,7 @@ export default function AttendanceCheckInPage() {
                     <div className="space-y-5 py-5">
                         <PunchConfirm size={80} className="mx-auto text-success-500" />
                         <div>
-                            <h1 className="display-sm text-3xl text-dark-50">
+                            <h1 className="display-sm text-2xl text-dark-50">
                                 {result.alreadyCheckedIn ? 'Already checked in' : 'Attendance confirmed'}
                             </h1>
                             <p className="mt-2 text-sm text-dark-300">
@@ -78,7 +78,7 @@ export default function AttendanceCheckInPage() {
                     <div className="space-y-5 py-5" role="alert">
                         <XCircle size={56} className="mx-auto text-danger-500" />
                         <div>
-                            <h1 className="display text-5xl sm:text-6xl">Check-in failed</h1>
+                            <h1 className="display text-3xl sm:text-4xl">Check-in failed</h1>
                             <p className="mt-2 text-sm text-dark-300">{error}</p>
                             <p className="mt-2 text-xs text-dark-500">If the code expired, scan the live code again or type the 6-digit code from your job page.</p>
                         </div>

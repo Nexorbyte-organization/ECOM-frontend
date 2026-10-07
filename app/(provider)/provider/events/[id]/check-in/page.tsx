@@ -90,7 +90,7 @@ export default function StaffCheckInPage() {
                 <ArrowLeft size={16} /> Back to event
             </Link>
             <div>
-                <h1 className="display text-5xl sm:text-6xl">Check-in screen</h1>
+                <h1 className="display text-3xl sm:text-4xl">Check-in screen</h1>
                 {event && <p className="mt-1 text-sm text-dark-400">{event.title}</p>}
             </div>
             {error && <p role="alert" className="rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-sm text-danger-400">{error}</p>}

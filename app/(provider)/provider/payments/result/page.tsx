@@ -72,7 +72,7 @@ function FundingResultContent({ fundingId }: { fundingId: string }) {
                     : failed ? <XCircle size={48} className="mx-auto mb-4 text-danger-500" />
                         : <Clock3 size={48} className="mx-auto mb-4 text-warning-500" />}
                 <Badge variant="warning">PAYMOB TEST MODE</Badge>
-                <h1 className="display text-5xl sm:text-6xl">
+                <h1 className="display text-3xl sm:text-4xl">
                     {paid ? 'Event funding confirmed' : failed ? 'Funding payment was not completed' : 'Funding confirmation pending'}
                 </h1>
                 <p className="mx-auto mt-2 max-w-lg text-sm text-dark-400">
@@ -177,7 +177,7 @@ function SettlementResultContent() {
                     <Clock3 size={48} className="mx-auto mb-4 text-warning-500" />
                 )}
                 <Badge variant="warning">PAYMOB TEST MODE</Badge>
-                <h1 className="display text-5xl sm:text-6xl">
+                <h1 className="display text-3xl sm:text-4xl">
                     {paid ? 'Payment confirmed' : failed ? 'Payment was not completed' : 'Payment confirmation pending'}
                 </h1>
                 <p className="mx-auto mt-2 max-w-lg text-sm text-dark-400">
