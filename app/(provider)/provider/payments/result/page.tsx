@@ -50,7 +50,8 @@ function FundingResultContent({ fundingId }: { fundingId: string }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fundingId]);
 
-    const paid = funding?.collectionStatus === 'paid';
+    // A card hold is confirmed once it is authorized; it is charged after the event day.
+    const paid = funding?.collectionStatus === 'paid' || funding?.collectionStatus === 'authorized';
     const failed = funding?.collectionStatus === 'failed' || funding?.collectionStatus === 'refunded';
     const eventId = funding?.eventId;
 
@@ -76,13 +77,17 @@ function FundingResultContent({ fundingId }: { fundingId: string }) {
                 </h1>
                 <p className="mx-auto mt-2 max-w-lg text-sm text-dark-400">
                     {paid
-                        ? `Paymob confirmed ${funding?.amount} EGP for “${funding?.event?.title || 'your event'}”. OO-Ushers holds it until you release the usher payments. Returning to your event…`
+                        ? funding?.kind === 'day_hold'
+                            ? `Paymob placed a ${funding?.amount} EGP hold on your card for “${funding?.event?.title || 'your event'}”. You are only charged for ushers who check in, after the day. Returning to your event…`
+                            : funding?.kind === 'fee'
+                                ? `Paymob confirmed the ${funding?.amount} EGP booking fee for “${funding?.event?.title || 'your event'}”. Returning to your event…`
+                                : `Paymob confirmed ${funding?.amount} EGP for “${funding?.event?.title || 'your event'}”. OO-Ushers holds it until you release the usher payments. Returning to your event…`
                         : failed
                             ? funding?.collectionFailureReason || 'Try again from the event funding panel. Any credit you applied stays on the event.'
                             : 'The Paymob callback can take a few seconds. This page refreshes the status automatically.'}
                 </p>
             </Card>
-            {summary && (
+            {summary && 'requiredAmount' in summary && (
                 <Card>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                         <div><p className="text-xs text-dark-400">Required for the team</p><p className="font-bold text-dark-50">{summary.requiredAmount} EGP</p></div>

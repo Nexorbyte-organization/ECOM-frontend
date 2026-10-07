@@ -5,7 +5,7 @@ import {
     CheckInPoint, CheckInPointView, GeoLocation,
     AuthResponse, Event, EventMap, EventActionRequest, EventFilters,
     EventSettlement, EventSettlementPreview, EventStatus, OrganizerCard,
-    AdminPaymentsOverview, EventFundingCheckout, EventFundingSummary, FundingMode,
+    AdminPaymentsOverview, EventFundingCheckout, EventFundingSummary, FundingMode, PreauthFundingSummary,
     OrganizerCreditOverview, PaymentTierStatus,
     PaginatedResponse, PaymentMethod, ProviderProfile, Referral,
     RegistrationResponse, Review, TalentProfile, TalentSearchFilters, LastTeam, RebookLastTeamResult, User,
@@ -790,6 +790,17 @@ async function startEventFundingAction(eventId: string, options: { cardId?: stri
     });
     return { checkoutUrl: payload.data?.checkoutUrl || null, fullyFunded: Boolean(payload.data?.fullyFunded), funding: normalizeFundingSummary(payload.data?.funding) };
 }
+// Card-hold events: a non-refundable booking fee, then a hold on the card for each event day.
+export async function getEventHoldSummary(eventId: string): Promise<PreauthFundingSummary> {
+    const payload = await apiRequest(`/provider/events/${eventId}/funding`); return payload.data as PreauthFundingSummary;
+}
+async function startEventHoldAction(eventId: string, options: { kind: 'fee' | 'day_hold'; dayIndex?: number; cardId?: string }): Promise<{ checkoutUrl: string | null; funding: PreauthFundingSummary }> {
+    const payload = await apiRequest(`/provider/events/${eventId}/funding`, {
+        method: 'POST',
+        body: { kind: options.kind, ...(options.dayIndex !== undefined ? { dayIndex: options.dayIndex } : {}), ...(options.cardId ? { cardId: options.cardId } : {}) },
+    });
+    return { checkoutUrl: payload.data?.checkoutUrl || null, funding: payload.data?.funding as PreauthFundingSummary };
+}
 async function setEventFundingModeAction(eventId: string, mode: FundingMode): Promise<Event> {
     const payload = await apiRequest(`/provider/events/${eventId}/funding-mode`, { method: 'PATCH', body: { mode } }); return normalizeEvent(payload.data);
 }
@@ -883,6 +894,7 @@ export const retrySettlementLinePayout = withFeedback(retrySettlementLinePayoutA
 export const startOrganizerCardEnrollment = withFeedback(startOrganizerCardEnrollmentAction, { en: 'Card setup started.', ar: 'بدأ إعداد البطاقة.', 'ar-eg': 'بدأ إعداد البطاقة.' });
 
 export const startEventFunding = withFeedback(startEventFundingAction, { en: 'Funding prepared.', ar: 'تم تجهيز التمويل.', 'ar-eg': 'التمويل جاهز.' });
+export const startEventHold = withFeedback(startEventHoldAction, { en: 'Payment page ready.', ar: 'صفحة الدفع جاهزة.', 'ar-eg': 'صفحة الدفع جاهزة.' });
 export const setEventFundingMode = withFeedback(setEventFundingModeAction, { en: 'Payment method updated.', ar: 'تم تحديث طريقة الدفع.', 'ar-eg': 'طريقة الدفع اتغيرت.' });
 export const releaseEventPayments = withFeedback(releaseEventPaymentsAction, { en: 'Usher payments released.', ar: 'تم صرف مستحقات المنظمين.', 'ar-eg': 'فلوس الأشرز اتصرفت.' });
 export const closeEventApplications = withFeedback(closeEventApplicationsAction, { en: 'Team confirmed and applications closed.', ar: 'تم تأكيد الفريق وإغلاق التقديم.', 'ar-eg': 'الفريق اتأكد والتقديم اتقفل.' });

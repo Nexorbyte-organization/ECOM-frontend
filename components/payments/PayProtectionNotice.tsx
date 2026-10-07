@@ -24,6 +24,12 @@ const COPY: Record<PaymentProtection, { en: string; ar: string; tone: string; Ic
         tone: 'border-success-500/30 bg-success-500/10 text-success-500',
         Icon: CheckCircle2,
     },
+    hold_pending: {
+        en: 'The organization holds your pay on its card a few days before each event day, and OO-Ushers sends it to you a day after each day you check in. Today’s hold is not in place yet for the later days.',
+        ar: 'تقوم الجهة المنظمة بحجز أجرك على بطاقتها قبل كل يوم فعالية بعدة أيام، ويتم تحويله لك بعد كل يوم تسجل فيه حضورك بيوم. الحجز للأيام القادمة لم يتم بعد.',
+        tone: 'border-primary-500/30 bg-primary-500/10 text-primary-500',
+        Icon: ShieldCheck,
+    },
     pay_after: {
         en: 'This trusted organization pays ushers after the event.',
         ar: 'هذه جهة موثوقة تدفع للمنظمين بعد انتهاء الفعالية.',
